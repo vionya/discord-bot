@@ -1,4 +1,6 @@
-from discord import Object, abc, User
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2021 sardonicism-04
+from discord import Object, User, abc
 
 
 class PartialUser(abc.Messageable, Object):
