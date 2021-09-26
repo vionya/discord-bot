@@ -318,7 +318,6 @@ class Highlights(neo.Addon):
         profile = self.bot.profiles[ctx.author.id]
 
         if not ids:
-
             def transform_mention(id):
                 mention = getattr(self.bot.get_guild(id), "name",
                                   getattr(self.bot.get_channel(id), "mention",
@@ -328,7 +327,11 @@ class Highlights(neo.Addon):
             menu = ButtonsMenu.from_iterable(
                 [*map(transform_mention, profile.hl_blocks)] or ["No highlight blocks"],
                 per_page=10,
-                use_embed=True
+                use_embed=True,
+                template_embed=neo.Embed().set_author(
+                    name=f"{ctx.author}'s highlight blocks",
+                    icon_url=ctx.author.display_avatar
+                )
             )
             await menu.start(ctx)
             return
