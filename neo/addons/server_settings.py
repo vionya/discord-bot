@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 sardonicism-04
+import discord
 import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu
@@ -149,6 +150,46 @@ class ServerSettings(neo.Addon):
             return
 
         await self.bot.delete_config(ctx.guild.id)
+
+    @server_settings.command(name="ignore")
+    @is_registered_guild()
+    async def server_settings_ignore_channel(self, ctx, channel: discord.TextChannel = None):
+        """
+        Ignores a channel. Run without arguments to view ignored channels
+
+        Any attempts to run a command in an ignored
+        channel will be ignored, *unless they are*
+        *executed by someone with administrator*
+        *permissions*
+        """
+        config = self.bot.configs[ctx.guild.id]
+        if not channel:
+            menu = ButtonsMenu.from_iterable(
+                [*map(lambda id: f"`{id}` [<#{id}>]", config.disabled_channels)]
+                or ["No ignored channels"],
+                per_page=10,
+                use_embed=True,
+                template_embed=neo.Embed().set_author(
+                    name=f"Ignored channels for {ctx.guild}",
+                    icon_url=ctx.guild.icon
+                )
+            )
+            await menu.start(ctx)
+            return
+
+        (channel_ids := {*config.disabled_channels, }).add(channel.id)
+        config.disabled_channels = [*channel_ids]
+        await ctx.message.add_reaction("\U00002611")
+
+    @server_settings.command(name="unignore")
+    @is_registered_guild()
+    async def server_settings_unignore_channel(self, ctx, channel: discord.TextChannel):
+        """Unignores a channel for command responses"""
+        config = self.bot.configs[ctx.guild.id]
+        (channel_ids := {*config.disabled_channels, }).discard(channel.id)
+
+        config.disabled_channels = [*channel_ids]
+        await ctx.message.add_reaction("\U00002611")
 
 
 def setup(bot):

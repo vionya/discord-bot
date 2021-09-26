@@ -4,15 +4,16 @@ CREATE TABLE profiles (
     user_id            BIGINT PRIMARY KEY,
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC'),
     hl_blocks          BIGINT[] DEFAULT ARRAY[]::BIGINT[],
-    receive_highlights BOOLEAN  DEFAULT TRUE,
+    receive_highlights BOOLEAN DEFAULT TRUE,
     timezone           TEXT DEFAULT NULL,
     hl_timeout         BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1
 );
 
 CREATE TABLE guild_configs (
-    guild_id  BIGINT PRIMARY KEY,
-    prefix    TEXT DEFAULT 'n!',
-    starboard BOOLEAN DEFAULT FALSE
+    guild_id          BIGINT PRIMARY KEY,
+    prefix            TEXT DEFAULT 'n!',
+    starboard         BOOLEAN DEFAULT FALSE,
+    disabled_channels BIGINT[] DEFAULT ARRAY[]::BIGINT[]
 );
 
 CREATE TABLE highlights (

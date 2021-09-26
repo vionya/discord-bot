@@ -142,7 +142,7 @@ class NeoUser(RecordContainer):
 
 
 class NeoGuildConfig(RecordContainer):
-    __slots__ = ("guild_id", "prefix", "starboard")
+    __slots__ = ("guild_id", "prefix", "starboard", "disabled_channels")
 
     def __repr__(self):
         return "<{0.__class__.__name__} guild_id={0.guild_id}>".format(self)

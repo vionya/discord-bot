@@ -52,6 +52,7 @@ class Neo(commands.Bot):
         self.cooldown = commands.CooldownMapping.from_cooldown(
             2, 4, commands.BucketType.user)
         self.add_check(self.global_cooldown, call_once=True)  # Register global cooldown
+        self.add_check(self.channel_check, call_once=True)  # Register channel disabled check
 
         self._async_ready = asyncio.Event()
         self.loop.create_task(self.__ainit__())
@@ -203,6 +204,18 @@ class Neo(commands.Bot):
         if retry_after:
             raise commands.CommandOnCooldown(
                 self.cooldown, retry_after, commands.BucketType.user)
+        return True
+
+    async def channel_check(self, ctx: context.NeoContext):
+        if any([
+            getattr(ctx.guild, "id", None) not in self.configs,
+            await self.is_owner(ctx.author),
+            ctx.channel.permissions_for(ctx.author).administrator
+        ]):
+            return True
+
+        if ctx.channel.id in self.configs[ctx.guild.id].disabled_channels:
+            raise commands.DisabledCommand("Commands are disabled in this channel.")
         return True
 
     # discord.py's `Client.dispatch` API is both private and *volatile*.
