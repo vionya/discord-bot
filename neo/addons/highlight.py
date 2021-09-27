@@ -142,7 +142,7 @@ class Highlights(neo.Addon):
     def cog_unload(self):
         self.send_queued_highlights.shutdown()
 
-    @cached_property  # Cache this so it isn't re-computed after every message
+    @cached_property  # Cache to avoid being re-computed after every message
     def flat_highlights(self):
         return [hl for hl_list in self.highlights.values() for hl in hl_list]
 
@@ -153,6 +153,9 @@ class Highlights(neo.Addon):
 
     @commands.Cog.listener("on_message")
     async def listen_for_highlights(self, message):
+        if not self.bot.is_ready():
+            return  # Return if bot is not ready, so flat_highlights is computed correctly
+
         if message.author.id in {hl.user_id for hl in self.flat_highlights}:
             self.grace_periods[message.author.id].add(message.channel.id)
 
