@@ -9,6 +9,7 @@ import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, shorten
+from neo.types.containers import TimedCache
 from neo.types.converters import max_days_converter
 
 SETTINGS_MAPPING = {
@@ -67,8 +68,10 @@ class Starboard:
         "max_days",
         "emoji",
         "ignored",
+        "star_ids",
         "cached_stars",
-        "lock"
+        "lock",
+        "pool"
     )
 
     def __init__(
@@ -80,7 +83,8 @@ class Starboard:
         format: str,
         max_days: int,
         emoji: discord.PartialEmoji,
-        ignored: set[int]
+        ignored: set[int],
+        pool
     ):
         self.channel = channel
         self.threshold = threshold
@@ -88,21 +92,34 @@ class Starboard:
         self.max_days = max_days
         self.emoji = emoji
         self.ignored = ignored
+        self.star_ids = [star["message_id"] for star in stars]
 
-        self.cached_stars = {}
+        # Use timed cache so that stars are not persisting for
+        # longer than they reasonably should be
+        self.cached_stars = TimedCache(300)
         self.lock = asyncio.Lock()
+        self.pool = pool
 
-        for star in stars:
-            message = self.channel.get_partial_message(star["starboard_message_id"])
-            self.cached_stars[star["message_id"]] = Star(
-                message_id=star["message_id"],
-                starboard_message=message,
-                stars=star["stars"]
+    async def get_star(self, id: int) -> Star:
+        if id in self.cached_stars:
+            return self.cached_stars[id]
+
+        star_data = await self.pool.fetchrow("SELECT * FROM stars WHERE message_id=$1", id)
+
+        if star_data:
+            starboard_msg = self.channel.get_partial_message(star_data["starboard_message_id"])
+            star = Star(
+                message_id=id,
+                starboard_message=starboard_msg,
+                stars=star_data["stars"]
             )
+            self.cached_stars[id] = star
+            return star
+        return None
 
     async def create_star(self, message: discord.Message, stars: int):
         if any([
-            message.id in self.cached_stars,
+            message.id in self.star_ids,
             self.lock.locked()
         ]):
             return
@@ -133,21 +150,57 @@ class Starboard:
                 embed=embed
             )
             star = Star(**kwargs)
+
+            await self.pool.execute(
+                """
+                INSERT INTO stars (
+                    guild_id,
+                    message_id,
+                    channel_id,
+                    stars,
+                    starboard_message_id
+                ) VALUES (
+                    $1, $2, $3, $4, $5
+                )
+                """,
+                message.guild.id,
+                message.id,
+                message.channel.id,
+                stars,
+                star.starboard_message.id
+            )
+
+            self.star_ids.append(message.id)
             self.cached_stars[message.id] = star
             return star
 
     async def delete_star(self, id: int):
-        star = self.cached_stars.pop(id)
+        star = await self.get_star(id)
         try:
             await star.starboard_message.delete()
         finally:
+            await self.pool.execute(
+                "DELETE FROM stars WHERE message_id=$1",
+                star.message_id
+            )
+            del self.cached_stars[id]
+            self.star_ids.remove(id)
             return star
 
     async def edit_star(self, id: int, stars: int):
-        star = self.cached_stars.get(id)
+        star = await self.get_star(id)
         star.stars = stars
 
         await star.edit(content=self.format.format(stars=star.stars))
+        await self.pool.execute(
+            """
+            UPDATE stars
+            SET stars=$1
+            WHERE message_id=$2
+            """,
+            star.stars,
+            star.message_id
+        )
         return star
 
 
@@ -201,24 +254,21 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     async def create_starboard(self, guild_id, starboard_settings):
         star_records = await self.bot.db.fetch(
             """
-            SELECT
-                message_id,
-                stars,
-                starboard_message_id
+            SELECT message_id
             FROM stars
             WHERE guild_id=$1
             """, guild_id
         )
-        kwargs = {
-            "channel": self.bot.get_channel(starboard_settings["channel"]),
-            "stars": star_records,
-            "threshold": starboard_settings["threshold"],
-            "format": starboard_settings["format"],
-            "max_days": starboard_settings["max_days"],
-            "emoji": discord.PartialEmoji.from_str(starboard_settings["emoji"]),
-            "ignored": set(starboard_settings["ignored"])
-        }
-        return Starboard(**kwargs)
+        return Starboard(
+            channel=self.bot.get_channel(starboard_settings["channel"]),
+            stars=star_records,
+            threshold=starboard_settings["threshold"],
+            format=starboard_settings["format"],
+            max_days=starboard_settings["max_days"],
+            emoji=discord.PartialEmoji.from_str(starboard_settings["emoji"]),
+            ignored=set(starboard_settings["ignored"]),
+            pool=self.bot.db
+        )
 
     # Sect: Event handling
 
@@ -260,8 +310,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         if not self.predicate(starboard, payload):
             return
 
-        star = starboard.cached_stars.get(payload.message_id)
-        if star is None:
+        if payload.message_id not in starboard.star_ids:
             message = await self.fetch_message(
                 self.bot.get_channel(payload.channel_id),
                 payload.message_id
@@ -281,29 +330,11 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             if not star:
                 return
 
-            await self.bot.db.execute(
-                """
-                INSERT INTO stars (
-                    guild_id,
-                    message_id,
-                    channel_id,
-                    stars,
-                    starboard_message_id
-                ) VALUES (
-                    $1, $2, $3, $4, $5
-                )
-                """,
-                message.guild.id,
-                message.id,
-                message.channel.id,
-                reaction_count,
-                star.starboard_message.id
-            )
-
         else:
             if not self.reaction_check(starboard, payload.emoji):
                 return
 
+            star = await starboard.get_star(payload.message_id)
             # Eventually replace this with a patma
             if payload.event_type == "REACTION_ADD":
                 star.stars += 1
@@ -312,21 +343,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
             if star.stars < starboard.threshold:
                 await starboard.delete_star(star.message_id)
-                await self.bot.db.execute(
-                    "DELETE FROM stars WHERE message_id=$1",
-                    star.message_id
-                )
             else:
                 await starboard.edit_star(star.message_id, star.stars)
-                await self.bot.db.execute(
-                    """
-                    UPDATE stars
-                    SET stars=$1
-                    WHERE message_id=$2
-                    """,
-                    star.stars,
-                    star.message_id
-                )
 
     @commands.Cog.listener("on_raw_reaction_clear")
     @commands.Cog.listener("on_raw_reaction_clear_emoji")
@@ -341,15 +359,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             if not self.reaction_check(payload.emoji):
                 return
 
-        star = starboard.cached_stars.get(payload.message_id)
-        if not star:
-            return
-
-        await starboard.delete_star(star.message_id)
-        await self.bot.db.execute(
-            "DELETE FROM stars WHERE message_id=$1",
-            star.message_id
-        )
+        if payload.message_id in starboard.star_ids:
+            await starboard.delete_star(payload.message_id)
 
     @neo.Addon.recv("config_update")
     async def handle_starboard_setting(self, guild, settings):
@@ -484,12 +495,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         )
 
         if isinstance(to_ignore, discord.PartialMessage) \
-                and starboard.cached_stars.get(id):
+                and id in starboard.star_ids:
             await starboard.delete_star(id)
-            await self.bot.db.execute(
-                "DELETE FROM stars WHERE message_id=$1",
-                id
-            )
 
         await ctx.send("Successfully ignored the provided entity!")
 
