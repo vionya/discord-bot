@@ -83,21 +83,14 @@ class ArgCommand(commands.Command):
                 for k, v in vars(parsed).items():
                     if not isinstance(v, list):
                         if isawaitable(v):
-                            try:
-                                vars(parsed)[k] = await v
-                            except Exception as e:
-                                await self.dispatch_error(ctx, e)
+                            vars(parsed)[k] = await v
                         continue
 
                     values = []
                     for result in v:
                         if isawaitable(result):
-                            try:
-                                values.append(await result)
-                                continue
-                            except Exception as e:
-                                await self.dispatch_error(ctx, e)
-                                return
+                            values.append(await result)
+                            continue
 
                         values.append(result)
                     vars(parsed)[k] = values

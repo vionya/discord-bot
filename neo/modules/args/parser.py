@@ -34,14 +34,14 @@ class Parser(ArgumentParser):
             msg = "%r is not callable"
             raise ArgumentError(action, msg % converter)
 
-        try:
-            if isinstance(converter, type) and issubclass(converter, Converter):
-                result = converter().convert(self.ctx, arg_string)
-                # Above tries to return an awaitable from a converter
-            else:
-                result = converter(arg_string)
+        if isinstance(converter, type) and issubclass(converter, Converter):
+            return converter().convert(self.ctx, arg_string)
+            # Above tries to return an awaitable from a converter
 
+        try:
+            return converter(arg_string)
+        except ValueError:
+            self.error(f"Bad value type for flag argument `{action.dest}`"
+                       f" (expected type: `{converter.__name__}`)")
         except Exception as e:
             self.error(str(e))
-
-        return result
