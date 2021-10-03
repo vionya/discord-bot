@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 sardonicism-04
+from collections import Counter
 from functools import partial
 from sys import version as py_version
 from types import SimpleNamespace
@@ -206,6 +207,47 @@ class Utility(neo.Addon):
             inline=False
         )
         await ctx.send(embed=embed)
+
+    @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.has_permissions(manage_messages=True)
+    @args.add_arg(
+        "limit", type=int, default=5, nargs="?",
+        help="The number of messages to clear (default: 5)"
+    )
+    @args.add_arg(
+        "-b", "--before", type=int,
+        help="Purge only messages before the message with the provided ID"
+    )
+    @args.add_arg(
+        "-a", "--after", type=int,
+        help="Purge only messages after the message with the provided ID"
+    )
+    @args.add_arg(
+        "-u", "--user", type=commands.MemberConverter, action="append",
+        help="Purge only messages from the given member (can be used"
+             " multiple times to select multiple)"
+    )
+    @args.command(name="purge", aliases=["clear", "c"])
+    async def purge_command(self, ctx, *, input):
+        """Purge messages from the current channel"""
+        purged = await ctx.channel.purge(
+            limit=min(max(input.limit, 0), 2000),
+            check=(lambda m: m.author in input.user
+                   if input.user else lambda _: True),
+            before=discord.Object(input.before) if input.before else None,
+            after=discord.Object(input.after) if input.after else None
+        )
+
+        deleted = Counter([m.author for m in purged])
+        embed = neo.Embed(
+            title="Channel Purge Breakdown",
+            description="\n".join(f"**{m.name}** {times} messages" for
+                                  m, times in deleted.items())
+        ).set_footer(text="This message will expire in 10 seconds")
+        await ctx.send(embed=embed, delete_after=10)
+
+    # Information commands below
 
     @commands.command(name="avatar", aliases=["av", "avy", "pfp"])
     async def avatar_command(self, ctx, *, user: Union[int, mention_converter, discord.Member] = None):
