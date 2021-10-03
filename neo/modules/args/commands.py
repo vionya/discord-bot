@@ -37,13 +37,13 @@ class ArgCommand(commands.Command):
             if not hasattr(action, "dest"):  # Logically this shouldn't happen
                 continue
 
-            description = getattr(action, "help", None)
-
+            description = ""
             converter = self.callback.parser._registry_get(
                 "type", action.type, action.type)
             if converter.__name__ != "identity":
-                description += f"\n*Expected value type:* `{converter.__name__}`"
+                description += f"[`{converter.__name__}`] "
 
+            description += getattr(action, "help", None)
             yield (action.dest, description)
 
     async def _parse_arguments(self, ctx):
