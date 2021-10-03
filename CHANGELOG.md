@@ -1,3 +1,38 @@
+# Release v0.12.0
+## Additions
+* `roleinfo`/`ri` command
+    * Displays relevant information pertaining to the given role
+    * Can only be used in servers
+* `serversettings ignore`/`serversettings unignore` system
+    * Enables server administrators to specify channels in which command invocation will not be acknowledged
+    * Ignored channels will not respond to commands, unless invoked by administrators (to prevent accidentally disabling all channels)
+    * Running `serversettings ignore` with no arguments will display a list of all currently ignored channels
+* `purge`/`clear`/`c` command
+    * Purges a variable number of messages from the channel in which it is invoked
+    * Restrictions:
+        * Invoking member must have `manage_messages` channel permission
+        * neo phoenix must have `manage_messages` channel permission
+        * Command may only be invoked within a server
+    * Flag command to allow for powerful specification:
+        * `--after` and `--before` flag to purge within certain timeframes
+        * `--user` flag to only purge messages from select users
+            * Adding the `--user` flag multiple times allows for multiple users to be selected at once
+        * `limit` positional argument to control how many messages are purged at once
+    * Sends a breakdown of number of messages deleted per member after completition, which then deletes itself after 10 seconds
+
+## Improvements
+* Contextual embeds from highlights will now replace all custom emoji with the `❔` character
+* Standardized appearance of `hl block` list embed
+* Slightly redesigned appearance of flag descriptions in flag command help
+* Rewrote starboard caching logic:
+    * Stars are now cached on-demand, rather than upfront
+    * Cached stars are invalidated after 5 minutes of not being modified
+    * Added graceful handler for the deletion of starboard channels
+
+## Fixes
+* Fixed an edge case in highlights whereby, if a message event was received prior to the bot's internal cache being ready, the highlights cache would be computed incorrectly, causing all highlights to fail to be cached, thus preventing any highlights from being delivered
+
+
 # Release v0.11.1
 ## Fixes
 * `avatar` now properly fetches guild members when applicable
