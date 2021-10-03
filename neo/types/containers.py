@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 sardonicism-04
 import asyncio
-import contextlib
 import zoneinfo
 from abc import ABCMeta, abstractmethod
+from collections.abc import MutableMapping, MutableSet
 from functools import cache
 from typing import Optional
 
@@ -180,32 +180,78 @@ class NeoGuildConfig(RecordContainer):
         super().__setattr__(attribute, value)
 
 
-class TimedSet(set):
-    def __init__(
-        self,
-        *args,
-        decay_time: int = 60,
-        loop: asyncio.AbstractEventLoop = None,
-        **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-        self.decay_time = decay_time
+class TimedSet(MutableSet):
+    __slots__ = ("__underlying_set__", "__running_store__", "loop", "timeout")
+
+    def __init__(self, *args, timeout: int = 60, loop: asyncio.AbstractEventLoop = None):
+        self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
-        self.running = {}
 
-        for item in self:
-            self.add(item)
+        self.__underlying_set__ = set()
+        self.__running_store__: dict[str, asyncio.tasks.Task] = {}
 
-    def add(self, item):
-        with contextlib.suppress(KeyError):
-            con = self.running.pop(item)
-            con.cancel()
+        for element in args:
+            self.add(element)
 
-        super().add(item)
-        task = self.loop.create_task(self.decay(item))
-        self.running[item] = task
+    async def invalidate(self, element):
+        await asyncio.sleep(self.timeout)
+        self.discard(element)
 
-    async def decay(self, item):
-        await asyncio.sleep(self.decay_time)
-        self.discard(item)
-        self.running.pop(item, None)
+    def add(self, element):
+        if element in self:
+            active = self.__running_store__.pop(element)
+            active.cancel()
+
+        self.__underlying_set__.add(element)
+        self.__running_store__[element] = self.loop.create_task(self.invalidate(element))
+
+    def discard(self, element):
+        del self.__running_store__[element]
+        self.__underlying_set__.discard(element)
+
+    def __contains__(self, o: object) -> bool:
+        return self.__underlying_set__.__contains__(o)
+
+    def __iter__(self):
+        return iter(self.__underlying_set__)
+
+    def __len__(self):
+        return len(self.__underlying_set__)
+
+
+class TimedCache(MutableMapping):
+    __slots__ = ("__dict__", "__running_store__", "loop", "timeout")
+
+    def __init__(self, timeout: int = 60, loop: asyncio.AbstractEventLoop = None, **kwargs):
+        self.timeout = timeout
+        self.loop = loop or asyncio.get_event_loop()
+
+        self.__running_store__: dict[str, asyncio.tasks.Task] = {}
+
+        for k, v in kwargs.items():
+            self[k] = v
+
+    async def invalidate(self, key):
+        await asyncio.sleep(self.timeout)
+        del self[key]
+
+    def __setitem__(self, key, value):
+        if key in self:
+            active = self.__running_store__.pop(key)
+            active.cancel()
+
+        self.__dict__[key] = value
+        self.__running_store__[key] = self.loop.create_task(self.invalidate(key))
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __delitem__(self, key):
+        del self.__running_store__[key]
+        del self.__dict__[key]
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)

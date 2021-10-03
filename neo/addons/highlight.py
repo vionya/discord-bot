@@ -134,7 +134,7 @@ class Highlights(neo.Addon):
 
         for profile in self.bot.profiles.values():
             self.grace_periods[profile.user_id] = TimedSet(
-                decay_time=profile.hl_timeout * 60
+                timeout=profile.hl_timeout * 60
             )
 
         self.send_queued_highlights.start()
@@ -184,14 +184,14 @@ class Highlights(neo.Addon):
     @neo.Addon.recv("user_settings_update")
     async def handle_update_profile(self, user, profile):
         if self.grace_periods.get(user.id):
-            current_timeout = self.grace_periods[user.id].decay_time
+            current_timeout = self.grace_periods[user.id].timeout
             if (profile.hl_timeout * 60) == current_timeout:
                 return
             for item in (t_set := self.grace_periods.pop(user.id)):
                 t_set.running.pop(item).cancel()
 
         self.grace_periods[profile.user_id] = TimedSet(
-            decay_time=profile.hl_timeout * 60
+            timeout=profile.hl_timeout * 60
         )
 
     # Need to dynamically account for deleted profiles
