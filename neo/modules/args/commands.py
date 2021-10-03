@@ -33,18 +33,23 @@ class ArgCommand(commands.Command):
         return " ".join(args)
 
     def get_args_help(self):
-        for action in reversed(self.callback.parser._actions):
-            if not hasattr(action, "dest"):  # Logically this shouldn't happen
+        for arg in reversed(self.callback.parser._actions):
+            if not hasattr(arg, "dest"):  # Logically this shouldn't happen
                 continue
 
-            description = ""
-            converter = self.callback.parser._registry_get(
-                "type", action.type, action.type)
-            if converter.__name__ != "identity":
-                description += f"[`{converter.__name__}`] "
+            argname = f"--{arg.dest}" if arg.option_strings else arg.dest
+            description = getattr(arg, "help", None)
 
-            description += getattr(action, "help", None)
-            yield (action.dest, description)
+            if len(arg.option_strings) > 1:
+                aliases = ", ".join(arg.option_strings)
+                description += f"\n↳ **Aliases** {aliases}"
+
+            converter = self.callback.parser._registry_get(
+                "type", arg.type, arg.type)
+            if converter.__name__ != "identity":
+                description += f"\n↳ **Expected type** `{converter.__name__}`"
+
+            yield (argname, description)
 
     async def _parse_arguments(self, ctx):
         self.callback.parser.ctx = ctx

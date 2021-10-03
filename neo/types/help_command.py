@@ -109,7 +109,7 @@ class NeoHelpCommand(commands.HelpCommand):
         if hasattr(command, "get_args_help"):
             args_help = ""
             for dest, help in command.get_args_help():
-                args_help += f"\n**{dest}** {help}"
+                args_help += f"\n\n**{dest}** {help}"
             embed.add_field(name="Flag Arguments", value=args_help, inline=False)
 
         if command.aliases:
