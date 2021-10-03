@@ -87,22 +87,37 @@ class ArgCommand(commands.Command):
                     kwargs[name] = None
                     raise
 
-                for k, v in vars(parsed).items():
-                    if not isinstance(v, list):
-                        if isawaitable(v):
-                            vars(parsed)[k] = await v
-                        continue
-
-                    values = []
-                    for result in v:
-                        if isawaitable(result):
-                            values.append(await result)
+                try:
+                    for k, v in vars(parsed).items():
+                        if not isinstance(v, list):
+                            if isawaitable(v):
+                                vars(parsed)[k] = await v
                             continue
 
-                        values.append(result)
-                    vars(parsed)[k] = values
+                        values = []
+                        for result in v:
+                            if isawaitable(result):
+                                values.append(await result)
+                                continue
 
-                kwargs[name] = parsed
+                            values.append(result)
+                        vars(parsed)[k] = values
+
+                    kwargs[name] = parsed
+
+                except Exception:
+                    coros = []
+                    for v in vars(parsed).values():
+                        if isawaitable(v):
+                            coros.append(v)
+                            continue
+
+                        if isinstance(v, list):
+                            coros.extend([*filter(lambda r: isawaitable(r), v)])
+
+                    for coro in coros:
+                        coro.close()  # Cleanup awaitables that will be abandoned
+                    raise
 
             except StopIteration:
                 raise discord.ClientException(fmt.format(self))
