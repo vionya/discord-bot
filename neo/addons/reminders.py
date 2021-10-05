@@ -2,7 +2,6 @@
 # Copyright (C) 2021 sardonicism-04
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Union
 
 import discord
 import neo
@@ -47,7 +46,7 @@ class Reminder:
         self.wait_task = bot.loop.create_task(self.wait())
 
     @property
-    def channel(self) -> Union[discord.TextChannel, discord.DMChannel]:
+    def channel(self) -> discord.TextChannel | discord.DMChannel:
         if (channel := self.bot.get_channel(self.channel_id)) is not None:
             return channel
         return discord.DMChannel._from_message(self.bot._connection, self.channel_id)
@@ -291,7 +290,7 @@ class Reminders(neo.Addon):
         await ctx.send(embed=embed)
 
     @remind.command(name="cancel", aliases=["remove", "rm"])
-    async def remind_cancel(self, ctx, *indices: Union[int, str]):
+    async def remind_cancel(self, ctx, *indices: int | str):
         """
         Cancel 1 or more reminder by index
 

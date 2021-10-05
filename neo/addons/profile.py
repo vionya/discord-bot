@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 sardonicism-04
 from datetime import datetime
-from typing import Union
 
 import neo
 from discord.ext import commands
@@ -19,11 +18,11 @@ SETTINGS_MAPPING = {
         "description": None
     },
     "timezone": {
-        "converter": timezone_converter,
+        "converter": timezone_converter(),
         "description": None
     },
     "hl_timeout": {
-        "converter": timeout_converter,
+        "converter": timeout_converter(),
         "description": None
     }
 }
@@ -123,7 +122,7 @@ class Profile(neo.Addon):
         await ctx.send(f"Setting `{setting}` has been reset!")
 
     @commands.group(invoke_without_command=True)
-    async def profile(self, ctx, *, user: Union[int, mention_converter] = None):
+    async def profile(self, ctx, *, user: int | mention_converter = None):
         """Displays the neo profile of yourself, or a specified user."""
         if user is None:
             await is_registered_profile().predicate(ctx)

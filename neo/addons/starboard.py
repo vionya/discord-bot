@@ -2,7 +2,6 @@
 # Copyright (C) 2021 sardonicism-04
 import asyncio
 from datetime import datetime, timezone
-from typing import Union
 
 import discord
 import neo
@@ -476,7 +475,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard.command(name="ignore")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_ignore(self, ctx, to_ignore: Union[discord.TextChannel, discord.PartialMessage]):
+    async def starboard_ignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage):
         """
         Ignores a channel or message
 
@@ -510,7 +509,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard.command(name="unignore")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_unignore(self, ctx, to_ignore: Union[discord.TextChannel, discord.PartialMessage, int]):
+    async def starboard_unignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage | int):
         """Unignores a channel or message"""
         starboard = self.starboards[ctx.guild.id]
         id = getattr(to_ignore, "id", to_ignore)
