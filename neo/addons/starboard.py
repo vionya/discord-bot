@@ -334,11 +334,10 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                 return
 
             star = await starboard.get_star(payload.message_id)
-            # Eventually replace this with a patma
-            if payload.event_type == "REACTION_ADD":
-                star.stars += 1
-            else:
-                star.stars -= 1
+
+            match payload.event_type:
+                case "REACTION_ADD": star.stars += 1
+                case "REACTION_REMOVE": star.stars -= 1
 
             if star.stars < starboard.threshold:
                 await starboard.delete_star(star.message_id)
@@ -367,7 +366,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         if channel.id == starboard.channel.id:
             await self.bot.db.execute("DELETE FROM stars WHERE guild_id=$1", channel.guild.id)
             starboard.cached_stars.clear()
-        self.starboards.pop(channel.guild.id, None)
+        starboard.channel = None
 
     @neo.Addon.recv("config_update")
     async def handle_starboard_setting(self, guild, settings):
