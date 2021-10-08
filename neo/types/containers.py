@@ -5,7 +5,6 @@ import zoneinfo
 from abc import ABCMeta, abstractmethod
 from collections.abc import MutableMapping, MutableSet
 from functools import cache
-from typing import Optional
 
 
 def add_hook(attr_name: str):
@@ -103,7 +102,7 @@ class NeoUser(RecordContainer):
 
     @add_hook("timezone")
     @cache
-    def cast_timezone(self, timezone: Optional[str] = None) -> Optional[zoneinfo.ZoneInfo]:
+    def cast_timezone(self, timezone: str | None = None) -> zoneinfo.ZoneInfo | None:
         if timezone is not None:
             return zoneinfo.ZoneInfo(timezone)
         return None

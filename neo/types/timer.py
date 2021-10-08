@@ -2,7 +2,6 @@
 # Copyright (C) 2021 sardonicism-04
 import asyncio
 import logging
-from typing import Optional
 
 from .formatters import format_exception
 
@@ -26,7 +25,7 @@ class PeriodicTimer:
         self.is_stopped = False
         self.logger = logging.getLogger(callback.__module__)
 
-    def __get__(self, instance: Optional[object], owner):
+    def __get__(self, instance: object | None, owner):
         if instance is None:
             return self
 

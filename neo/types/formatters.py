@@ -3,10 +3,9 @@
 import traceback
 from enum import Enum
 from logging import Formatter, LogRecord
-from typing import Optional, Union
 
 
-def format_exception(exc: Union[BaseException, tuple]) -> Optional[str]:
+def format_exception(exc: BaseException | tuple) -> str | None:
     if isinstance(exc, tuple) and all(exc):
         exc_info = exc
     elif isinstance(exc, BaseException):
