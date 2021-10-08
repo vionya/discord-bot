@@ -18,11 +18,11 @@ SETTINGS_MAPPING = {
         "description": None
     },
     "timezone": {
-        "converter": timezone_converter(),
+        "converter": timezone_converter,
         "description": None
     },
     "hl_timeout": {
-        "converter": timeout_converter(),
+        "converter": timeout_converter,
         "description": None
     }
 }
