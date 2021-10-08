@@ -187,8 +187,7 @@ class Highlights(neo.Addon):
             current_timeout = self.grace_periods[user.id].timeout
             if (profile.hl_timeout * 60) == current_timeout:
                 return
-            for item in (t_set := self.grace_periods.pop(user.id)):
-                t_set.running.pop(item).cancel()
+            self.grace_periods.pop(user.id).clear()
 
         self.grace_periods[profile.user_id] = TimedSet(
             timeout=profile.hl_timeout * 60
@@ -197,7 +196,8 @@ class Highlights(neo.Addon):
     # Need to dynamically account for deleted profiles
     @neo.Addon.recv("profile_delete")
     async def handle_deleted_profile(self, user_id: int):
-        self.grace_periods.pop(user_id, None)
+        if (popped := self.grace_periods.pop(user_id, None)) is not None:
+            popped.clear()  # Cleanup TimedSet
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 

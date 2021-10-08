@@ -209,6 +209,11 @@ class TimedSet(MutableSet):
         del self.__running_store__[element]
         self.__underlying_set__.discard(element)
 
+    def clear(self):
+        for task in self.__running_store__.values():
+            task.cancel()
+        self.__underlying_set__.clear()
+
     def __contains__(self, o: object) -> bool:
         return self.__underlying_set__.__contains__(o)
 
@@ -234,6 +239,11 @@ class TimedCache(MutableMapping):
     async def invalidate(self, key):
         await asyncio.sleep(self.timeout)
         del self[key]
+
+    def clear(self):
+        for task in self.__running_store__.values():
+            task.cancel()
+        self.__dict__.clear()
 
     def __setitem__(self, key, value):
         if key in self:
