@@ -249,12 +249,12 @@ class Utility(neo.Addon):
     # Information commands below
 
     @commands.command(name="avatar", aliases=["av", "avy", "pfp"])
-    async def avatar_command(self, ctx, *, user: int | mention_converter | discord.Member = None):
+    async def avatar_command(self, ctx, *, user: mention_converter | int | discord.Member = None):
         """Retrieves the avatar of yourself, or a specified user"""
         kwargs = {}
         embed = neo.Embed(description="")
 
-        if isinstance(user, (int, type(None))):
+        if isinstance(user, int | type(None)):
             try:
                 user = await ctx.guild.fetch_member(user or ctx.author.id)
             except (discord.HTTPException, AttributeError):
@@ -279,7 +279,7 @@ class Utility(neo.Addon):
     @commands.command(name="userinfo", aliases=["ui"])
     async def user_info_command(self, ctx, *, user: mention_converter | int | discord.Member = None):
         """Retrieves information of yourself, or a specified user"""
-        if isinstance(user, (int, type(None))):
+        if isinstance(user, int | type(None)):
             try:
                 user = await ctx.guild.fetch_member(user or ctx.author.id)
             except (discord.HTTPException, AttributeError):
