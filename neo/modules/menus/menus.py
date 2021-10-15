@@ -121,7 +121,7 @@ class BaseMenu(discord.ui.View):
 
 class ButtonsMenu(BaseMenu):
 
-    @discord.ui.button(label="<", row=4)
+    @discord.ui.button(label="≪", row=4)
     async def previous_button(self, button, interaction):
         current_page = self.get_current_page(self.current_page - 1)
         send_kwargs = self._get_msg_kwargs(current_page)
@@ -132,7 +132,7 @@ class ButtonsMenu(BaseMenu):
         self.stop()
         await self.close(manual=True)
 
-    @discord.ui.button(label=">", row=4)
+    @discord.ui.button(label="≫", row=4)
     async def next_button(self, button, interaction):
         current_page = self.get_current_page(self.current_page + 1)
         send_kwargs = self._get_msg_kwargs(current_page)
