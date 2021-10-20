@@ -190,7 +190,17 @@ class Starboard:
         star = await self.get_star(id)
         star.stars = stars
 
-        await star.edit(content=self.format.format(stars=star.stars))
+        try:
+            await star.edit(content=self.format.format(stars=star.stars))
+        except discord.NotFound:  # Delete star from records if its message has been deleted
+            await self.pool.execute(
+                "DELETE FROM stars WHERE message_id=$1",
+                star.message_id
+            )
+            del self.cached_stars[id]
+            self.star_ids.remove(id)
+            return star
+
         await self.pool.execute(
             """
             UPDATE stars

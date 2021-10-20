@@ -205,6 +205,7 @@ class TimedSet(MutableSet):
         self.__running_store__[element] = self.loop.create_task(self.invalidate(element))
 
     def discard(self, element):
+        self.__running_store__[element].cancel()
         del self.__running_store__[element]
         self.__underlying_set__.discard(element)
 
@@ -256,6 +257,7 @@ class TimedCache(MutableMapping):
         return self.__dict__[key]
 
     def __delitem__(self, key):
+        self.__running_store__[key].cancel()
         del self.__running_store__[key]
         del self.__dict__[key]
 
