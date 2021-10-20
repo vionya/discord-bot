@@ -285,8 +285,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         checks = [
             not self.bot.configs[starboard.channel.guild.id].starboard,
             payload.channel_id == starboard.channel.id,
-            (datetime.now(timezone.utc) - discord.Object(payload.message_id)
-             .created_at).days > starboard.max_days
+            # (datetime.now(timezone.utc) - discord.Object(payload.message_id)
+            #  .created_at).days > starboard.max_days
         ]
         check_ignored = [  # Ensure the channel/message isn't ignored
             payload.message_id in starboard.ignored,
@@ -310,6 +310,10 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             return
 
         if payload.message_id not in starboard.star_ids:
+            if (datetime.now(timezone.utc) - discord.Object(payload.message_id)
+                    .created_at).days > starboard.max_days:
+                return
+
             message = await self.fetch_message(
                 self.bot.get_channel(payload.channel_id),
                 payload.message_id
