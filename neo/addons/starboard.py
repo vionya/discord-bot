@@ -488,7 +488,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard.command(name="ignore")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_ignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage):
+    async def starboard_ignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage | str):
         """
         Ignores a channel or message
 
@@ -498,6 +498,10 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         Note: If an already starred message is ignored, the
         star will be deleted, *and* the message will be ignored
         """
+        if not isinstance(to_ignore, discord.TextChannel | discord.PartialMessage):
+            raise TypeError("Invalid target provided for `to_ignore`."
+                            " Please provide a message link or channel.")
+
         starboard = self.starboards[ctx.guild.id]
         id = to_ignore.id
 
@@ -522,12 +526,16 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard.command(name="unignore")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_unignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage | int):
+    async def starboard_unignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage | int | str):
         """Unignores a channel or message"""
+        if not isinstance(to_ignore, discord.TextChannel | discord.PartialMessage | int):
+            raise TypeError("Invalid target provided for `to_ignore`."
+                            " Please provide a message link or channel.")
+
         starboard = self.starboards[ctx.guild.id]
         id = getattr(to_ignore, "id", to_ignore)
 
-        starboard.ignored.remove(id)
+        starboard.ignored.discard(id)
         await self.bot.db.execute(
             """
             UPDATE starboards
