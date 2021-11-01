@@ -4,7 +4,7 @@ import re
 import zoneinfo
 from types import MethodType
 
-from discord.ext.commands import Converter
+from discord.ext.commands import Converter, Command
 
 CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
@@ -60,3 +60,11 @@ def max_days_converter(max_days: str) -> int:
     if not max_days > 1:
         raise ValueError("`max_days` may not be less than 1.")
     return max_days
+
+
+class command_converter(Converter):
+    async def convert(self, ctx, command_name: str) -> Command:
+        command = ctx.bot.get_command(command_name)
+        if not command:
+            raise NameError(f"There is no command by the identifier `{command_name}`.")
+        return command

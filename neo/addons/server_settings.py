@@ -5,6 +5,7 @@ import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, is_registered_guild
+from neo.types.converters import command_converter
 
 SETTINGS_MAPPING = {
     "prefix": {
@@ -189,6 +190,53 @@ class ServerSettings(neo.Addon):
         (channel_ids := {*config.disabled_channels, }).discard(channel.id)
 
         config.disabled_channels = [*channel_ids]
+        await ctx.message.add_reaction("\U00002611")
+
+    @server_settings.command(name="disable")
+    @is_registered_guild()
+    async def server_settings_disable_command(self, ctx, *, command: command_converter = None):
+        """
+        Disables a command in the server. Run without arguments to view
+        disabled commands
+
+        When disabling group commands and subcommands,
+        behavior is as follows:
+        - Disabling a group command will disable the group
+        and all its subcommands
+        - Disabling a subcommand will disable only the
+        subcommand, not the entire group
+
+        Any attempts to run a disabled command
+        will be ignored, *unless executed by*
+        *someone with administrator permissions*
+        """
+        config = self.bot.configs[ctx.guild.id]
+        if not command:
+            menu = ButtonsMenu.from_iterable(
+                [*map(lambda cmd: f"`{cmd}`", config.disabled_commands)]
+                or ["No disabled commands"],
+                per_page=10,
+                use_embed=True,
+                template_embed=neo.Embed().set_author(
+                    name=f"Disabled commands for {ctx.guild}",
+                    icon_url=ctx.guild.icon
+                )
+            )
+            await menu.start(ctx)
+            return
+
+        (commands := {*config.disabled_commands, }).add(str(command))
+        config.disabled_commands = [*commands]
+        await ctx.message.add_reaction("\U00002611")
+
+    @server_settings.command(name="reenable", aliases=["enable"])
+    @is_registered_guild()
+    async def server_settings_reenable_command(self, ctx, *, command: command_converter):
+        """Re-enables a disabled command"""
+        config = self.bot.configs[ctx.guild.id]
+        (commands := {*config.disabled_commands, }).discard(str(command))
+
+        config.disabled_commands = [*commands]
         await ctx.message.add_reaction("\U00002611")
 
 
