@@ -109,7 +109,7 @@ class NeoHelpCommand(commands.HelpCommand):
         if command.aliases:
             aliases = ", ".join(
                 f"**{alias}**" for alias in [command.name, *command.aliases])
-            embed.add_field(name="Aliases", value=aliases, inline=False)
+            embed.add_field(name="Command Aliases", value=aliases, inline=False)
 
         if hasattr(command, "get_args_help"):
             args_help = ""

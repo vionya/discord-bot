@@ -152,8 +152,7 @@ class Utility(neo.Addon):
     @args.add_arg(
         "-lc", "--lang_code",
         default="en_US",
-        help="The language code of the dictionary to search\n```\n"
-        + LANGUAGE_CODES + "\n```Defaults to `en_US`"
+        help="The language code of the dictionary to search\n```\n" + LANGUAGE_CODES + "\n```"
     )
     @args.command(name="define")
     async def dictionary_command(self, ctx, *, query):
@@ -212,7 +211,7 @@ class Utility(neo.Addon):
     @commands.has_permissions(manage_messages=True)
     @args.add_arg(
         "limit", type=int, default=5, nargs="?",
-        help="The number of messages to clear (default: 5)"
+        help="The number of messages to clear"
     )
     @args.add_arg(
         "-b", "--before", type=int,

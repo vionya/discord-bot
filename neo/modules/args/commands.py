@@ -42,12 +42,15 @@ class ArgCommand(commands.Command):
 
             if len(arg.option_strings) > 1:
                 aliases = ", ".join(arg.option_strings)
-                description += f"\n↳ **Aliases** {aliases}"
+                description += f"\n↳ **Flag Aliases** {aliases}"
 
             converter = self.callback.parser._registry_get(
                 "type", arg.type, arg.type)
             if converter.__name__ != "identity":
                 description += f"\n↳ **Expected type** `{converter.__name__}`"
+
+            if arg.default:
+                description += f"\n↳ **Default** `{arg.default}`"
 
             yield (argname, description)
 
