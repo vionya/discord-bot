@@ -292,8 +292,8 @@ class Utility(neo.Addon):
         description += f"**Created Account** <t:{int(user.created_at.timestamp())}:D>"
 
         if user.bot:
-            title = ICON_MAPPING["verified_bot_tag"] if user.public_flags \
-                .verified_bot else ICON_MAPPING["bot_tag"] + " " + title
+            title = (ICON_MAPPING["verified_bot_tag"] if user.public_flags
+                     .verified_bot else ICON_MAPPING["bot_tag"]) + " " + title
 
         if isinstance(user, discord.Member):
             description += f"\n**Joined Server** <t:{int(user.joined_at.timestamp())}:D>"
