@@ -1,3 +1,20 @@
+# Release v0.12.1
+## Improvements
+* Adjust Unicode characters used for menu paging buttons
+* Adjusted the display of command aliases in flag command help
+* Adjusted behavior of starboard's `max_days` setting to match its description
+    * Messages older than the `max_days` will now:
+        * Not be sent to starboard as new stars (no change)
+        * If they already have a corresponding star, that star will still be updated (adjusted behavior)
+* Improved clarity of `starboard ignore`/`starboard unignore` error messages
+* Show flag argument defaults in command help
+* Rename `Aliases` to `Command Aliases` and flag aliases from `Aliases` to `Flag Aliases` for clarity
+
+## Other
+* Updated to Python 3.10
+    * Updated some syntax accordingly
+
+
 # Release v0.12.0
 ## Additions
 * `roleinfo`/`ri` command
