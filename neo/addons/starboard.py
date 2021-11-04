@@ -376,7 +376,10 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @commands.Cog.listener("on_guild_channel_delete")
     async def handle_starboard_channel_delete(self, channel):
-        starboard = self.starboards.get(channel.guild.id)
+        if channel.guild.id not in self.starboards:
+            return
+
+        starboard = self.starboards[channel.guild.id]
         if channel.id == starboard.channel.id:
             await self.bot.db.execute("DELETE FROM stars WHERE guild_id=$1", channel.guild.id)
             starboard.cached_stars.clear()
