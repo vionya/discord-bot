@@ -562,9 +562,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         formatted: list[str] = []
         for id in starboard.ignored:
             if (channel := self.bot.get_channel(id)):
-                formatted.append(f"Channel: {channel.mention}")
+                formatted.append(f"**Channel** {channel.mention}")
             else:
-                formatted.append(f"Message: {id}")
+                formatted.append(f"**Message ID** `{id}`")
 
         menu = ButtonsMenu.from_iterable(
             formatted or ["No ignored items"],
