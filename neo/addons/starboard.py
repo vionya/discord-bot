@@ -562,14 +562,18 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         formatted: list[str] = []
         for id in starboard.ignored:
             if (channel := self.bot.get_channel(id)):
-                formatted.append(f"**Channel** {channel.mention}")
+                formatted.insert(0, f"**Channel** {channel.mention}")
             else:
                 formatted.append(f"**Message ID** `{id}`")
 
         menu = ButtonsMenu.from_iterable(
             formatted or ["No ignored items"],
             per_page=10,
-            use_embed=True
+            use_embed=True,
+            template_embed=neo.Embed().set_author(
+                name=f"Ignored from starboard for {ctx.guild}",
+                icon_url=ctx.guild.icon
+            )
         )
         await menu.start(ctx)
 
