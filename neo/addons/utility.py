@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 sardonicism-04
+import random
 from collections import Counter
 from functools import partial
 from sys import version as py_version
@@ -12,6 +13,7 @@ from googletrans import LANGUAGES, Translator
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
 from neo.tools import shorten
 from neo.types.converters import mention_converter
+from neo.types.formatters import Table
 
 from .auxiliary.utility import (
     LANGUAGE_CODES,
@@ -244,6 +246,37 @@ class Utility(neo.Addon):
                                   m, times in deleted.items())
         ).set_footer(text="This message will expire in 10 seconds")
         await ctx.send(embed=embed, delete_after=10)
+
+    @commands.command(name="choose")
+    async def choose_command(self, ctx, *, options: str):
+        """
+        Make a random choice from a set of options
+
+        To separate each option, use a comma (`,`)
+        Ex: `choose option a, option b, option c`
+        """
+        options = [opt.strip() for opt in options.split(",")]
+        if len(options) < 2:
+            raise ValueError("At least 2 options must be provided")
+
+        data = Counter(random.choice(options) for _ in range(1000))
+
+        table = Table()
+        table.init_columns("Item", "Preference")
+        for item, hits in data.most_common():
+            table.add_row(shorten(item, 13), f"{(hits / 1000) * 100:.1f}%")
+        rendered = table.display()
+
+        embed = neo.Embed(
+            description="```\n" + rendered + "\n```"
+        ).add_field(
+            name="Selection",
+            value=f"`{shorten(data.most_common(1)[0][0], 250)}`"
+        ).set_author(
+            name=f"{ctx.author}'s choice results",
+            icon_url=ctx.author.display_avatar
+        )
+        await ctx.send(embed=embed)
 
     # Information commands below
 
