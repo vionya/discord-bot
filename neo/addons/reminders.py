@@ -282,7 +282,8 @@ class Reminders(neo.Addon):
             description=reminder.content
         ).add_field(
             name=f"Created on <t:{int(snowflake_time(reminder.message_id).timestamp())}>",
-            value=f"Triggers on <t:{int(reminder.end_time.timestamp())}>"
+            value=(f"Triggers on <t:{int(reminder.end_time.timestamp())}>"
+                   f"\n[Jump to origin]({reminder.message.jump_url})")
         ).set_author(
             name="Viewing a reminder",
             icon_url=ctx.author.display_avatar
