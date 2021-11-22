@@ -38,10 +38,11 @@ runtime.patch_all()
 
 # Sect: Running bot
 
-with open("config.toml", "r") as file:
-    config = toml.load(file)
+if __name__ == "__main__":
+    with open("config.toml", "r") as file:
+        config = toml.load(file)
 
-bot = Neo(config)
-bot.run()
+    bot = Neo(config)
+    bot.run()
 
 # /Sect: Running bot
