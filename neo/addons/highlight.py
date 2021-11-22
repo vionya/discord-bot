@@ -83,9 +83,14 @@ class Highlight:
             return
 
         if isinstance(message.channel, discord.Thread):
-            if message.channel.is_private():  # Ignore private threads
-                return
-            members = message.channel.parent.members
+            if message.channel.is_private():  # Need to fetch members explicitly
+                try:
+                    await message.channel.fetch_member(self.user_id)
+                    members = [member]  # If member is in thread, then they pass
+                except discord.NotFound:
+                    return  # Otherwise... they don't
+            else:
+                members = message.channel.parent.members
         else:
             members = message.channel.members
         if member not in members:  # Check channel membership
