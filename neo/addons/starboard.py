@@ -133,20 +133,33 @@ class Starboard:
 
             if message.content:
                 embed.description = shorten(message.content, 1900) + "\n\n"
-            embed.description += f"[Jump]({message.jump_url})"
 
-            for attachment in (*message.attachments, *message.embeds):
-                if not embed.image:
-                    embed.set_image(url=attachment.url)
+            if message.stickers:
                 embed.add_field(
-                    name=discord.utils.escape_markdown(
-                        getattr(attachment, "filename", "Embed")),
-                    value=f"[View]({attachment.url})"
+                    name=f"Stickers [x{len(message.stickers)}]",
+                    value="\n".join(f"`{sticker.name}`" for sticker in message.stickers),
+                    inline=False
                 )
+
+            if (attachments := (*message.attachments, *message.embeds)):
+                if not embed.image:
+                    embed.set_image(url=attachments[0].url)
+                embed.add_field(
+                    name=f"Attachments/Embeds [x{len(attachments)}]",
+                    value="\n".join("[{0}]({1})".format(
+                        discord.utils.escape_markdown(
+                            getattr(attachment, 'filename', 'Embed')),
+                        attachment.url
+                    ) for attachment in attachments),
+                    inline=False)
+
+            view = discord.ui.View(timeout=0)
+            view.add_item(discord.ui.Button(url=message.jump_url, label="Jump to original"))
 
             kwargs["starboard_message"] = await self.channel.send(
                 self.format.format(stars=stars),
-                embed=embed
+                embed=embed,
+                view=view
             )
             star = Star(**kwargs)
 
