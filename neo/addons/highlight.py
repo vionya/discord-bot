@@ -109,12 +109,16 @@ class Highlight:
 
         embed = neo.Embed(
             title="In {0.guild.name}/#{0.channel.name}".format(message),
-            description=content,
-            timestamp=message.created_at
+            description=content
         )
+
+        view = discord.ui.View(timeout=0)
+        view.add_item(discord.ui.Button(url=message.jump_url, label="Jump to message"))
+
         return {
             "content": "{0.author}: {0.content}".format(message)[:1500],
-            "embed": embed
+            "embed": embed,
+            "view": view
         }
 
     def matches(self, other):
@@ -126,7 +130,7 @@ class Highlights(neo.Addon):
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot
-        self.highlights: defaultdict[str, list[Highlight]] = defaultdict(list)
+        self.highlights: defaultdict[int, list[Highlight]] = defaultdict(list)
         self.grace_periods: dict[int, TimedSet] = {}
         self.queued_highlights: defaultdict[int, dict] = defaultdict(dict)
         bot.loop.create_task(self.__ainit__())
