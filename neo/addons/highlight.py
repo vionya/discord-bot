@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2021 sardonicism-04
+# Copyright (C) 2022 sardonicism-04
 import re
 from collections import defaultdict
 from functools import cached_property

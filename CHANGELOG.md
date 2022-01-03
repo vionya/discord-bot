@@ -1,3 +1,25 @@
+# Release v0.13.0
+## Additions
+* `serversettings disable`/`serversettings reenable` system
+    * Allows server administrators to disable neo phoenix's commands within their server
+    * Disabled commands will not be acknowledged, unless invoked by administrators
+    * Running `serversettings disable` with no arguments will display a list of all currently ignored commands
+* `choose` command
+    * Given a set of choices, makes a (pseudo-) random selection and outputs the results
+    * Can be provided a comma-separated list of options to randomize
+
+## Improvements
+* Adjusted the design of the output of `starboard ignored` to be consistent with other listings
+* `remind view` now provides a jump URL to the reminder's origin - note: this may not work if the message has been deleted
+* Highlights will now work in private threads. Highlights will only be delivered if they highlighted user is a member of the private thread
+* Redesigned appearance for starred messages
+* Minute changes to highlight messages (added a button to jump to the trigger message)
+
+## Fixes
+* Fixed an issue wherein invoking `userinfo` on a verified bot would fail to display the account's username and discriminator
+* Fixed an issue where errors would be produced when a channel is deleted in a server without a starboard
+
+
 # Release v0.12.1
 ## Improvements
 * Adjust Unicode characters used for menu paging buttons
