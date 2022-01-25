@@ -29,7 +29,7 @@ intents = discord.Intents(
 
 
 class Neo(commands.Bot):
-    def __init__(self, config, **kwargs):
+    def __init__(self, config, loop: asyncio.AbstractEventLoop = None, **kwargs):
         self.cfg = config
         self.boot_time = int(time.time())
         self.session = None
@@ -47,7 +47,7 @@ class Neo(commands.Bot):
         kwargs["help_command"] = help_command.NeoHelpCommand()
         kwargs["intents"] = intents
 
-        super().__init__(**kwargs)
+        super().__init__(loop=loop, **kwargs)
 
         self.cooldown = commands.CooldownMapping.from_cooldown(
             2, 4, commands.BucketType.user)
@@ -143,10 +143,10 @@ class Neo(commands.Bot):
         )
         self.broadcast("config_delete", guild_id)
 
-    def run(self):
+    async def start(self):
         for addon in self.cfg["addons"]:
             self.load_extension(addon)
-        super().run(self.cfg["bot"]["token"])
+        await super().start(self.cfg["bot"]["token"])
 
     async def close(self):
         await self.session.close()
