@@ -19,6 +19,9 @@
 * Fixed an issue wherein invoking `userinfo` on a verified bot would fail to display the account's username and discriminator
 * Fixed an issue where errors would be produced when a channel is deleted in a server without a starboard
 
+## Other
+* Updated startup code to have manual control over the event loop
+
 
 # Release v0.12.1
 ## Improvements
