@@ -2,6 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 import asyncio
 from datetime import datetime, timezone
+from typing import Any
 
 import discord
 import neo
@@ -10,6 +11,8 @@ from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, shorten
 from neo.types.containers import TimedCache
 from neo.types.converters import max_days_converter
+
+from .auxiliary.starboard import ChangeSettingButton
 
 SETTINGS_MAPPING = {
     "channel": {
@@ -361,6 +364,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                 return
 
             star = await starboard.get_star(payload.message_id)
+            if not star:
+                return
 
             match payload.event_type:
                 case "REACTION_ADD": star.stars += 1
@@ -438,19 +443,10 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             ))
         return True
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @commands.has_permissions(manage_channels=True)
     async def starboard(self, ctx):
         """Group command for managing starboards"""
-
-    @starboard.command(name="list")
-    @commands.has_permissions(manage_channels=True)
-    async def starboard_list(self, ctx):
-        """
-        Displays an overview of your server's starboard settings
-
-        Descriptions of the settings are also provided here
-        """
         starboard = self.starboards[ctx.guild.id]
         embeds = []
 
@@ -467,6 +463,15 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             embeds.append(embed)
 
         menu = ButtonsMenu.from_embeds(embeds)
+        menu.add_item(ChangeSettingButton(
+            ctx=ctx,
+            addon=self,
+            settings=SETTINGS_MAPPING,
+            label="Change this setting",
+            style=discord.ButtonStyle.primary,
+            row=0
+        ))
+
         await menu.start(ctx)
 
     @starboard.command(name="set")
@@ -477,6 +482,10 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
         More information on the available settings and their functions is in the `starboard` command
         """
+        await self.set_option(ctx, setting, new_value)
+        await ctx.send(f"Setting `{setting}` has been changed!")
+
+    async def set_option(self, ctx, setting: str, new_value: Any):
         value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
         starboard = self.starboards[ctx.guild.id]
         setattr(starboard, setting, value)
@@ -499,8 +508,6 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         if setting in ["channel", "emoji"]:
             await self.bot.db.execute("DELETE FROM stars WHERE guild_id=$1", ctx.guild.id)
             starboard.cached_stars.clear()
-
-        await ctx.send(f"Setting `{setting}` has been changed!")
 
     @starboard.command(name="ignore")
     @commands.has_permissions(manage_messages=True)

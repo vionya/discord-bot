@@ -7,6 +7,8 @@ from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, is_registered_guild
 from neo.types.converters import command_converter
 
+from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
+
 SETTINGS_MAPPING = {
     "prefix": {
         "converter": str,
@@ -58,17 +60,9 @@ class ServerSettings(neo.Addon):
 
         return True
 
-    @commands.group(name="serversettings", aliases=["server"])
+    @commands.group(name="serversettings", aliases=["server"], invoke_without_command=True)
     async def server_settings(self, ctx):
-        """Group command for managing server settings"""
-
-    @server_settings.command(name="list")
-    async def server_settings_list(self, ctx):
-        """
-        Displays an overview of your server's settings
-
-        Descriptions of the settings are also provided here
-        """
+        """Manage your server settings here"""
         await is_registered_guild().predicate(ctx)
         config = self.bot.configs[ctx.guild.id]
         embeds = []
@@ -86,7 +80,40 @@ class ServerSettings(neo.Addon):
             embeds.append(embed)
 
         menu = ButtonsMenu.from_embeds(embeds)
+        menu.add_item(ChangeSettingButton(
+            ctx=ctx,
+            addon=self,
+            settings=SETTINGS_MAPPING,
+            label="Change this setting",
+            style=discord.ButtonStyle.primary,
+            row=0
+        ))
+        menu.add_item(ResetSettingButton(
+            ctx=ctx,
+            addon=self,
+            settings=SETTINGS_MAPPING,
+            label="Reset this setting",
+            style=discord.ButtonStyle.danger,
+            row=0
+        ))
+
         await menu.start(ctx)
+
+    async def set_option(self, ctx, setting, new_value):
+        value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
+        config = self.bot.configs[ctx.guild.id]
+        setattr(config, setting, value)
+        self.bot.broadcast("config_update", ctx.guild, config)
+
+    async def reset_option(self, ctx, setting):
+        if not SETTINGS_MAPPING.get(setting):
+            raise commands.BadArgument(
+                "That's not a valid setting! "
+                "Try `server` for a list of settings!"
+            )
+        config = self.bot.configs[ctx.guild.id]
+        await config.reset_attribute(setting)
+        self.bot.broadcast("config_update", ctx.guild, config)
 
     @server_settings.command(name="set")
     @is_registered_guild()
@@ -96,10 +123,7 @@ class ServerSettings(neo.Addon):
 
         More information on the available settings and their functions is in the `server` command
         """
-        value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
-        config = self.bot.configs[ctx.guild.id]
-        setattr(config, setting, value)
-        self.bot.broadcast("config_update", ctx.guild, config)
+        await self.set_option(ctx, setting, new_value)
         await ctx.send(f"Setting `{setting}` has been changed!")
 
     @server_settings.command(name="reset")
@@ -110,14 +134,7 @@ class ServerSettings(neo.Addon):
 
         Defaults can be found in the `server` command
         """
-        if not SETTINGS_MAPPING.get(setting):
-            raise commands.BadArgument(
-                "That's not a valid setting! "
-                "Try `server` for a list of settings!"
-            )
-        config = self.bot.configs[ctx.guild.id]
-        await config.reset_attribute(setting)
-        self.bot.broadcast("config_update", ctx.guild, config)
+        await self.reset_option(ctx, setting)
         await ctx.send(f"Setting `{setting}` has been reset!")
 
     @server_settings.command(name="create")
