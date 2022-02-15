@@ -25,7 +25,7 @@ __version__ = "0.14.0a"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
-    **dict.fromkeys(["messages", "guilds", "guild_reactions"], True))
+    **dict.fromkeys(["messages", "guilds", "guild_reactions", "message_content"], True))
 
 
 class Neo(commands.Bot):
