@@ -1,11 +1,11 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 -- Copyright (C) 2022 sardonicism-04
-CREATE OR REPLACE FUNCTION get_column_description(
+CREATE
+OR REPLACE FUNCTION get_column_description(
     _database_name TEXT,
-    _table_name    TEXT,
-    _column_name   TEXT
-)
-RETURNS TEXT AS $$
+    _table_name TEXT,
+    _column_name TEXT
+) RETURNS TEXT AS $$
 DECLARE
     result TEXT;
 BEGIN
