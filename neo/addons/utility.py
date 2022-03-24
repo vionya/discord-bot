@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 import random
+import shlex
 from collections import Counter
 from functools import partial
 from sys import version as py_version
@@ -141,9 +142,10 @@ class Utility(neo.Addon):
     @commands.command(name="image", aliases=["i"])
     async def google_image_shortcut(self, ctx, *, query):
         """A shortcut for `google --image <query>`"""
+        prepared_query = shlex.split(query, " ", posix=False)
         await self.google_command(
             ctx, query=SimpleNamespace(
-                query=query, image=True
+                query=prepared_query, image=True
             ))
 
     @args.add_arg(
