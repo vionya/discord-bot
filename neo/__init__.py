@@ -46,6 +46,7 @@ class Neo(commands.Bot):
         kwargs["allowed_mentions"] = discord.AllowedMentions.none()
         kwargs["help_command"] = help_command.NeoHelpCommand()
         kwargs["intents"] = intents
+        kwargs["case_insensitive"] = True
 
         super().__init__(loop=loop, **kwargs)
 

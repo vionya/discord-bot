@@ -51,6 +51,11 @@ def arg_group(self, **kwargs):
         return result
     return inner
 
+@group.attribute(name="__init__")
+def group_init(self, *args, **attrs) -> None:
+    attrs.setdefault("case_insensitive", True)
+    self.invoke_without_command = attrs.pop("invoke_without_command", False)
+    super(commands.Group, self).__init__(*args, **attrs)
 
 @message.attribute()
 async def add_reaction(self, emoji):
@@ -63,8 +68,8 @@ async def add_reaction(self, emoji):
         raise e  # If not 90001, re-raise
 
 
-@missing_required.attribute()
-def __init__(self, param):
+@missing_required.attribute(name="__init__")
+def missing_required_init(self, param):
     self.param = param
     super(commands.MissingRequiredArgument, self) \
         .__init__(f'Missing required argument(s): `{param.name}`')
