@@ -1,5 +1,5 @@
 ###  Core Requirements ###
-git+https://github.com/sardonicism-04/discord.py.git
+git+https://github.com/Rapptz/discord.py.git
 toml
 asyncpg
 

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+import asyncio
 from datetime import datetime
 from typing import Any
 
@@ -44,7 +45,7 @@ class Profile(neo.Addon):
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -195,5 +196,5 @@ class Profile(neo.Addon):
         await self.bot.delete_profile(ctx.author.id)
 
 
-def setup(bot):
-    bot.add_cog(Profile(bot))
+async def setup(bot):
+    await bot.add_cog(Profile(bot))

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -118,7 +119,7 @@ class Reminders(neo.Addon):
     def __init__(self, bot: neo.Neo):
         self.bot = bot
         self.reminders: dict[int, list[Reminder]] = defaultdict(list)
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -312,5 +313,5 @@ class Reminders(neo.Addon):
         await ctx.message.add_reaction("\U00002611")
 
 
-def setup(bot: neo.Neo):
-    bot.add_cog(Reminders(bot))
+async def setup(bot: neo.Neo):
+    await bot.add_cog(Reminders(bot))

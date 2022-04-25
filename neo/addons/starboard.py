@@ -242,7 +242,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         self.bot = bot
         self.ready = False
         self.starboards: dict[int, Starboard] = {}
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -598,5 +598,5 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         await menu.start(ctx)
 
 
-def setup(bot: neo.Neo):
-    bot.add_cog(StarboardAddon(bot))
+async def setup(bot: neo.Neo):
+    await bot.add_cog(StarboardAddon(bot))

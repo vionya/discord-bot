@@ -127,5 +127,5 @@ class Devel(neo.Addon):
         await ctx.message.add_reaction("\U00002611")
 
 
-def setup(bot):
-    bot.add_cog(Devel(bot))
+async def setup(bot):
+    await bot.add_cog(Devel(bot))

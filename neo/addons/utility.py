@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+import asyncio
 import random
 import shlex
 from collections import Counter
@@ -78,7 +79,7 @@ class Utility(neo.Addon):
             body = body.replace("  \n", "\n")  # Ensure proper formatting on mobile
         self.privacy_embed = neo.Embed(title=header, description=body)
         self.translator = Translator(raise_exception=True)
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -411,5 +412,5 @@ class Utility(neo.Addon):
         await ctx.send(embed=embed, view=self.info_buttons())
 
 
-def setup(bot):
-    bot.add_cog(Utility(bot))
+async def setup(bot):
+    await bot.add_cog(Utility(bot))

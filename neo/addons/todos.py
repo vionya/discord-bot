@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+import asyncio
 from collections import defaultdict
 from operator import attrgetter
 
@@ -51,7 +52,7 @@ class Todos(neo.Addon):
     def __init__(self, bot: neo.Neo):
         self.bot = bot
         self.todos: defaultdict[int, list[TodoItem]] = defaultdict(list)
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -204,5 +205,5 @@ class Todos(neo.Addon):
         await ctx.message.add_reaction("\U00002611")
 
 
-def setup(bot):
-    bot.add_cog(Todos(bot))
+async def setup(bot):
+    await bot.add_cog(Todos(bot))

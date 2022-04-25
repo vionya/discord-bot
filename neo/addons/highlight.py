@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+import asyncio
 import re
 from collections import defaultdict
 from functools import cached_property
@@ -133,7 +134,7 @@ class Highlights(neo.Addon):
         self.highlights: defaultdict[int, list[Highlight]] = defaultdict(list)
         self.grace_periods: dict[int, TimedSet] = {}
         self.queued_highlights: defaultdict[int, dict] = defaultdict(dict)
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -366,5 +367,5 @@ class Highlights(neo.Addon):
         await ctx.message.add_reaction("\U00002611")
 
 
-def setup(bot):
-    bot.add_cog(Highlights(bot))
+async def setup(bot):
+    await bot.add_cog(Highlights(bot))

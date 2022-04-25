@@ -29,7 +29,7 @@ intents = discord.Intents(
 
 
 class Neo(commands.Bot):
-    def __init__(self, config, loop: asyncio.AbstractEventLoop = None, **kwargs):
+    def __init__(self, config, **kwargs):
         self.cfg = config
         self.boot_time = int(time.time())
         self.session = None
@@ -48,7 +48,7 @@ class Neo(commands.Bot):
         kwargs["intents"] = intents
         kwargs["case_insensitive"] = True
 
-        super().__init__(loop=loop, **kwargs)
+        super().__init__(**kwargs)
 
         self.cooldown = commands.CooldownMapping.from_cooldown(
             2, 4, commands.BucketType.user)
@@ -57,7 +57,6 @@ class Neo(commands.Bot):
         self.add_check(self.guild_disabled_check)  # Register command disabled check
 
         self._async_ready = asyncio.Event()
-        self.loop.create_task(self.__ainit__())
 
     async def __ainit__(self) -> None:
         self.session = ClientSession()
@@ -76,7 +75,7 @@ class Neo(commands.Bot):
 
     async def wait_until_ready(self):
         await self._async_ready.wait()
-        await self._ready.wait()
+        return await super().wait_until_ready()
 
     async def verify_configs(self) -> None:
         """Purges configs where the bot is no longer in the corresponding guild"""
@@ -146,8 +145,10 @@ class Neo(commands.Bot):
 
     async def start(self):
         for addon in self.cfg["addons"]:
-            self.load_extension(addon)
-        await super().start(self.cfg["bot"]["token"])
+            await self.load_extension(addon)
+
+        async with self:
+            await super().start(self.cfg["bot"]["token"])
 
     async def close(self):
         await self.session.close()
@@ -243,4 +244,4 @@ class Neo(commands.Bot):
 
         async def run_coros():
             await asyncio.gather(*coros)
-        self.loop.create_task(run_coros())
+        asyncio.create_task(run_coros())

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+import asyncio
 import discord
 import neo
 from discord.ext import commands
@@ -30,7 +31,7 @@ class ServerSettings(neo.Addon):
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot
-        bot.loop.create_task(self.__ainit__())
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
@@ -257,5 +258,5 @@ class ServerSettings(neo.Addon):
         await ctx.message.add_reaction("\U00002611")
 
 
-def setup(bot):
-    bot.add_cog(ServerSettings(bot))
+async def setup(bot):
+    await bot.add_cog(ServerSettings(bot))
