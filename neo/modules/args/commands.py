@@ -65,18 +65,6 @@ class ArgCommand(commands.Command):
         iterator = iter(self.params.items())
 
         if self.cog is not None:
-            try:
-                next(iterator)
-            except StopIteration:
-                fmt = "Callback for {0.name} command is missing \"self\" parameter."
-                raise discord.ClientException(fmt.format(self))
-
-            try:
-                next(iterator)
-            except StopIteration:
-                fmt = "Callback for {0.name} command is missing \"ctx\" parameter."
-                raise discord.ClientException(fmt.format(self))
-
             fmt = "Callback for {0.name} must contain one keyword-only argument."
             try:
                 name, param = next(iterator)

@@ -28,12 +28,17 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         index = self.view.current_page
         current_setting = [*self.settings.keys()][index]
 
-        class ChangeSettingModal(discord.ui.Modal):
-            async def on_submit(modal_self, interaction):
-                new_value = modal_self.children[0].value
+        class ChangeSettingModal(discord.ui.Modal, title="Edit starboard settings"):
+            new_value = discord.ui.TextInput(
+                label=f"Changing {current_setting}",
+                placeholder="New value",
+                min_length=1,
+                max_length=500
+            )
 
+            async def on_submit(modal_self, interaction):
                 try:
-                    await self.addon.set_option(self.ctx, current_setting, new_value)
+                    await self.addon.set_option(self.ctx, current_setting, modal_self.new_value)
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
@@ -49,12 +54,6 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
                         f"**Setting: `{current_setting}`**\n\n" + description
                     await self.view.refresh_page()
 
-        modal = ChangeSettingModal(title="Edit starboard settings")
-        modal.add_item(discord.ui.TextInput(
-            label=f"Changing {current_setting}",
-            placeholder="New value",
-            min_length=1,
-            max_length=500
-        ))
+        modal = ChangeSettingModal()
 
-        await interaction.response.create_modal(modal)
+        await interaction.response.send_modal(modal)

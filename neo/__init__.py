@@ -57,6 +57,7 @@ class Neo(commands.Bot):
         self.add_check(self.guild_disabled_check)  # Register command disabled check
 
         self._async_ready = asyncio.Event()
+        asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self) -> None:
         self.session = ClientSession()
@@ -152,7 +153,8 @@ class Neo(commands.Bot):
 
     async def close(self):
         await self.session.close()
-        await self.db.close()
+        await asyncio.wait_for(self.db.close(), 5)
+
         await super().close()
 
     async def on_ready(self):

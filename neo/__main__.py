@@ -46,7 +46,6 @@ async def main():
         config = toml.load(file)
 
     neo = Neo(config)
-    await neo.__ainit__()
 
     await neo.start()
 

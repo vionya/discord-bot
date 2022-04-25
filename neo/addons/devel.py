@@ -116,7 +116,7 @@ class Devel(neo.Addon):
             args.addons = self.bot.extensions.copy().keys()
         for addon in args.addons:
             try:
-                action(addon)
+                await action(addon)
             except BaseException as e:
                 failed.append("```py\n" + format_exception(e) + "\n```")
 
