@@ -28,7 +28,7 @@ class BaseMenu(discord.ui.View):
     )
 
     def __init__(self, pages: Pages):
-        super().__init__(timeout=5)
+        super().__init__()
         self.pages = pages
 
         self.message = None
