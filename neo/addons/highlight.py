@@ -15,14 +15,14 @@ from neo.tools import is_registered_profile
 from neo.classes.containers import TimedSet
 from neo.classes.timer import periodic
 
-DEFAULT_AVATARS = [
-    "<:_:863449882088833065>",
-    "<:_:863449883121418320>",
-    "<:_:863449884157280307>",
-    "<:_:863449885088808970>",
-    "<:_:863449885834739712>",
-    "<:_:863449887403147314>"
-]
+class DefaultAvatars(Enum):
+    BLURPLE = "<:_:863449882088833065>"
+    GREY = "<:_:863449883121418320>"
+    GREEN = "<:_:863449884157280307>"
+    ORANGE = "<:_:863449885088808970>"
+    RED = "<:_:863449885834739712>"
+    PINK = "<:_:863449887403147314>"
+
 MAX_TRIGGERS = 10
 MAX_TRIGGER_LEN = 100
 CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
@@ -42,10 +42,15 @@ def format_hl_context(message: discord.Message, is_trigger=False):
     if message.stickers:
         message.content += " *[Sticker x{}]*".format(len(message.stickers))
 
-    return fmt.format(
-        DEFAULT_AVATARS[int(message.author.default_avatar.key)],
-        message
-    )
+    match int(message.author.default_avatar.key):
+        case 0: enum_member = DefaultAvatars.BLURPLE
+        case 1: enum_member = DefaultAvatars.GREY
+        case 2: enum_member = DefaultAvatars.GREEN
+        case 3: enum_member = DefaultAvatars.ORANGE
+        case 4: enum_member = DefaultAvatars.RED
+        case 5: enum_member = DefaultAvatars.PINK
+
+    return fmt.format(enum_member.value, message)
 
 
 class Highlight:
