@@ -138,8 +138,12 @@ class Todos(neo.Addon):
 
         Passing `~` will remove all todos at once
         """
-        indices = [*filter(lambda ind: ind == "~" or isinstance(ind, int),
-                           int(index) if index != "~" else index)]
+        if index.isnumeric():
+            indices = [int(index)]
+        elif index == "~":
+            indices = ["~"]
+        else:
+            raise ValueError("Invalid input for index.")
 
         if "~" in indices:
             todos = self.todos[ctx.author.id].copy()

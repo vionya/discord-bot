@@ -292,8 +292,12 @@ class Highlights(neo.Addon):
 
         Passing `~` will remove all highlights at once
         """
-        indices = [*filter(lambda ind: ind == "~" or isinstance(ind, int),
-                           int(index) if index != "~" else index)]
+        if index.isnumeric():
+            indices = [int(index)]
+        elif index == "~":
+            indices = ["~"]
+        else:
+            raise ValueError("Invalid input for index.")
 
         if "~" in indices:
             highlights = self.highlights.get(ctx.author.id, []).copy()

@@ -311,8 +311,12 @@ class Reminders(neo.Addon):
 
         Passing `~` will cancel all reminders at once
         """
-        indices = [*filter(lambda ind: ind == "~" or isinstance(ind, int),
-                           int(index) if index != "~" else index)]
+        if index.isnumeric():
+            indices = [int(index)]
+        elif index == "~":
+            indices = ["~"]
+        else:
+            raise ValueError("Invalid input for index.")
 
         if "~" in indices:
             reminders = self.reminders[ctx.author.id].copy()
