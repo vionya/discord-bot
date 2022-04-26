@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 import discord
 import neo
@@ -11,6 +14,9 @@ from discord.utils import snowflake_time
 from neo.modules import ButtonsMenu
 from neo.tools import is_registered_profile, shorten
 from neo.tools.time_parse import parse_absolute, parse_relative
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
 
 MAX_REMINDERS = 15
 MAX_REMINDER_LEN = 1000
@@ -74,7 +80,7 @@ class Reminder:
         finally:  # Ensure that the database entry is always deleted
             await self.delete()
 
-    async def fallback_deliver(self) -> None:
+    async def fallback_deliver(self):
         """Fallback to a primitive delivery format if normal deliver is impossible"""
         try:
             dest = self.bot.get_user(self.user_id, as_partial=True)
@@ -140,7 +146,7 @@ class Reminders(neo.Addon):
             self.reminders[user_id].copy()
         )]
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: NeoContext):
         return await is_registered_profile().predicate(ctx)
 
     def cog_unload(self):
@@ -148,7 +154,15 @@ class Reminders(neo.Addon):
             for reminder in reminders:
                 reminder.wait_task.cancel()
 
-    async def add_reminder(self, *, user_id, message_id, channel_id, content, end_time):
+    async def add_reminder(
+        self,
+        *,
+        user_id: int,
+        message_id: int,
+        channel_id: int,
+        content: str,
+        end_time: int
+    ):
         data = await self.bot.db.fetchrow(
             """
             INSERT INTO reminders (
@@ -171,12 +185,12 @@ class Reminders(neo.Addon):
         self.reminders[user_id].append(reminder)
 
     @commands.hybrid_group()
-    async def remind(self, ctx):
+    async def remind(self, ctx: NeoContext):
         """Group command for managing reminders"""
 
     @remind.command(name="in", usage="<offset> <content>")
     @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
-    async def remind_relative(self, ctx, *, input: str):
+    async def remind_relative(self, ctx: NeoContext, *, input: str):
         """
         Schedule a reminder for a relative offset
 
@@ -211,7 +225,7 @@ class Reminders(neo.Addon):
 
     @remind.command(name="on", aliases=["at"], usage="<absolute time> <content>")
     @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
-    async def remind_absolute(self, ctx, *, input: str):
+    async def remind_absolute(self, ctx: NeoContext, *, input: str):
         """
         Schedule a reminder for an absolute date/time
 
@@ -252,7 +266,7 @@ class Reminders(neo.Addon):
         await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
 
     @remind.command(name="list")
-    async def remind_list(self, ctx):
+    async def remind_list(self, ctx: NeoContext):
         """Lists your active reminders"""
         reminders = self.reminders[ctx.author.id].copy()
         formatted_reminders: list[str] = []
@@ -274,7 +288,7 @@ class Reminders(neo.Addon):
         await menu.start(ctx)
 
     @remind.command(name="view", aliases=["show"])
-    async def remind_view(self, ctx, index: int):
+    async def remind_view(self, ctx: NeoContext, index: int):
         """View the full content of a reminder, accessed by index"""
         try:
             reminder = self.reminders[ctx.author.id][index - 1]
@@ -305,7 +319,7 @@ class Reminders(neo.Addon):
         )]
 
     @remind.command(name="cancel", aliases=["remove", "rm"])
-    async def remind_cancel(self, ctx, index: str):
+    async def remind_cancel(self, ctx: NeoContext, index: str):
         """
         Cancel 1 or more reminder by index
 

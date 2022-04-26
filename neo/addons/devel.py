@@ -1,11 +1,18 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import neo
 from discord.ext import commands
-from neo.modules import ButtonsMenu, Pages, args
-from neo.modules.exec import ExecWrapper, env_from_context
 from neo.classes.converters import codeblock_converter
 from neo.classes.formatters import Table, format_exception
+from neo.modules import ButtonsMenu, Pages, args
+from neo.modules.exec import ExecWrapper, env_from_context
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
 
 
 class Devel(neo.Addon):
@@ -23,7 +30,7 @@ class Devel(neo.Addon):
 
     @commands.guild_only()
     @commands.command(name="cleanup", aliases=["clean"])
-    async def dev_cleanup(self, ctx, amount: int = 5):
+    async def dev_cleanup(self, ctx: NeoContext, amount: int = 5):
         """Cleanup the bot's messages from a channel"""
         can_manage = ctx.channel.permissions_for(ctx.me).manage_messages
         if can_manage:
@@ -44,7 +51,7 @@ class Devel(neo.Addon):
         await ctx.send(f"Cleaned {len(purged)} message(s).", delete_after=5)
 
     @commands.command(name="exec", aliases=["e"])
-    async def dev_exec(self, ctx, *, code: codeblock_converter):
+    async def dev_exec(self, ctx: NeoContext, *, code: str = commands.parameter(converter=codeblock_converter)):
         """Executes some code, retaining the result"""
         (globals_ := env_from_context(ctx)).update(**(self._exec_scope | globals()))
         pages = Pages(
@@ -75,7 +82,7 @@ class Devel(neo.Addon):
             await menu.start(ctx, as_reply=True)
 
     @commands.command(name="sql")
-    async def dev_sql(self, ctx, *, query: codeblock_converter):
+    async def dev_sql(self, ctx, *, query: str = commands.parameter(converter=codeblock_converter)):
         """Perform an SQL query"""
         data = await self.bot.db.fetch(query)
         if len(data) == 0:

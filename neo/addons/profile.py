@@ -1,21 +1,28 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING
 
 import discord
 import neo
 from discord.ext import commands
-from neo.modules import ButtonsMenu
-from neo.tools import convert_setting, is_registered_profile
 from neo.classes.converters import (
     mention_converter,
     timeout_converter,
     timezone_converter
 )
+from neo.classes.partials import PartialUser
+from neo.modules import ButtonsMenu
+from neo.tools import convert_setting, is_registered_profile
 
 from .auxiliary.profile import ChangeSettingButton, ResetSettingButton
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
+
 
 SETTINGS_MAPPING = {
     "receive_highlights": {
@@ -65,7 +72,7 @@ class Profile(neo.Addon):
 
     @commands.group(name="profilesettings", aliases=["settings"], invoke_without_command=True)
     @is_registered_profile()
-    async def profile_settings(self, ctx):
+    async def profile_settings(self, ctx: NeoContext):
         """Manage your profile settings here"""
         profile = self.bot.profiles[ctx.author.id]
         embeds = []
@@ -102,13 +109,13 @@ class Profile(neo.Addon):
 
         await menu.start(ctx)
 
-    async def set_option(self, ctx, setting: str, new_value: Any):
+    async def set_option(self, ctx: NeoContext, setting: str, new_value: str):
         value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
         profile = self.bot.profiles[ctx.author.id]
         setattr(profile, setting, value)
         self.bot.broadcast("user_settings_update", ctx.author, profile)
 
-    async def reset_option(self, ctx, setting: str):
+    async def reset_option(self, ctx: NeoContext, setting: str):
         if not SETTINGS_MAPPING.get(setting):
             raise commands.BadArgument(
                 "That's not a valid setting! "
@@ -120,7 +127,7 @@ class Profile(neo.Addon):
 
     @profile_settings.command(name="set")
     @is_registered_profile()
-    async def profile_settings_set(self, ctx, setting, *, new_value):
+    async def profile_settings_set(self, ctx: NeoContext, setting: str, *, new_value: str):
         """
         Updates the value of a profile setting
 
@@ -131,7 +138,7 @@ class Profile(neo.Addon):
 
     @profile_settings.command(name="reset")
     @is_registered_profile()
-    async def profile_settings_reset(self, ctx, setting):
+    async def profile_settings_reset(self, ctx: NeoContext, setting: str):
         """
         Resets the value of a profile setting to its default
 
@@ -141,22 +148,31 @@ class Profile(neo.Addon):
         await ctx.send(f"Setting `{setting}` has been reset!")
 
     @commands.group(invoke_without_command=True)
-    async def profile(self, ctx, *, user: int | mention_converter = None):
+    async def profile(
+        self,
+        ctx: NeoContext,
+        *,
+        user: discord.User | PartialUser = commands.parameter(
+            converter=commands.UserConverter,
+            default=lambda ctx: ctx.author
+        )
+    ):
         """Displays the neo profile of yourself, or a specified user."""
-        if user is None:
+        if user == ctx.author:
             await is_registered_profile().predicate(ctx)
 
-        profile = self.bot.profiles.get(user or ctx.author.id)
+        profile = self.bot.profiles.get(user.id)
         if profile is None:
             raise AttributeError("This user doesn't have a neo profile!")
 
         embed = neo.Embed(
             description=(
-                f"**<@{user or ctx.author.id}>'s neo profile**\n\n"
+                f"**<@{user.id}>'s neo profile**\n\n"
                 f"**Created** <t:{int(profile.created_at.timestamp())}>"
             )
         ).set_thumbnail(
-            url=ctx.me.display_avatar if user else ctx.author.display_avatar
+            url=ctx.me.display_avatar if user != ctx.author
+            else ctx.author.display_avatar
         )
         if getattr(profile, "timezone", None):
             embed.add_field(
@@ -170,7 +186,7 @@ class Profile(neo.Addon):
         await ctx.send(embed=embed)
 
     @profile.command(name="create")
-    async def profile_create(self, ctx):
+    async def profile_create(self, ctx: NeoContext):
         """Creates your neo profile!"""
         if ctx.author.id in self.bot.profiles:
             raise RuntimeError("You already have a profile!")
@@ -181,7 +197,7 @@ class Profile(neo.Addon):
 
     @profile.command(name="delete")
     @is_registered_profile()
-    async def profile_delete(self, ctx):
+    async def profile_delete(self, ctx: NeoContext):
         """__Permanently__ deletes your neo profile"""
         if await ctx.prompt_user(
             "Are you sure you want to delete your profile?"
@@ -196,5 +212,5 @@ class Profile(neo.Addon):
         await self.bot.delete_profile(ctx.author.id)
 
 
-async def setup(bot):
+async def setup(bot: neo.Neo):
     await bot.add_cog(Profile(bot))

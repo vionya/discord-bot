@@ -1,19 +1,28 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
+from enum import Enum
 import asyncio
 import inspect
 import re
 from collections import defaultdict
 from functools import cached_property
 from operator import attrgetter
+from typing import TYPE_CHECKING
 
 import discord
 import neo
 from discord.ext import commands
-from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile
 from neo.classes.containers import TimedSet
 from neo.classes.timer import periodic
+from neo.modules import ButtonsMenu
+from neo.tools import is_registered_profile
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
+    from neo.classes.containers import NeoUser
+
 
 class DefaultAvatars(Enum):
     BLURPLE = "<:_:863449882088833065>"
@@ -56,7 +65,7 @@ def format_hl_context(message: discord.Message, is_trigger=False):
 class Highlight:
     __slots__ = ("bot", "content", "user_id", "pattern")
 
-    def __init__(self, bot: neo.Neo, *, content, user_id):
+    def __init__(self, bot: neo.Neo, *, content: str, user_id: int):
         self.bot = bot
         self.content = content
         self.user_id = user_id
@@ -66,7 +75,7 @@ class Highlight:
         return ("<{0.__class__.__name__} user_id={0.user_id!r} "
                 "content={0.content!r}>").format(self)
 
-    async def predicate(self, message):
+    async def predicate(self, message: discord.Message):
         if not message.guild:
             return
         if any([message.author.id == self.user_id,
@@ -105,7 +114,7 @@ class Highlight:
 
         return True
 
-    async def to_send_kwargs(self, message, later_triggers: set[discord.Message]):
+    async def to_send_kwargs(self, message: discord.Message, later_triggers: set[discord.Message]):
         content = ""
         triggers: set[discord.Message] = {message, *later_triggers}
         async for m in message.channel.history(limit=6, around=message):
@@ -128,7 +137,7 @@ class Highlight:
             "view": view
         }
 
-    def matches(self, other):
+    def matches(self, other: Highlight):
         return self.pattern.search(other)
 
 
@@ -168,7 +177,7 @@ class Highlights(neo.Addon):
         self.flat_highlights
 
     @commands.Cog.listener("on_message")
-    async def listen_for_highlights(self, message):
+    async def listen_for_highlights(self, message: discord.Message):
         if not self.bot.is_ready():
             return  # Return if bot is not ready, so flat_highlights is computed correctly
 
@@ -198,7 +207,7 @@ class Highlights(neo.Addon):
             )
 
     @neo.Addon.recv("user_settings_update")
-    async def handle_update_profile(self, user, profile):
+    async def handle_update_profile(self, user: discord.User, profile: NeoUser):
         if self.grace_periods.get(user.id):
             current_timeout = self.grace_periods[user.id].timeout
             if (profile.hl_timeout * 60) == current_timeout:
@@ -217,15 +226,15 @@ class Highlights(neo.Addon):
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: NeoContext):
         return await is_registered_profile().predicate(ctx)
 
     @commands.hybrid_group(aliases=["hl"])
-    async def highlight(self, ctx):
+    async def highlight(self, ctx: NeoContext):
         """Group command for managing highlights"""
 
     @highlight.command(name="list")
-    async def highlight_list(self, ctx: neo.context.NeoContext):
+    async def highlight_list(self, ctx: NeoContext):
         """List your highlights"""
         description = ""
         user_highlights = self.highlights.get(ctx.author.id, [])
@@ -243,7 +252,7 @@ class Highlights(neo.Addon):
         await ctx.send(embeds=[embed])
 
     @highlight.command(name="add")
-    async def highlight_add(self, ctx, *, content):
+    async def highlight_add(self, ctx: NeoContext, *, content: str):
         """
         Add a new highlight
 
@@ -289,7 +298,7 @@ class Highlights(neo.Addon):
     @discord.app_commands.describe(
         index="A highlight index to remove, or \"~\" to clear all highlights"
     )
-    async def highlight_remove(self, ctx, index: str):
+    async def highlight_remove(self, ctx: NeoContext, index: str):
         """
         Remove a highlight by index
 
@@ -344,7 +353,7 @@ class Highlights(neo.Addon):
             map(str, opts)
         )]
 
-    def perform_blocklist_action(self, *, profile, ids, action="block"):
+    def perform_blocklist_action(self, *, profile: NeoUser, ids: list[int], action="block"):
         blacklist = {*profile.hl_blocks, }
         ids = {*ids, }
 
@@ -363,7 +372,7 @@ class Highlights(neo.Addon):
     )
     async def highlight_block(
         self,
-        ctx,
+        ctx: NeoContext,
         id: str = None,
         user: discord.User | discord.Member = None,
         channel: discord.TextChannel = None
@@ -390,7 +399,7 @@ class Highlights(neo.Addon):
             await ctx.send("\U00002611")
 
     @highlight.command(name="blocklist")
-    async def highlight_block_list(self, ctx):
+    async def highlight_block_list(self, ctx: NeoContext):
         """
         Manage a blocklist for highlights.
         """
@@ -414,7 +423,7 @@ class Highlights(neo.Addon):
         await menu.start(ctx)
 
     @highlight.command(name="unblock")
-    async def highlight_unblock(self, ctx, id: str):
+    async def highlight_unblock(self, ctx: NeoContext, id: str):
         """
         Unblock entities from triggering your highlights
 
@@ -454,5 +463,5 @@ class Highlights(neo.Addon):
         ][:25]
 
 
-async def setup(bot):
+async def setup(bot: neo.Neo):
     await bot.add_cog(Highlights(bot))

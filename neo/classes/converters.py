@@ -1,20 +1,30 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import re
 import zoneinfo
 from types import MethodType
+from typing import TYPE_CHECKING, Callable, ParamSpec, TypeVar
 
-from discord.ext.commands import Converter, Command
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
+
+from discord.ext.commands import Command, Converter
 
 CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
 
+T = TypeVar("T")
+P = ParamSpec("P")
 
-def wrap_converter(func):
-    converter_type: Converter = type(func.__name__, (Converter,), {})
 
-    async def convert(self, ctx, arg):
+def wrap_converter(func: Callable[P, T]) -> Converter[T]:
+    converter_type: Converter[T] = type(func.__name__, (Converter,), {})
+
+    async def convert(self: Converter[T], ctx: NeoContext, arg: str) -> T:
         return func(arg)
+
     converter_type.convert = MethodType(convert, converter_type)
     return converter_type
 
