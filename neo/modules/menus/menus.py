@@ -11,7 +11,7 @@ from neo.tools import shorten
 from .pages import EmbedPages, Pages
 
 if TYPE_CHECKING:
-    from neo.types.context import NeoContext
+    from neo.classes.context import NeoContext
 
 
 class BaseMenu(discord.ui.View):

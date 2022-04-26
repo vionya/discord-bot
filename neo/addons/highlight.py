@@ -12,8 +12,8 @@ import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu
 from neo.tools import is_registered_profile
-from neo.types.containers import TimedSet
-from neo.types.timer import periodic
+from neo.classes.containers import TimedSet
+from neo.classes.timer import periodic
 
 DEFAULT_AVATARS = [
     "<:_:863449882088833065>",

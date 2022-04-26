@@ -6,7 +6,7 @@ import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, is_registered_guild
-from neo.types.converters import command_converter
+from neo.classes.converters import command_converter
 
 from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 

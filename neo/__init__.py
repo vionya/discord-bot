@@ -1,18 +1,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 import logging
 import sys
 import time
+from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientSession
 from asyncpg import create_pool
 from discord.ext import commands
 
-from .modules import *  # noqa: F403
-from .tools import *  # noqa: F403
-from .types import (
+from .classes import (
     Embed,
     containers,
     context,
@@ -20,6 +21,11 @@ from .types import (
     help_command,
     partials
 )
+from .modules import *  # noqa: F403
+from .tools import *  # noqa: F403
+
+if TYPE_CHECKING:
+    from .types.config import NeoConfig
 
 __version__ = "0.14.0a"
 
@@ -30,7 +36,7 @@ intents = discord.Intents(
 
 class Neo(commands.Bot):
     def __init__(self, config, **kwargs):
-        self.cfg = config
+        self.cfg: NeoConfig = config
         self.boot_time = int(time.time())
         self.session = None
         self.profiles: dict[int, containers.NeoUser] = {}
@@ -159,8 +165,9 @@ class Neo(commands.Bot):
 
     async def on_ready(self):
         log.info(f"{self.user} has received ready event")
-        await self.tree.sync()
-        log.info("Synchronized command tree")
+        if self.cfg["bot"]["sync_app_commands"]:
+            await self.tree.sync()
+            log.info("Synchronized command tree")
 
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if after.content != before.content:

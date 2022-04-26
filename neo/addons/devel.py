@@ -4,8 +4,8 @@ import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu, Pages, args
 from neo.modules.exec import ExecWrapper, env_from_context
-from neo.types.converters import codeblock_converter
-from neo.types.formatters import Table, format_exception
+from neo.classes.converters import codeblock_converter
+from neo.classes.formatters import Table, format_exception
 
 
 class Devel(neo.Addon):

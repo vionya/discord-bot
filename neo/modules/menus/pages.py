@@ -2,7 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 from typing import Optional
 
-from neo.types import Embed
+from neo.classes import Embed
 
 
 class Pages:

@@ -14,8 +14,8 @@ from discord.ext import commands
 from googletrans import LANGUAGES, Translator
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
 from neo.tools import shorten
-from neo.types.converters import mention_converter
-from neo.types.formatters import Table
+from neo.classes.converters import mention_converter
+from neo.classes.formatters import Table
 
 from .auxiliary.utility import (
     LANGUAGE_CODES,

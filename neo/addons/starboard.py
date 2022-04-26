@@ -9,8 +9,8 @@ import neo
 from discord.ext import commands
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, shorten
-from neo.types.containers import TimedCache
-from neo.types.converters import max_days_converter
+from neo.classes.containers import TimedCache
+from neo.classes.converters import max_days_converter
 
 from .auxiliary.starboard import ChangeSettingButton
 

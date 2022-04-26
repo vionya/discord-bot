@@ -9,8 +9,8 @@ from discord.ext import commands
 
 from neo.modules.args.commands import ArgCommand, ArgGroup
 from neo.tools import Patcher
-from neo.types.formatters import format_exception
-from neo.types.hybrid_command import AutoEphemeralHybridCommand
+from neo.classes.formatters import format_exception
+from neo.classes.hybrid_command import AutoEphemeralHybridCommand
 
 logger = logging.getLogger("neo")
 
