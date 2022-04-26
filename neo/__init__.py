@@ -159,6 +159,8 @@ class Neo(commands.Bot):
 
     async def on_ready(self):
         log.info(f"{self.user} has received ready event")
+        await self.tree.sync()
+        log.info("Synchronized command tree")
 
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if after.content != before.content:
