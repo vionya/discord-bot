@@ -9,14 +9,21 @@
 #
 # The generated file contains a recursively constructed copy of the input file,
 # omitting the values, and replacing them with the expected type of the value.
+
+from __future__ import annotations
+
 from sys import argv
+from typing import TYPE_CHECKING
 
 import toml
+
+if TYPE_CHECKING:
+    from neo.types.config import NeoConfig
 
 INPUT_FILE = next(iter(argv[1:]), "config.toml")
 OUTPUT_FILE = next(iter(argv[2:]), "config.example.toml")
 
-ORIGINAL = toml.load("config.toml")
+ORIGINAL: NeoConfig = toml.load("config.toml")
 
 
 class PrettyListEncoder(toml.TomlEncoder):  # Dump lists with newlines
