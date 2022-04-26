@@ -235,9 +235,7 @@ class Highlights(neo.Addon):
             .set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used") \
             .set_author(name=f"{ctx.author}'s highlights", icon_url=ctx.author.avatar)
 
-        if not ctx.interaction:
-            return await ctx.send(embed=embed)
-        await ctx.interaction.response.send_message(embeds=[embed], ephemeral=True)
+        await ctx.send(embeds=[embed])
 
     @highlight.command(name="add")
     async def highlight_add(self, ctx, *, content):
@@ -280,7 +278,7 @@ class Highlights(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @highlight.command(name="remove", aliases=["rm"])
     @discord.app_commands.describe(
@@ -328,7 +326,7 @@ class Highlights(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @highlight_remove.autocomplete("index")
     async def highlight_remove_autocomplete(self, interaction: discord.Interaction, current: str):
@@ -384,7 +382,7 @@ class Highlights(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @highlight.command(name="blocklist")
     async def highlight_block_list(self, ctx):
@@ -429,7 +427,7 @@ class Highlights(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @highlight_unblock.autocomplete("id")
     async def highlight_unblock_autocomplete(

@@ -64,7 +64,7 @@ class BaseMenu(discord.ui.View):
                 )
             self.message = await self.ctx.send(view=self, **send_kwargs)
         else:
-            await self.ctx.interaction.response.send_message(view=self, ephemeral=True, **send_kwargs)
+            await self.ctx.send(view=self, **send_kwargs)
 
         self.bot = self.ctx.bot
         self.author = self.ctx.author
@@ -95,8 +95,12 @@ class BaseMenu(discord.ui.View):
         self.stop()
         self.running = False
         try:
-            if manual is True and self.ctx.interaction is None:
-                await self.message.delete()
+            if manual is True and getattr(self.ctx, "ephemeral", False) is False:
+                if self.ctx.interaction:
+                    await interaction.response.defer()
+                    await interaction.delete_original_message()
+                else:
+                    await self.message.delete()
             else:
                 for item in self.children:
                     item.disabled = True

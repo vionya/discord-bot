@@ -129,7 +129,7 @@ class Todos(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @todo.command(name="remove", aliases=["rm"])
     async def todo_remove(self, ctx, index: str):
@@ -171,7 +171,7 @@ class Todos(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @todo_remove.autocomplete("index")
     async def todo_remove_autocomplete(self, interaction: discord.Interaction, current: str):
@@ -232,7 +232,7 @@ class Todos(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @todo_view.autocomplete("index")
     @todo_edit.autocomplete("index")

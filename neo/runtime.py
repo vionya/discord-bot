@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 import argparse
+import inspect
 import logging
 
 import discord
@@ -9,6 +10,7 @@ from discord.ext import commands
 from neo.modules.args.commands import ArgCommand, ArgGroup
 from neo.tools import Patcher
 from neo.types.formatters import format_exception
+from neo.types.hybrid_command import AutoEphemeralHybridCommand
 
 logger = logging.getLogger("neo")
 
@@ -19,6 +21,7 @@ message = Patcher(discord.Message)
 missing_required = Patcher(commands.MissingRequiredArgument)
 argument_error = Patcher(argparse.ArgumentError)
 view = Patcher(discord.ui.View)
+hybrid_command_deco = Patcher(commands.hybrid)
 
 
 @guild.attribute()
@@ -51,11 +54,13 @@ def arg_group(self, **kwargs):
         return result
     return inner
 
+
 @group.attribute(name="__init__")
 def group_init(self, *args, **attrs) -> None:
     attrs.setdefault("case_insensitive", True)
     self.invoke_without_command = attrs.pop("invoke_without_command", False)
     super(commands.Group, self).__init__(*args, **attrs)
+
 
 @message.attribute()
 async def add_reaction(self, emoji):
@@ -85,12 +90,21 @@ def __str__(self):
 
 
 @view.attribute()
-async def on_error(self, error, item, interaction):
+async def on_error(self, interaction, error, item):
     if isinstance(error, discord.Forbidden):
         if error.code == 50083:  # Tried to perform action in archived thread
             return
     logger.error(format_exception(error))
 
+
+@hybrid_command_deco.attribute()
+def hybrid_command(name, **attrs):
+    def decorator(func):
+        if isinstance(func, commands.Command):
+            raise TypeError("Callback is already a command.")
+        return AutoEphemeralHybridCommand(func, name=name, **attrs)
+
+    return decorator
 
 def patch_all() -> None:
     guild.patch()
@@ -100,3 +114,4 @@ def patch_all() -> None:
     missing_required.patch()
     argument_error.patch()
     view.patch()
+    hybrid_command_deco.patch()

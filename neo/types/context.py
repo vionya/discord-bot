@@ -68,3 +68,10 @@ class NeoContext(commands.Context):
         await self.send(embed=embed, view=actions)
         await actions.wait()
         return actions.value
+
+    async def send(self, *args, **kwargs) -> discord.Message:
+        if self.interaction is not None:
+            await self.interaction.response.send_message(*args, ephemeral=getattr(self, "ephemeral", True), **kwargs)
+            return await self.interaction.original_message()
+        else:
+            return await super().send(*args, **kwargs)

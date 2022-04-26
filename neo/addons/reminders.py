@@ -334,7 +334,7 @@ class Reminders(neo.Addon):
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            await ctx.send("\U00002611")
 
     @remind_cancel.autocomplete("index")
     async def remind_cancel_autocomplete(self, interaction: discord.Interaction, current: str):
