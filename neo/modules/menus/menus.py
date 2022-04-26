@@ -101,7 +101,8 @@ class BaseMenu(discord.ui.View):
                 for item in self.children:
                     item.disabled = True
 
-                if interaction:
+                if self.ctx.interaction:
+                    await interaction.response.defer()
                     await interaction.edit_original_message(view=self)
                 else:
                     await self.message.edit(view=self)
