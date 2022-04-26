@@ -28,7 +28,7 @@ class BaseMenu(discord.ui.View):
     )
 
     def __init__(self, pages: Pages):
-        super().__init__()
+        super().__init__(timeout=5)
         self.pages = pages
 
         self.message = None
@@ -91,7 +91,7 @@ class BaseMenu(discord.ui.View):
         kwargs = self._get_msg_kwargs(self.pages[self.current_page])
         await self.message.edit(**kwargs)
 
-    async def close(self, interaction: discord.Interaction, manual=False):
+    async def close(self, *, interaction: discord.Interaction = None, manual=False):
         self.stop()
         self.running = False
         try:
@@ -100,7 +100,11 @@ class BaseMenu(discord.ui.View):
             else:
                 for item in self.children:
                     item.disabled = True
-                await interaction.response.edit_message(view=self)
+
+                if interaction:
+                    await interaction.edit_original_message(view=self)
+                else:
+                    await self.message.edit(view=self)
         except discord.NotFound:
             return
 
@@ -126,7 +130,10 @@ class BaseMenu(discord.ui.View):
         return all(predicates)
 
     async def on_timeout(self):
-        await self.close()
+        if not self.ctx.interaction:
+            await self.close()
+        else:
+            await self.close(interaction=self.ctx.interaction)
 
 
 class ButtonsMenu(BaseMenu):
@@ -140,7 +147,7 @@ class ButtonsMenu(BaseMenu):
     @discord.ui.button(label="⨉", row=4)
     async def close_button(self, interaction, button):
         self.stop()
-        await self.close(interaction, manual=True)
+        await self.close(interaction=interaction, manual=True)
 
     @discord.ui.button(label="≫", row=4)
     async def next_button(self, interaction, button):
