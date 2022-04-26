@@ -1,11 +1,17 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING
 
 import discord
 from neo.tools import shorten
 
 from .pages import EmbedPages, Pages
+
+if TYPE_CHECKING:
+    from neo.types.context import NeoContext
 
 
 class BaseMenu(discord.ui.View):
@@ -26,7 +32,7 @@ class BaseMenu(discord.ui.View):
         self.pages = pages
 
         self.message = None
-        self.ctx = None
+        self.ctx: NeoContext = None
         self.current_page = 0
         self.running = False
 
@@ -43,19 +49,23 @@ class BaseMenu(discord.ui.View):
         _pages = EmbedPages(iterable)
         return cls(_pages, **kwargs)
 
-    async def start(self, _ctx, *, as_reply=False):
+    async def start(self, _ctx: NeoContext, *, as_reply=False):
         self.ctx = _ctx
 
         send_kwargs = self._get_msg_kwargs(self.pages[0])
-        if as_reply:
-            send_kwargs.update(
-                reference=discord.MessageReference(
-                    message_id=self.ctx.message.id,
-                    channel_id=self.ctx.channel.id
-                )
-            )
 
-        self.message = await self.ctx.send(view=self, **send_kwargs)
+        if self.ctx.interaction is None:
+            if as_reply:
+                send_kwargs.update(
+                    reference=discord.MessageReference(
+                        message_id=self.ctx.message.id,
+                        channel_id=self.ctx.channel.id
+                    )
+                )
+            self.message = await self.ctx.send(view=self, **send_kwargs)
+        else:
+            await self.ctx.interaction.response.send_message(view=self, ephemeral=True, **send_kwargs)
+
         self.bot = self.ctx.bot
         self.author = self.ctx.author
 
@@ -81,16 +91,16 @@ class BaseMenu(discord.ui.View):
         kwargs = self._get_msg_kwargs(self.pages[self.current_page])
         await self.message.edit(**kwargs)
 
-    async def close(self, manual=False):
+    async def close(self, interaction: discord.Interaction, manual=False):
         self.stop()
         self.running = False
         try:
-            if manual is True:
+            if manual is True and self.ctx.interaction is None:
                 await self.message.delete()
             else:
                 for item in self.children:
                     item.disabled = True
-                await self.message.edit(view=self)
+                await interaction.response.edit_message(view=self)
         except discord.NotFound:
             return
 
@@ -122,18 +132,18 @@ class BaseMenu(discord.ui.View):
 class ButtonsMenu(BaseMenu):
 
     @discord.ui.button(label="≪", row=4)
-    async def previous_button(self, button, interaction):
+    async def previous_button(self, interaction, button):
         current_page = self.get_current_page(self.current_page - 1)
         send_kwargs = self._get_msg_kwargs(current_page)
         await interaction.response.edit_message(**send_kwargs)
 
     @discord.ui.button(label="⨉", row=4)
-    async def close_button(self, button, interaction):
+    async def close_button(self, interaction, button):
         self.stop()
-        await self.close(manual=True)
+        await self.close(interaction, manual=True)
 
     @discord.ui.button(label="≫", row=4)
-    async def next_button(self, button, interaction):
+    async def next_button(self, interaction, button):
         current_page = self.get_current_page(self.current_page + 1)
         send_kwargs = self._get_msg_kwargs(current_page)
         await interaction.response.edit_message(**send_kwargs)

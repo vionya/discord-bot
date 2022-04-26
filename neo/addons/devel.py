@@ -126,6 +126,13 @@ class Devel(neo.Addon):
             return
         await ctx.message.add_reaction("\U00002611")
 
+    @commands.command(name="sync")
+    async def dev_sync(self, ctx):
+        """Sync all global app commands to the current guild"""
+        self.bot.tree.copy_global_to(guild=ctx.guild)
+        await self.bot.tree.sync(guild=ctx.guild)
+        await ctx.message.add_reaction("\U00002611")
+
 
 async def setup(bot):
     await bot.add_cog(Devel(bot))

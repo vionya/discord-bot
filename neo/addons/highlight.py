@@ -102,7 +102,7 @@ class Highlight:
     async def to_send_kwargs(self, message, later_triggers: set[discord.Message]):
         content = ""
         triggers: set[discord.Message] = {message, *later_triggers}
-        for m in await message.channel.history(limit=6, around=message).flatten():
+        async for m in message.channel.history(limit=6, around=message):
             if len(content + m.content) > 1500:  # Don't exceed embed limits
                 m.content = "*[Omitted due to length]*"
             formatted = format_hl_context(m, m in triggers)
@@ -214,12 +214,12 @@ class Highlights(neo.Addon):
     async def cog_check(self, ctx):
         return await is_registered_profile().predicate(ctx)
 
-    @commands.group(aliases=["hl"])
+    @commands.hybrid_group(aliases=["hl"])
     async def highlight(self, ctx):
         """Group command for managing highlights"""
 
     @highlight.command(name="list")
-    async def highlight_list(self, ctx):
+    async def highlight_list(self, ctx: neo.context.NeoContext):
         """List your highlights"""
         description = ""
         user_highlights = self.highlights.get(ctx.author.id, [])
@@ -233,7 +233,10 @@ class Highlights(neo.Addon):
         embed = neo.Embed(description=description or "You have no highlights") \
             .set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used") \
             .set_author(name=f"{ctx.author}'s highlights", icon_url=ctx.author.avatar)
-        await ctx.send(embed=embed)
+
+        if not ctx.interaction:
+            return await ctx.send(embed=embed)
+        await ctx.interaction.response.send_message(embeds=[embed], ephemeral=True)
 
     @highlight.command(name="add")
     async def highlight_add(self, ctx, *, content):
@@ -272,15 +275,25 @@ class Highlights(neo.Addon):
         )
         self.highlights[ctx.author.id].append(Highlight(self.bot, **result))
         self.recompute_flattened()
-        await ctx.message.add_reaction("\U00002611")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
 
     @highlight.command(name="remove", aliases=["rm"])
-    async def highlight_remove(self, ctx, *indices):
+    @discord.app_commands.describe(
+        indices="A space-separated list of highlight indices to remove."
+        " Can be \"~\" to remove all at once."
+    )
+    async def highlight_remove(self, ctx, indices: str):
         """
         Remove 1 or more highlight by index
 
         Passing `~` will remove all highlights at once
         """
+        indices = indices.split(" ")
+
         if "~" in indices:
             highlights = self.highlights.get(ctx.author.id, []).copy()
             self.highlights.pop(ctx.author.id, None)
@@ -306,7 +319,11 @@ class Highlights(neo.Addon):
             [*map(attrgetter("content"), highlights)]
         )
         self.recompute_flattened()
-        await ctx.message.add_reaction("\U00002611")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
 
     def perform_blocklist_action(self, *, profile, ids, action="block"):
         blacklist = {*profile.hl_blocks, }
@@ -319,41 +336,68 @@ class Highlights(neo.Addon):
 
         profile.hl_blocks = [*blacklist]
 
-    @highlight.command(name="block")
-    async def highlight_block(self, ctx, ids: commands.Greedy[int]):
+    @highlight.command(name="blockuser")
+    async def highlight_block_user(self, ctx, user: discord.User | discord.Member):
+        """Block a user from highlighting you"""
+        profile = self.bot.profiles[ctx.author.id]
+
+        self.perform_blocklist_action(profile=profile, ids=[user.id])
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @highlight.command(name="blockchannel")
+    async def highlight_block_channel(self, ctx, channel: discord.TextChannel):
+        """Block a channel from highlighting you"""
+        profile = self.bot.profiles[ctx.author.id]
+
+        self.perform_blocklist_action(profile=profile, ids=[channel.id])
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @highlight.command(name="blockid")
+    async def highlight_block_id(self, ctx, id: int):
+        """Block a server, channel, or user ID from highlighting you"""
+        profile = self.bot.profiles[ctx.author.id]
+
+        self.perform_blocklist_action(profile=profile, ids=[id])
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @highlight.command(name="blocklist")
+    async def highlight_block_list(self, ctx):
         """
-        Manage a blocklist for highlights. Run with no arguments for a list of your blocks
-
-        Servers, users, and channels can all be blocked via ID
-
-        One *or more* IDs can be provided to this command
+        Manage a blocklist for highlights.
         """
         profile = self.bot.profiles[ctx.author.id]
 
-        if not ids:
-            def transform_mention(id):
-                mention = getattr(self.bot.get_guild(id), "name",
-                                  getattr(self.bot.get_channel(id), "mention",
-                                          f"<@{id}>"))  # Yes, this could lead to fake user mentions
-                return "`{0}` [{1}]".format(id, mention)
+        def transform_mention(id):
+            mention = getattr(self.bot.get_guild(id), "name",
+                              getattr(self.bot.get_channel(id), "mention",
+                                      f"<@{id}>"))  # Yes, this could lead to fake user mentions
+            return "`{0}` [{1}]".format(id, mention)
 
-            menu = ButtonsMenu.from_iterable(
-                [*map(transform_mention, profile.hl_blocks)] or ["No highlight blocks"],
-                per_page=10,
-                use_embed=True,
-                template_embed=neo.Embed().set_author(
-                    name=f"{ctx.author}'s highlight blocks",
-                    icon_url=ctx.author.display_avatar
-                )
+        menu = ButtonsMenu.from_iterable(
+            [*map(transform_mention, profile.hl_blocks)] or ["No highlight blocks"],
+            per_page=10,
+            use_embed=True,
+            template_embed=neo.Embed().set_author(
+                name=f"{ctx.author}'s highlight blocks",
+                icon_url=ctx.author.display_avatar
             )
-            await menu.start(ctx)
-            return
-
-        self.perform_blocklist_action(profile=profile, ids=ids)
-        await ctx.message.add_reaction("\U00002611")
+        )
+        await menu.start(ctx)
 
     @highlight.command(name="unblock")
-    async def highlight_unblock(self, ctx, ids: commands.Greedy[int]):
+    async def highlight_unblock(self, ctx, id: int):
         """
         Unblock entities from triggering your highlights
 
@@ -363,8 +407,30 @@ class Highlights(neo.Addon):
         """
         profile = self.bot.profiles[ctx.author.id]
 
-        self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
-        await ctx.message.add_reaction("\U00002611")
+        self.perform_blocklist_action(profile=profile, ids=[id], action="unblock")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @highlight_unblock.autocomplete("id")
+    async def highlight_unblock_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ):
+        profile = self.bot.profiles[interaction.user.id]
+
+        def transform_mention(id):
+            mention = getattr(self.bot.get_guild(id), "name",
+                              getattr(self.bot.get_channel(id), "name",
+                                      getattr(self.bot.get_user(id), "name", "Unknown")))
+            return "{0} [{1}]".format(id, mention)
+
+        return [
+            discord.app_commands.Choice(name=transform_mention(_id), value=_id) for _id in profile.hl_blocks
+        ][:25]
 
 
 async def setup(bot):

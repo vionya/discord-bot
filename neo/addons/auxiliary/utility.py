@@ -159,7 +159,7 @@ class InfoButtons(discord.ui.View):
         label="Privacy Policy",
         row=1
     )
-    async def callback(self, button, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction, button):
         await interaction.response.send_message(
             embed=self.privacy_embed, ephemeral=True
         )

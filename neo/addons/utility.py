@@ -140,6 +140,11 @@ class Utility(neo.Addon):
             pages, embed_auto_label=True, embed_auto_desc=True)
         await menu.start(ctx)
 
+    # @discord.app_commands.command(name="google", description="foo")
+    # async def google_app_command(self, interaction: discord.Interaction, query: str) -> None:
+    #     query = SimpleNamespace(query=query, image=False)
+    #     await self.google_command(await self.bot.get_context(interaction), query=query)
+
     @commands.command(name="image", aliases=["i"])
     async def google_image_shortcut(self, ctx, *, query):
         """A shortcut for `google --image <query>`"""

@@ -180,16 +180,20 @@ class Neo(commands.Bot):
     async def on_command_error(self, ctx, error):
         original_error = getattr(error, "original", error)
         if original_error.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
-            return  # Ignore exceptions specified in config
+            if not ctx.interaction:
+                return  # Ignore exceptions specified in config when not an app command
 
         try:
-            await ctx.send(original_error)
+            if not ctx.interaction:
+                await ctx.send(original_error)
+            else:
+                await ctx.interaction.response.send_message(original_error, ephemeral=True)
         except discord.Forbidden:
             pass  # Maybe we can't send messages in the channel
         log.error(f"In command invocation: {ctx.message.content}\n" + formatters
                   .format_exception(original_error))
 
-    async def get_context(self, message: discord.Message, *, cls=context.NeoContext):
+    async def get_context(self, message: discord.Message | discord.Interaction, *, cls=context.NeoContext):
         return await super().get_context(message, cls=cls)
 
     def get_user(self, id, *, as_partial=False):
@@ -212,11 +216,15 @@ class Neo(commands.Bot):
         return True
 
     async def channel_check(self, ctx: context.NeoContext):
-        if any([
+        predicates = [
             getattr(ctx.guild, "id", None) not in self.configs,
-            await self.is_owner(ctx.author),
-            ctx.channel.permissions_for(ctx.author).administrator
-        ]):
+            await self.is_owner(ctx.author)
+        ]
+
+        if hasattr(ctx.channel, "permissions_for"):
+            predicates.append(ctx.channel.permissions_for(ctx.author).administrator)
+
+        if any(predicates):
             return True
 
         if ctx.channel.id in self.configs[ctx.guild.id].disabled_channels:
@@ -224,11 +232,15 @@ class Neo(commands.Bot):
         return True
 
     async def guild_disabled_check(self, ctx: context.NeoContext):
-        if any([
+        predicates = [
             getattr(ctx.guild, "id", None) not in self.configs,
-            await self.is_owner(ctx.author),
-            ctx.channel.permissions_for(ctx.author).administrator
-        ]):
+            await self.is_owner(ctx.author)
+        ]
+
+        if hasattr(ctx.channel, "permissions_for"):
+            predicates.append(ctx.channel.permissions_for(ctx.author).administrator)
+
+        if any(predicates):
             return True
 
         if str(ctx.command) in self.configs[ctx.guild.id].disabled_commands:
