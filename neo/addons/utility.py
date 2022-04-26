@@ -120,22 +120,20 @@ class Utility(neo.Addon):
         )
         self.bot.add_view(self.info_buttons())
 
-    @args.add_arg(
-        "query",
-        nargs="+",
-        help="The query which will searched for on Google",
-    )
-    @args.add_arg(
-        "-i", "--image",
-        action="store_true",
-        help="Toggles whether or not Google Images will be searched"
-    )
-    @args.command(name="google", aliases=["g"])
-    async def google_command(self, ctx, *, query):
+    @commands.hybrid_command(name="google", aliases=["g"])
+    @discord.app_commands.describe(query="The query to search for")
+    async def google_command(self, ctx, *, query: str):
         """Search Google for a query"""
-        resp = await self.google.search(
-            " ".join(query.query),
-            image=query.image)
+        await self.google_command_callback(ctx, query)
+
+    @commands.hybrid_command(name="image", aliases=["i"])
+    @discord.app_commands.describe(query="The query to search for")
+    async def google_image_command(self, ctx, *, query: str):
+        """Search Google Images for a query"""
+        await self.google_command_callback(ctx, query, True)
+
+    async def google_command_callback(self, ctx, query: str, image: bool = False):
+        resp = await self.google.search(query, image=image)
 
         embeds = [*map(result_to_embed, resp)]
         if not embeds:
@@ -145,20 +143,6 @@ class Utility(neo.Addon):
         menu = DropdownMenu.from_pages(
             pages, embed_auto_label=True, embed_auto_desc=True)
         await menu.start(ctx)
-
-    # @discord.app_commands.command(name="google", description="foo")
-    # async def google_app_command(self, interaction: discord.Interaction, query: str) -> None:
-    #     query = SimpleNamespace(query=query, image=False)
-    #     await self.google_command(await self.bot.get_context(interaction), query=query)
-
-    @commands.command(name="image", aliases=["i"])
-    async def google_image_shortcut(self, ctx, *, query):
-        """A shortcut for `google --image <query>`"""
-        prepared_query = shlex.split(query, " ", posix=False)
-        await self.google_command(
-            ctx, query=SimpleNamespace(
-                query=prepared_query, image=True
-            ))
 
     @args.add_arg(
         "word",
