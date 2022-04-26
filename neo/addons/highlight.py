@@ -362,7 +362,7 @@ class Highlights(neo.Addon):
         channel: discord.TextChannel = None
     ):
         """Block a target from highlighting you"""
-        if not (id or "").isnumeric():
+        if not (id or "").isnumeric() and not any([user, channel]):
             raise commands.BadArgument("Please input a valid ID.")
 
         profile = self.bot.profiles[ctx.author.id]
