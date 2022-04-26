@@ -174,4 +174,4 @@ class SwappableEmbedButton(discord.ui.Button):
         embed = interaction.message.embeds[0]
         image, thumbnail = embed.image, embed.thumbnail
         embed = embed.set_image(url=thumbnail.url).set_thumbnail(url=image.url)
-        await interaction.message.edit(embed=embed)
+        await interaction.edit_original_message(embed=embed)
