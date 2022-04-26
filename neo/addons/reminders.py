@@ -170,11 +170,12 @@ class Reminders(neo.Addon):
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
 
-    @commands.group()
+    @commands.hybrid_group()
     async def remind(self, ctx):
         """Group command for managing reminders"""
 
     @remind.command(name="in", usage="<offset> <content>")
+    @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
     async def remind_relative(self, ctx, *, input: str):
         """
         Schedule a reminder for a relative offset
@@ -209,6 +210,7 @@ class Reminders(neo.Addon):
         await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
 
     @remind.command(name="on", aliases=["at"], usage="<absolute time> <content>")
+    @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
     async def remind_absolute(self, ctx, *, input: str):
         """
         Schedule a reminder for an absolute date/time
@@ -291,13 +293,27 @@ class Reminders(neo.Addon):
         )
         await ctx.send(embed=embed)
 
+    @remind_view.autocomplete("index")
+    async def remind_view_autocomplete(self, interaction: discord.Interaction, current: str):
+        if interaction.user.id not in self.bot.profiles:
+            return []
+
+        opts = [*range(1, len(self.reminders[interaction.user.id]) + 1)][:24]
+        return [*map(
+            lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
+            map(str, opts)
+        )]
+
     @remind.command(name="cancel", aliases=["remove", "rm"])
-    async def remind_cancel(self, ctx, *indices: int | str):
+    async def remind_cancel(self, ctx, index: str):
         """
         Cancel 1 or more reminder by index
 
         Passing `~` will cancel all reminders at once
         """
+        indices = [*filter(lambda ind: ind == "~" or isinstance(ind, int),
+                           int(index) if index != "~" else index)]
+
         if "~" in indices:
             reminders = self.reminders[ctx.author.id].copy()
         else:
@@ -310,7 +326,22 @@ class Reminders(neo.Addon):
 
         for reminder in reminders:
             await reminder.delete()
-        await ctx.message.add_reaction("\U00002611")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @remind_cancel.autocomplete("index")
+    async def remind_cancel_autocomplete(self, interaction: discord.Interaction, current: str):
+        if interaction.user.id not in self.bot.profiles:
+            return []
+
+        (opts := ["~"]).extend([*range(1, len(self.reminders[interaction.user.id]) + 1)][:24])
+        return [*map(
+            lambda opt: discord.app_commands.Choice(name=opt, value=opt),
+            map(str, opts)
+        )]
 
 
 async def setup(bot: neo.Neo):

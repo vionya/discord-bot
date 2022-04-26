@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 import asyncio
+import inspect
 import re
 from collections import defaultdict
 from functools import cached_property
@@ -283,16 +284,16 @@ class Highlights(neo.Addon):
 
     @highlight.command(name="remove", aliases=["rm"])
     @discord.app_commands.describe(
-        indices="A space-separated list of highlight indices to remove."
-        " Can be \"~\" to remove all at once."
+        index="A highlight index to remove, or \"~\" to clear all highlights"
     )
-    async def highlight_remove(self, ctx, indices: str):
+    async def highlight_remove(self, ctx, index: str):
         """
-        Remove 1 or more highlight by index
+        Remove a highlight by index
 
         Passing `~` will remove all highlights at once
         """
-        indices = indices.split(" ")
+        indices = [*filter(lambda ind: ind == "~" or isinstance(ind, int),
+                           int(index) if index != "~" else index)]
 
         if "~" in indices:
             highlights = self.highlights.get(ctx.author.id, []).copy()
@@ -325,6 +326,17 @@ class Highlights(neo.Addon):
         else:
             await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
 
+    @highlight_remove.autocomplete("index")
+    async def highlight_remove_autocomplete(self, interaction: discord.Interaction, current: str):
+        if interaction.user.id not in self.bot.profiles:
+            return []
+
+        (opts := ["~"]).extend([*range(1, len(self.highlights[interaction.user.id]) + 1)][:24])
+        return [*map(
+            lambda opt: discord.app_commands.Choice(name=opt, value=opt),
+            map(str, opts)
+        )]
+
     def perform_blocklist_action(self, *, profile, ids, action="block"):
         blacklist = {*profile.hl_blocks, }
         ids = {*ids, }
@@ -336,36 +348,34 @@ class Highlights(neo.Addon):
 
         profile.hl_blocks = [*blacklist]
 
-    @highlight.command(name="blockuser")
-    async def highlight_block_user(self, ctx, user: discord.User | discord.Member):
-        """Block a user from highlighting you"""
+    @highlight.command(name="block", usage="<id>")
+    @discord.app_commands.describe(
+        id="The ID of a user, server, or channel to block",
+        user="A user to block",
+        channel="A channel to block"
+    )
+    async def highlight_block(
+        self,
+        ctx,
+        id: str = None,
+        user: discord.User | discord.Member = None,
+        channel: discord.TextChannel = None
+    ):
+        """Block a target from highlighting you"""
+        if not id.isnumeric():
+            raise commands.BadArgument("Please input a valid ID.")
+
         profile = self.bot.profiles[ctx.author.id]
 
-        self.perform_blocklist_action(profile=profile, ids=[user.id])
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
+        if ctx.interaction:
+            ids = [*map(lambda obj: int(getattr(obj, "id", obj)), filter(None, [user, channel, id]))]
         else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+            if not id:
+                raise commands.MissingRequiredArgument(commands.Parameter(
+                    name="id", kind=inspect.Parameter.POSITIONAL_ONLY))
+            ids = [id]
 
-    @highlight.command(name="blockchannel")
-    async def highlight_block_channel(self, ctx, channel: discord.TextChannel):
-        """Block a channel from highlighting you"""
-        profile = self.bot.profiles[ctx.author.id]
-
-        self.perform_blocklist_action(profile=profile, ids=[channel.id])
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
-
-    @highlight.command(name="blockid")
-    async def highlight_block_id(self, ctx, id: int):
-        """Block a server, channel, or user ID from highlighting you"""
-        profile = self.bot.profiles[ctx.author.id]
-
-        self.perform_blocklist_action(profile=profile, ids=[id])
+        self.perform_blocklist_action(profile=profile, ids=ids)
 
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
@@ -397,7 +407,7 @@ class Highlights(neo.Addon):
         await menu.start(ctx)
 
     @highlight.command(name="unblock")
-    async def highlight_unblock(self, ctx, id: int):
+    async def highlight_unblock(self, ctx, id: str):
         """
         Unblock entities from triggering your highlights
 
@@ -405,9 +415,12 @@ class Highlights(neo.Addon):
 
         One *or more* IDs can be provided to this command
         """
+        if not id.isnumeric():
+            raise commands.BadArgument("Please input a valid ID.")
+
         profile = self.bot.profiles[ctx.author.id]
 
-        self.perform_blocklist_action(profile=profile, ids=[id], action="unblock")
+        self.perform_blocklist_action(profile=profile, ids=[int(id)], action="unblock")
 
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
@@ -429,7 +442,8 @@ class Highlights(neo.Addon):
             return "{0} [{1}]".format(id, mention)
 
         return [
-            discord.app_commands.Choice(name=transform_mention(_id), value=_id) for _id in profile.hl_blocks
+            discord.app_commands.Choice(name=transform_mention(_id), value=str(_id))
+            for _id in profile.hl_blocks
         ][:25]
 
 

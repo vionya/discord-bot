@@ -68,7 +68,7 @@ class Todos(neo.Addon):
     async def cog_check(self, ctx):
         return await is_registered_profile().predicate(ctx)
 
-    @commands.group()
+    @commands.hybrid_group()
     async def todo(self, ctx):
         """Group command for managing todos"""
 
@@ -125,15 +125,22 @@ class Todos(neo.Addon):
         )
 
         self.todos[ctx.author.id].append(TodoItem(**data))
-        await ctx.message.add_reaction("\U00002611")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
 
     @todo.command(name="remove", aliases=["rm"])
-    async def todo_remove(self, ctx, *indices):
+    async def todo_remove(self, ctx, index: str):
         """
-        Remove 1 or more todo by index
+        Remove a todo by index
 
         Passing `~` will remove all todos at once
         """
+        indices = [*filter(lambda ind: ind == "~" or isinstance(ind, int),
+                           int(index) if index != "~" else index)]
+
         if "~" in indices:
             todos = self.todos[ctx.author.id].copy()
             self.todos[ctx.author.id].clear()
@@ -156,7 +163,22 @@ class Todos(neo.Addon):
             [*map(attrgetter("message_id"), todos)],
             ctx.author.id
         )
-        await ctx.message.add_reaction("\U00002611")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @todo_remove.autocomplete("index")
+    async def todo_remove_autocomplete(self, interaction: discord.Interaction, current: str):
+        if interaction.user.id not in self.bot.profiles:
+            return []
+
+        (opts := ["~"]).extend([*range(1, len(self.todos[interaction.user.id]) + 1)][:24])
+        return [*map(
+            lambda opt: discord.app_commands.Choice(name=opt, value=opt),
+            map(str, opts)
+        )]
 
     @todo.command(name="view", aliases=["show"])
     async def todo_view(self, ctx, index: int):
@@ -202,7 +224,23 @@ class Todos(neo.Addon):
             """,
             new_content, todo.message_id, todo.user_id
         )
-        await ctx.message.add_reaction("\U00002611")
+
+        if not ctx.interaction:
+            await ctx.message.add_reaction("\U00002611")
+        else:
+            await ctx.interaction.response.send_message("\U00002611", ephemeral=True)
+
+    @todo_view.autocomplete("index")
+    @todo_edit.autocomplete("index")
+    async def todo_edit_view_autocomplete(self, interaction: discord.Interaction, current: str):
+        if interaction.user.id not in self.bot.profiles:
+            return []
+
+        opts = [*range(1, len(self.todos[interaction.user.id]) + 1)][:24]
+        return [*map(
+            lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
+            map(str, opts)
+        )]
 
 
 async def setup(bot):
