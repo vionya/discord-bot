@@ -301,9 +301,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     # versus the fetch message endpoint
     @staticmethod
     async def fetch_message(channel: discord.TextChannel, message_id: int):
-        return await channel.history(
+        return await anext(channel.history(
             limit=1, before=discord.Object(message_id + 1)
-        ).next()
+        ))
 
     def predicate(self, starboard: Starboard, payload):
         if starboard is None or starboard.channel is None:
