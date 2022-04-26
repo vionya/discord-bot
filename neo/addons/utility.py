@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 import random
 import shlex
@@ -7,15 +9,16 @@ from collections import Counter
 from functools import partial
 from sys import version as py_version
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 import discord
 import neo
 from discord.ext import commands
 from googletrans import LANGUAGES, Translator
-from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import shorten
 from neo.classes.converters import mention_converter
 from neo.classes.formatters import Table
+from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
+from neo.tools import shorten
 
 from .auxiliary.utility import (
     LANGUAGE_CODES,
@@ -26,6 +29,9 @@ from .auxiliary.utility import (
     result_to_embed,
     translate
 )
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
 
 BADGE_MAPPING = {
     "staff": "<:_:863197443386900541>",
@@ -288,8 +294,8 @@ class Utility(neo.Addon):
 
     # Information commands below
 
-    @commands.command(name="avatar", aliases=["av", "avy", "pfp"])
-    async def avatar_command(self, ctx, *, user: mention_converter | int | discord.Member = None):
+    @commands.hybrid_command(name="avatar", aliases=["av", "avy", "pfp"])
+    async def avatar_command(self, ctx: NeoContext, *, user: discord.User | discord.Member = None):
         """Retrieves the avatar of yourself, or a specified user"""
         kwargs = {}
         embed = neo.Embed(description="")
@@ -316,8 +322,9 @@ class Utility(neo.Addon):
 
         await ctx.send(embed=embed, **kwargs)
 
-    @commands.command(name="userinfo", aliases=["ui"])
-    async def user_info_command(self, ctx, *, user: mention_converter | int | discord.Member = None):
+    @commands.hybrid_command(name="userinfo", aliases=["ui"])
+    @discord.app_commands.describe(user="The user to get info about. If empty, gets your own info.")
+    async def user_info_command(self, ctx: NeoContext, user: discord.Member | discord.User = None):
         """Retrieves information of yourself, or a specified user"""
         if isinstance(user, int | type(None)):
             try:
@@ -344,11 +351,16 @@ class Utility(neo.Addon):
         embed.title = title
         embed.description = description
 
-        await ctx.send(embed=embed)
+        content = None
+        if ctx.interaction and ctx.guild and not ctx.guild.default_role.permissions.external_emojis:
+            content = ("Make sure @everyone has \"Use External Emoji\" permissions, otherwise"
+                       " `userinfo` can't properly display icons!")
+
+        await ctx.send(content=content, embed=embed)
 
     @commands.guild_only()
-    @commands.command(name="serverinfo", aliases=["si"])
-    async def guild_info_command(self, ctx):
+    @commands.hybrid_command(name="serverinfo", aliases=["si"])
+    async def guild_info_command(self, ctx: NeoContext):
         """Retrieves information about the current server"""
         animated_emotes = len([e for e in ctx.guild.emojis if e.animated])
         static_emotes = len(ctx.guild.emojis) - animated_emotes
@@ -364,11 +376,17 @@ class Utility(neo.Addon):
             f"\n**Bitrate Limit** {round(ctx.guild.bitrate_limit / 1_000)} KB/s"
         ).set_thumbnail(url=ctx.guild.icon)
 
-        await ctx.send(embed=embed)
+        content = None
+        if ctx.interaction and ctx.guild and not ctx.guild.default_role.permissions.external_emojis:
+            content = ("Make sure @everyone has \"Use External Emoji\" permissions, otherwise"
+                       " `serverinfo` can't properly display icons!")
+
+        await ctx.send(content=content, embed=embed)
 
     @commands.guild_only()
-    @commands.command(name="roleinfo", aliases=["ri"])
-    async def role_info_command(self, ctx, *, role: discord.Role):
+    @commands.hybrid_command(name="roleinfo", aliases=["ri"])
+    @discord.app_commands.describe(role="The role to get info about.")
+    async def role_info_command(self, ctx: NeoContext, *, role: discord.Role):
         """
         Retrives information about the given role
 
@@ -386,9 +404,14 @@ class Utility(neo.Addon):
             + f"\n**Icon** [View]({role.icon})" * bool(role.icon)
         ).set_thumbnail(url=role.icon or "")
 
-        await ctx.send(embed=embed)
+        content = None
+        if ctx.interaction and ctx.guild and not ctx.guild.default_role.permissions.external_emojis:
+            content = ("Make sure @everyone has \"Use External Emoji\" permissions, otherwise"
+                       " `roleinfo` can't properly display icons!")
 
-    @commands.command(
+        await ctx.send(content=content, embed=embed)
+
+    @commands.hybrid_command(
         name="info",
         aliases=["about", "invite", "support", "source", "privacy"]
     )

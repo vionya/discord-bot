@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 import argparse
-import inspect
 import logging
 
 import discord
@@ -21,6 +20,7 @@ message = Patcher(discord.Message)
 missing_required = Patcher(commands.MissingRequiredArgument)
 argument_error = Patcher(argparse.ArgumentError)
 view = Patcher(discord.ui.View)
+hybrid_command_deco_exported = Patcher(commands)
 hybrid_command_deco = Patcher(commands.hybrid)
 
 
@@ -97,7 +97,6 @@ async def on_error(self, interaction, error, item):
     logger.error(format_exception(error))
 
 
-@hybrid_command_deco.attribute()
 def hybrid_command(name, **attrs):
     def decorator(func):
         if isinstance(func, commands.Command):
@@ -105,6 +104,9 @@ def hybrid_command(name, **attrs):
         return AutoEphemeralHybridCommand(func, name=name, **attrs)
 
     return decorator
+
+hybrid_command_deco_exported.attribute(name="hybrid_command", value=hybrid_command)
+hybrid_command_deco.attribute(name="hybrid_command", value=hybrid_command)
 
 def patch_all() -> None:
     guild.patch()
@@ -115,3 +117,4 @@ def patch_all() -> None:
     argument_error.patch()
     view.patch()
     hybrid_command_deco.patch()
+    hybrid_command_deco_exported.patch()
