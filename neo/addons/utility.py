@@ -316,11 +316,17 @@ class Utility(neo.Addon):
     @discord.app_commands.describe(user="The user to get info about. If empty, gets your own info.")
     async def user_info_command(self, ctx: NeoContext, user: discord.Member | discord.User = None):
         """Retrieves information of yourself, or a specified user"""
-        if isinstance(user, int | type(None)):
+        if not user:
             try:
                 user = await ctx.guild.fetch_member(user or ctx.author.id)
             except (discord.HTTPException, AttributeError):
                 user = await self.bot.fetch_user(user or ctx.author.id)
+
+        if isinstance(user, neo.partials.PartialUser):
+            try:
+                user = await ctx.guild.fetch_member(user.id)
+            except (discord.HTTPException, AttributeError):
+                user = await user.fetch()
 
         embed = neo.Embed().set_thumbnail(url=user.display_avatar)
         flags = [v for k, v in BADGE_MAPPING.items() if k in
