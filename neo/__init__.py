@@ -35,8 +35,8 @@ intents = discord.Intents(
 
 
 class Neo(commands.Bot):
-    def __init__(self, config, **kwargs):
-        self.cfg: NeoConfig = config
+    def __init__(self, config: NeoConfig, **kwargs):
+        self.cfg = config
         self.boot_time = int(time.time())
         self.session = None
         self.profiles: dict[int, containers.NeoUser] = {}

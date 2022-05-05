@@ -3,9 +3,10 @@
 import asyncio
 import logging
 import os
-import signal
 
 import toml
+
+from neo.types.config import NeoConfig
 
 try:
     import uvloop  # type: ignore
@@ -43,7 +44,7 @@ runtime.patch_all()
 
 async def main():
     with open("config.toml", "r") as file:
-        config = toml.load(file)
+        config: NeoConfig = toml.load(file)
 
     neo = Neo(config)
 

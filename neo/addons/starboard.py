@@ -297,14 +297,6 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     # Sect: Event handling
 
-    # Takes advantage of the better ratelimits of the history endpoint
-    # versus the fetch message endpoint
-    @staticmethod
-    async def fetch_message(channel: discord.TextChannel, message_id: int):
-        return await anext(channel.history(
-            limit=1, before=discord.Object(message_id + 1)
-        ))
-
     def predicate(self, starboard: Starboard, payload):
         if starboard is None or starboard.channel is None:
             return False
@@ -340,10 +332,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                     .created_at).days > starboard.max_days:
                 return
 
-            message = await self.fetch_message(
-                self.bot.get_channel(payload.channel_id),
-                payload.message_id
-            )
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+
             reaction_count = getattr(
                 next(filter(
                     lambda r: self.reaction_check(starboard, r.emoji),
