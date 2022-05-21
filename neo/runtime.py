@@ -20,8 +20,7 @@ message = Patcher(discord.Message)
 missing_required = Patcher(commands.MissingRequiredArgument)
 argument_error = Patcher(argparse.ArgumentError)
 view = Patcher(discord.ui.View)
-hybrid_command_deco_exported = Patcher(commands)
-hybrid_command_deco = Patcher(commands.hybrid)
+hybrid_command = Patcher(commands.hybrid)
 
 
 @guild.attribute()
@@ -97,16 +96,8 @@ async def on_error(self, interaction, error, item):
     logger.error(format_exception(error))
 
 
-def hybrid_command(name, **attrs):
-    def decorator(func):
-        if isinstance(func, commands.Command):
-            raise TypeError("Callback is already a command.")
-        return AutoEphemeralHybridCommand(func, name=name, **attrs)
+hybrid_command.attribute(name="HybridCommand", value=AutoEphemeralHybridCommand)
 
-    return decorator
-
-hybrid_command_deco_exported.attribute(name="hybrid_command", value=hybrid_command)
-hybrid_command_deco.attribute(name="hybrid_command", value=hybrid_command)
 
 def patch_all() -> None:
     guild.patch()
@@ -116,5 +107,4 @@ def patch_all() -> None:
     missing_required.patch()
     argument_error.patch()
     view.patch()
-    hybrid_command_deco.patch()
-    hybrid_command_deco_exported.patch()
+    hybrid_command.patch()

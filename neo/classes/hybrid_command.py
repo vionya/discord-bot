@@ -6,6 +6,7 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
     def __init__(self, wrapped):
         super().__init__(wrapped)
 
+        # Inject an `ephemeral` parameter to every hybrid commmand
         self._params["ephemeral"] = discord.app_commands.transformers.CommandParameter(
             name="ephemeral",
             description="Whether to send the command result ephemerally",
