@@ -52,11 +52,14 @@ async def convert_setting(ctx, mapping, setting, new_value):
 
 
 def recursive_getattr(target: Any, attr: str, default: Any = None) -> Any:
-    if not target:
-        return default
+    # Get the named attribute from the target object
+    # with a default of None
     found = getattr(target, attr, None)
+    # If nothing is found, return the default
     if not found:
         return default
 
+    # If `found` has no attribute named `attr` then return it
+    # Otherwise, recurse until we do find something
     return found if not hasattr(found, attr) else \
         recursive_getattr(found, attr, default)
