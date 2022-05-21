@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from collections import defaultdict
+
+
 class Patcher:
     """
     Utility class to facilitate monkeypatching... stuff
@@ -7,17 +10,18 @@ class Patcher:
     Initialise class with a target, which can be a module, or a class, etc
     """
 
-    __slots__ = ("target", "_patches", "_original")
+    __slots__ = ("targets", "_patches", "_original")
 
-    def __init__(self, target):
-        self.target = target
+    def __init__(self, *targets):
+        self.targets = targets
         self._patches = {}
-        self._original = {}
-        for name, attr in map(
-            lambda _attr: (_attr, getattr(target, _attr)),
-            dir(target)
-        ):
-            self._original[name] = attr
+        self._original = defaultdict(dict)
+        for target in self.targets:
+            for name, attr in map(
+                lambda _attr: (_attr, getattr(target, _attr)),
+                dir(target)
+            ):
+                self._original[target.__name__][name] = attr
 
     def attribute(self, value=None, *, name=None):
         """
@@ -47,7 +51,8 @@ class Patcher:
         Applies all staged patches to the target.
         """
         for name, attr in self._patches.items():
-            setattr(self.target, name, attr)
+            for target in self.targets:
+                setattr(target, name, attr)
 
     def revert(self):
         """
@@ -57,10 +62,11 @@ class Patcher:
         Any *new* attributes will be removed, and all overridden
         attributes will be reverted.
         """
-        for name in self._patches.keys():
-            delattr(self.target, name)
-        for name, attr in self._original.items():
-            try:
-                setattr(self.target, name, attr)
-            except (TypeError, AttributeError):
-                continue
+        for target in self.targets:
+            for name in self._patches.keys():
+                delattr(target, name)
+            for name, attr in self._original.items():
+                try:
+                    setattr(target, name, attr)
+                except (TypeError, AttributeError):
+                    continue
