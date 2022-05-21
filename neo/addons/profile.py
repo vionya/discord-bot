@@ -70,10 +70,14 @@ class Profile(neo.Addon):
 
             SETTINGS_MAPPING[col_name]["description"] = col_desc
 
-    @commands.group(name="profilesettings", aliases=["settings"], invoke_without_command=True)
+    @commands.hybrid_group(name="profilesettings", aliases=["settings"], invoke_without_command=True)
     @is_registered_profile()
     async def profile_settings(self, ctx: NeoContext):
-        """Manage your profile settings here"""
+        """Group command for managing profile settings"""
+
+    @profile_settings.command(name="list")
+    async def profile_settings_list(self, ctx: NeoContext):
+        """Lists profile settings"""
         profile = self.bot.profiles[ctx.author.id]
         embeds = []
 
@@ -126,6 +130,11 @@ class Profile(neo.Addon):
         self.bot.broadcast("user_settings_update", ctx.author, profile)
 
     @profile_settings.command(name="set")
+    @discord.app_commands.describe(
+        setting="The setting to set. More information can be found in the settings list",
+        new_value="The new value to assign to this setting. More information"
+        " can be found in the settings list"
+    )
     @is_registered_profile()
     async def profile_settings_set(self, ctx: NeoContext, setting: str, *, new_value: str):
         """
@@ -137,6 +146,7 @@ class Profile(neo.Addon):
         await ctx.send(f"Setting `{setting}` has been changed!")
 
     @profile_settings.command(name="reset")
+    @discord.app_commands.describe(setting="The setting to reset")
     @is_registered_profile()
     async def profile_settings_reset(self, ctx: NeoContext, setting: str):
         """
@@ -147,17 +157,25 @@ class Profile(neo.Addon):
         await self.reset_option(ctx, setting)
         await ctx.send(f"Setting `{setting}` has been reset!")
 
-    @commands.group(invoke_without_command=True)
-    async def profile(
+    @profile_settings_set.autocomplete("setting")
+    @profile_settings_reset.autocomplete("setting")
+    async def profile_settings_set_reset_autocomplete(self, interaction: discord.Interaction, current: str):
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k), SETTINGS_MAPPING.keys())]
+
+    @commands.hybrid_group()
+    async def profile(self, ctx: NeoContext):
+        """Group command for profiles"""
+
+    @profile.command(name="show")
+    @discord.app_commands.describe(user="The user to view the profile for. Yourself if empty")
+    async def profile_show(
         self,
         ctx: NeoContext,
         *,
-        user: discord.User | PartialUser = commands.parameter(
-            converter=commands.UserConverter,
-            default=lambda ctx: ctx.author
-        )
+        user: discord.User | discord.Member = None
     ):
         """Displays the neo profile of yourself, or a specified user."""
+        user = user or ctx.author
         if user == ctx.author:
             await is_registered_profile().predicate(ctx)
 
@@ -198,7 +216,7 @@ class Profile(neo.Addon):
     @profile.command(name="delete")
     @is_registered_profile()
     async def profile_delete(self, ctx: NeoContext):
-        """__Permanently__ deletes your neo profile"""
+        """Permanently deletes your neo profile"""
         if await ctx.prompt_user(
             "Are you sure you want to delete your profile?"
             "\nThis will delete your profile and all associated "
