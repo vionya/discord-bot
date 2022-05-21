@@ -101,8 +101,9 @@ class BaseMenu(discord.ui.View):
         self.running = False
         try:
             if manual is True and getattr(self.ctx, "ephemeral", False) is False:
-                if self.ctx.interaction and not self.ctx.interaction.response.is_done():
-                    await interaction.response.defer()
+                if self.ctx.interaction:
+                    if not interaction.response.is_done():
+                        await interaction.response.defer()
                     await interaction.delete_original_message()
                 else:
                     await self.message.delete()
@@ -110,8 +111,9 @@ class BaseMenu(discord.ui.View):
                 for item in self.children:
                     item.disabled = True
 
-                if self.ctx.interaction and not self.ctx.interaction.response.is_done():
-                    await interaction.response.defer()
+                if self.ctx.interaction:
+                    if not interaction.response.is_done():
+                        await interaction.response.defer()
                     await interaction.edit_original_message(view=self)
                 else:
                     await self.message.edit(view=self)
