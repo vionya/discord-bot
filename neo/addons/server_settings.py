@@ -68,9 +68,13 @@ class ServerSettings(neo.Addon):
 
         return True
 
-    @commands.group(name="serversettings", aliases=["server"], invoke_without_command=True)
+    @commands.hybrid_group(name="serversettings", aliases=["server"])
     async def server_settings(self, ctx: NeoContext):
-        """Manage your server settings here"""
+        """Group command for managing server settings"""
+
+    @server_settings.command(name="list")
+    async def server_settings_list(self, ctx: NeoContext):
+        """Lists server settings"""
         await is_registered_guild().predicate(ctx)
         config = self.bot.configs[ctx.guild.id]
         embeds = []
@@ -124,6 +128,11 @@ class ServerSettings(neo.Addon):
         self.bot.broadcast("config_update", ctx.guild, config)
 
     @server_settings.command(name="set")
+    @discord.app_commands.describe(
+        setting="The setting to set. More information can be found in the settings list",
+        new_value="The new value to assign to this setting. More information"
+        " can be found in the settings list"
+    )
     @is_registered_guild()
     async def server_settings_set(self, ctx: NeoContext, setting: str, *, new_value: str):
         """
@@ -136,6 +145,7 @@ class ServerSettings(neo.Addon):
         await ctx.send(f"Setting `{setting}` has been changed!")
 
     @server_settings.command(name="reset")
+    @discord.app_commands.describe(setting="The setting to reset")
     @is_registered_guild()
     async def server_settings_reset(self, ctx: NeoContext, setting: str):
         """
@@ -145,6 +155,11 @@ class ServerSettings(neo.Addon):
         """
         await self.reset_option(ctx, setting)
         await ctx.send(f"Setting `{setting}` has been reset!")
+
+    @server_settings_set.autocomplete("setting")
+    @server_settings_reset.autocomplete("setting")
+    async def server_settings_set_reset_autocomplete(self, interaction: discord.Interaction, current: str):
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k), SETTINGS_MAPPING.keys())]
 
     @server_settings.command(name="create")
     async def server_settings_create(self, ctx: NeoContext):
@@ -165,7 +180,7 @@ class ServerSettings(neo.Addon):
     @server_settings.command(name="delete")
     @is_registered_guild()
     async def server_settings_delete(self, ctx: NeoContext):
-        """__Permanently__ deletes this server's config"""
+        """Permanently deletes this server's config"""
         if await ctx.prompt_user(
             "Are you sure you want to delete the config?"
             "\nThis will delete your config and all associated "
