@@ -160,7 +160,8 @@ class Profile(neo.Addon):
     @profile_settings_set.autocomplete("setting")
     @profile_settings_reset.autocomplete("setting")
     async def profile_settings_set_reset_autocomplete(self, interaction: discord.Interaction, current: str):
-        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k), SETTINGS_MAPPING.keys())]
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k),
+                     filter(lambda k: current in k, SETTINGS_MAPPING.keys()))]
 
     @commands.hybrid_group()
     async def profile(self, ctx: NeoContext):

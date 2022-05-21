@@ -459,7 +459,7 @@ class Highlights(neo.Addon):
 
         return [
             discord.app_commands.Choice(name=transform_mention(_id), value=str(_id))
-            for _id in profile.hl_blocks
+            for _id in filter(lambda block: current in block, profile.hl_blocks)
         ][:25]
 
 

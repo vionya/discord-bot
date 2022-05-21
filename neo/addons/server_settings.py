@@ -159,7 +159,8 @@ class ServerSettings(neo.Addon):
     @server_settings_set.autocomplete("setting")
     @server_settings_reset.autocomplete("setting")
     async def server_settings_set_reset_autocomplete(self, interaction: discord.Interaction, current: str):
-        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k), SETTINGS_MAPPING.keys())]
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k),
+                     filter(lambda k: current in k, SETTINGS_MAPPING.keys()))]
 
     @server_settings.command(name="create")
     async def server_settings_create(self, ctx: NeoContext):

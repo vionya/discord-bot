@@ -488,7 +488,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard_set.autocomplete("setting")
     async def starboard_set_autocomplete(self, interaction: discord.Interaction, current: str):
-        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k), SETTINGS_MAPPING.keys())]
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k),
+                     filter(lambda k: current in k, SETTINGS_MAPPING.keys()))]
 
     async def set_option(self, ctx: NeoContext, setting: str, new_value: Any):
         value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
