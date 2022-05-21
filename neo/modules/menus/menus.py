@@ -89,14 +89,19 @@ class BaseMenu(discord.ui.View):
 
     async def refresh_page(self):
         kwargs = self._get_msg_kwargs(self.pages[self.current_page])
-        await self.message.edit(**kwargs)
+        if self.ctx.interaction:
+            if not self.ctx.interaction.response.is_done():
+                await self.ctx.interaction.response.defer()
+            await self.ctx.interaction.edit_original_message(**kwargs)
+        else:
+            await self.message.edit(**kwargs)
 
     async def close(self, *, interaction: discord.Interaction = None, manual=False):
         self.stop()
         self.running = False
         try:
             if manual is True and getattr(self.ctx, "ephemeral", False) is False:
-                if self.ctx.interaction:
+                if self.ctx.interaction and not self.ctx.interaction.response.is_done():
                     await interaction.response.defer()
                     await interaction.delete_original_message()
                 else:
@@ -105,7 +110,7 @@ class BaseMenu(discord.ui.View):
                 for item in self.children:
                     item.disabled = True
 
-                if self.ctx.interaction:
+                if self.ctx.interaction and not self.ctx.interaction.response.is_done():
                     await interaction.response.defer()
                     await interaction.edit_original_message(view=self)
                 else:
