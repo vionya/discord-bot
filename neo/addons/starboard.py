@@ -7,6 +7,7 @@ from typing import Any
 import discord
 import neo
 from discord.ext import commands
+from neo.classes.context import NeoContext
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, shorten
 from neo.classes.containers import TimedCache
@@ -434,10 +435,14 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             ))
         return True
 
-    @commands.group(invoke_without_command=True)
-    @commands.has_permissions(manage_channels=True)
-    async def starboard(self, ctx):
+    @commands.hybrid_group()
+    async def starboard(self, ctx: NeoContext):
         """Group command for managing starboards"""
+
+    @starboard.command(name="list")
+    @commands.has_permissions(manage_channels=True)
+    async def starboard_list(self, ctx: NeoContext):
+        """Lists starboard settings"""
         starboard = self.starboards[ctx.guild.id]
         embeds = []
 
@@ -467,7 +472,12 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard.command(name="set")
     @commands.has_permissions(manage_channels=True)
-    async def starboard_set(self, ctx, setting, *, new_value):
+    @discord.app_commands.describe(
+        setting="The setting to set. More information can be found in the settings list",
+        new_value="The new value to assign to this setting. More information"
+        " can be found in the settings list"
+    )
+    async def starboard_set(self, ctx: NeoContext, setting: str, *, new_value: str):
         """
         Updates the value of a starboard setting
 
@@ -476,7 +486,11 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         await self.set_option(ctx, setting, new_value)
         await ctx.send(f"Setting `{setting}` has been changed!")
 
-    async def set_option(self, ctx, setting: str, new_value: Any):
+    @starboard_set.autocomplete("setting")
+    async def starboard_set_autocomplete(self, interaction: discord.Interaction, current: str):
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k), SETTINGS_MAPPING.keys())]
+
+    async def set_option(self, ctx: NeoContext, setting: str, new_value: Any):
         value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
         starboard = self.starboards[ctx.guild.id]
         setattr(starboard, setting, value)
@@ -502,7 +516,16 @@ class StarboardAddon(neo.Addon, name="Starboard"):
 
     @starboard.command(name="ignore")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_ignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage | str):
+    @discord.app_commands.describe(
+        channel="The channel to ignore, can be a channel mention or ID",
+        message="The message to ignore, can be a message URL or ID"
+    )
+    async def starboard_ignore(
+        self,
+        ctx: NeoContext,
+        channel: discord.TextChannel = None,
+        message: discord.PartialMessage = None
+    ):
         """
         Ignores a channel or message
 
@@ -512,61 +535,82 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         Note: If an already starred message is ignored, the
         star will be deleted, *and* the message will be ignored
         """
-        if not isinstance(to_ignore, discord.TextChannel | discord.PartialMessage):
-            raise TypeError("Invalid target provided for `to_ignore`."
-                            " Please provide a message link or channel.")
+        if not any([
+            isinstance(channel, discord.TextChannel),
+            isinstance(message, discord.PartialMessage)
+        ]):
+            raise TypeError("You must provide at least one valid argument to ignore.")
 
         starboard = self.starboards[ctx.guild.id]
-        id = to_ignore.id
 
-        starboard.ignored.add(id)
-        await self.bot.db.execute(
-            """
-            UPDATE starboards
-            SET
-                ignored=array_append(ignored, $1)
-            WHERE
-                guild_id=$2
-            """,
-            id,
-            ctx.guild.id
-        )
+        for snowflake in filter(None, [channel, message]):
+            id = snowflake.id
 
-        if isinstance(to_ignore, discord.PartialMessage) \
-                and id in starboard.star_ids:
-            await starboard.delete_star(id)
+            starboard.ignored.add(id)
+            await self.bot.db.execute(
+                """
+                UPDATE starboards
+                SET
+                    ignored=array_append(ignored, $1)
+                WHERE
+                    guild_id=$2
+                """,
+                id,
+                ctx.guild.id
+            )
+
+            if isinstance(snowflake, discord.PartialMessage) \
+                    and id in starboard.star_ids:
+                await starboard.delete_star(id)
 
         await ctx.send("Successfully ignored the provided entity!")
 
     @starboard.command(name="unignore")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_unignore(self, ctx, to_ignore: discord.TextChannel | discord.PartialMessage | int | str):
+    @discord.app_commands.describe(
+        id="A generic ID to unignore",
+        channel="The channel to unignore, can be a channel mention or ID",
+        message="The message to unignore, can be a message URL or ID"
+    )
+    async def starboard_unignore(
+        self,
+        ctx: NeoContext,
+        id: str = None,
+        channel: discord.TextChannel = None,
+        message: discord.PartialMessage = None
+    ):
         """Unignores a channel or message"""
-        if not isinstance(to_ignore, discord.TextChannel | discord.PartialMessage | int):
-            raise TypeError("Invalid target provided for `to_ignore`."
-                            " Please provide a message link or channel.")
+        if not any([
+            (id or "").isdigit(),
+            isinstance(channel, discord.TextChannel),
+            isinstance(message, discord.PartialMessage)
+        ]):
+            raise TypeError("You must provide at least one valid argument to unignore.")
 
         starboard = self.starboards[ctx.guild.id]
-        id = getattr(to_ignore, "id", to_ignore)
+        id = int(id) if (id or "").isdigit() else None
 
-        starboard.ignored.discard(id)
-        await self.bot.db.execute(
-            """
-            UPDATE starboards
-            SET
-                ignored=array_remove(ignored, $1)
-            WHERE
-                guild_id=$2
-            """,
-            id,
-            ctx.guild.id
-        )
+        for snowflake in filter(None, [id, channel, message]):
+            _id = getattr(snowflake, "id", snowflake)
+
+            starboard.ignored.discard(_id)
+            await self.bot.db.execute(
+                """
+                UPDATE starboards
+                SET
+                    ignored=array_remove(ignored, $1)
+                WHERE
+                    guild_id=$2
+                """,
+                _id,
+                ctx.guild.id
+            )
 
         await ctx.send("Successfully unignored the provided entity!")
 
     @starboard.command(name="ignored")
     @commands.has_permissions(manage_messages=True)
-    async def starboard_ignored(self, ctx):
+    async def starboard_ignored(self, ctx: NeoContext):
         """Displays a list of all ignored items"""
         starboard = self.starboards[ctx.guild.id]
 
