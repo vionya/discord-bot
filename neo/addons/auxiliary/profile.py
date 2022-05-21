@@ -38,7 +38,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
 
             async def on_submit(modal_self, interaction):
                 try:
-                    await self.addon.set_option(self.ctx, current_setting, modal_self.new_value)
+                    await self.addon.set_option(self.ctx, current_setting, modal_self.new_value.value)
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
