@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from typing import Any
 from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
@@ -48,3 +49,14 @@ async def convert_setting(ctx, mapping, setting, new_value):
         )
 
     return value
+
+
+def recursive_getattr(target: Any, attr: str, default: Any = None) -> Any:
+    if not target:
+        return default
+    found = getattr(target, attr, None)
+    if not found:
+        return default
+
+    return found if not hasattr(found, attr) else \
+        recursive_getattr(found, attr, default)

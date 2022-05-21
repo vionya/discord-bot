@@ -23,6 +23,7 @@ from .classes import (
 )
 from .modules import *  # noqa: F403
 from .tools import *  # noqa: F403
+from .tools import recursive_getattr
 
 if TYPE_CHECKING:
     from .types.config import NeoConfig
@@ -187,7 +188,7 @@ class Neo(commands.Bot):
         log.error("\n" + formatters.format_exception(sys.exc_info()))
 
     async def on_command_error(self, ctx, error):
-        original_error = getattr(error, "original", error)
+        original_error = recursive_getattr(error, "original", error)
         if original_error.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
             if not ctx.interaction:
                 return  # Ignore exceptions specified in config when not an app command
