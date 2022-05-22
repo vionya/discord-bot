@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
@@ -10,8 +10,9 @@ if TYPE_CHECKING:
 
 
 class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
-    def __init__(self, wrapped):
+    def __init__(self, wrapped, app_command_name: Optional[str]) -> None:
         super().__init__(wrapped)
+        self.name = app_command_name or self.name
 
         # Inject an `ephemeral` parameter to every hybrid commmand
         self._params["ephemeral"] = discord.app_commands.transformers.CommandParameter(
@@ -25,8 +26,10 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
 
 class AutoEphemeralHybridCommand(commands.HybridCommand):
     def __init__(self, func, /, **kwargs):
+        app_command_name = kwargs.pop("app_command_name", None)
         super().__init__(func, **kwargs)
-        self.app_command = AutoEphemeralHybridAppCommand(self) if self.with_app_command else None
+        self.app_command = AutoEphemeralHybridAppCommand(self, app_command_name) \
+            if self.with_app_command else None
 
     async def _parse_arguments(self, ctx):
         interaction = ctx.interaction

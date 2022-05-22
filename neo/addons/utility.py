@@ -120,6 +120,14 @@ class Utility(neo.Addon):
         )
         self.bot.add_view(self.info_buttons())
 
+    # Create a fake slash command which directly invokes the help command
+    # Uses `app_command_name` to falsify the command without interfering with
+    # the actual command instance
+    @commands.hybrid_command(app_command_name="help", with_command=False, hidden=True)
+    async def help_slash(self, ctx, *, command: str = None):
+        self.bot.help_command.context = ctx
+        await self.bot.help_command.command_callback(ctx, command=command)
+
     @commands.hybrid_command(name="google", aliases=["g"])
     @discord.app_commands.describe(query="The query to search for")
     async def google_command(self, ctx, *, query: str):

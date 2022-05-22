@@ -2,6 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 import neo
 from discord.ext import commands
+from neo.classes.context import NeoContext
 from neo.modules import DropdownMenu, EmbedPages
 
 
@@ -17,6 +18,7 @@ def format_command(command):
 
 
 class NeoHelpCommand(commands.HelpCommand):
+    context: NeoContext
 
     def __init__(self):
         description = """Displays help for the bot.
