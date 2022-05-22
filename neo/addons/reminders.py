@@ -12,8 +12,8 @@ import neo
 from discord.ext import commands
 from discord.utils import snowflake_time
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, shorten
-from neo.tools.time_parse import parse_absolute, parse_relative
+from neo.tools import is_registered_profile, shorten, try_or_none
+from neo.tools.time_parse import TimedeltaWithYears, parse_absolute, parse_relative
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
@@ -188,7 +188,7 @@ class Reminders(neo.Addon):
     async def remind(self, ctx: NeoContext):
         """Group command for managing reminders"""
 
-    @remind.command(name="in", usage="<offset> <content>")
+    @remind.command(name="in", usage="<offset> <content>", with_app_command=False)
     @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
     async def remind_relative(self, ctx: NeoContext, *, input: str):
         """
@@ -223,7 +223,7 @@ class Reminders(neo.Addon):
         )
         await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
 
-    @remind.command(name="on", aliases=["at"], usage="<absolute time> <content>")
+    @remind.command(name="on", aliases=["at"], usage="<absolute time> <content>", with_app_command=False)
     @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
     async def remind_absolute(self, ctx: NeoContext, *, input: str):
         """
@@ -261,6 +261,75 @@ class Reminders(neo.Addon):
             message_id=ctx.message.id,
             channel_id=ctx.channel.id,
             content=remainder or "...",
+            end_time=future_time
+        )
+        await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
+
+    @remind.command(name="set", with_command=False)
+    @discord.app_commands.describe(
+        when="When the reminder should be delivered. See this command's help entry for more info",
+        content="The content to remind yourself about. Can be empty"
+    )
+    async def reminder_set(self, ctx: NeoContext, when: str, *, content: str = None):
+        """
+        Schedule a reminder
+
+        `when` may be either absolute or relative.
+
+        **__Absolute__**
+        A select few date/time formats are supported:
+        - `month date, year`
+        Ex: `remind on Mar 2, 2022 Dance`
+        - `hour:minute`
+        Ex: `remind at 14:08 Do something obscure`
+        - `month date, year at hour:minute`
+        Ex: `remind on January 19, 2038 at 3:14 Y2k38`
+
+        All times are required to be in 24-hour format.
+
+        **Note**
+        If you have configured a timezone in your neo
+        profile, it will be used to localize date/time.
+        Otherwise, date/times will be in UTC.
+
+        **__Relative__**
+        Offsets have the following requirements:
+        - Must be one of `years`, `weeks`, `days`,
+        `hours`, `minutes`, and `seconds`
+        - Not all time units have to be used
+        - Time units have to be ordered by magnitude
+
+        **Examples**
+        `remind in 5 years Hey, hello!`
+        `remind in 4h30m Check what time it is`
+        `remind in 3 weeks, 2 days Do something funny`
+        """
+        profile = self.bot.profiles[ctx.author.id]
+        tz = profile.timezone or timezone.utc
+
+        if len(self.reminders[ctx.author.id]) >= MAX_REMINDERS:
+            raise ValueError("You've used up all of your reminder slots!")
+
+        (time_data, remainder) = try_or_none(parse_relative, when) or \
+            parse_absolute(when, tz=profile.timezone or timezone.utc)
+
+        if len(remainder) > MAX_REMINDER_LEN:
+            raise ValueError(f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!")
+
+        match time_data:
+            case TimedeltaWithYears():
+                future_time = datetime.now(timezone.utc) + time_data
+            case datetime():
+                future_time = time_data.replace(tzinfo=tz)
+            case _:
+                raise RuntimeError("Unknown error in future_time assignment")
+
+        timestamp: int = int(future_time.timestamp())
+        await self.add_reminder(
+            user_id=ctx.author.id,
+            message_id=ctx.message.id,
+            channel_id=ctx.channel.id,
+            content=content or "...",
             end_time=future_time
         )
         await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
