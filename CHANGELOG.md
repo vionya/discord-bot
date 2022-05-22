@@ -1,3 +1,50 @@
+# Release v0.14.0
+## Initial Slash Commands
+* neo phoenix has been updated to support slash commands
+    * Support is currently limited to several commands
+    * More commands should become slash commands as time progresses
+* To accomodate some code limitations in having commands function as both text and slash commands, the inputs for several commands has been changed slightly:
+    * `highlight remove`, `todo remove`, and `remind cancel` no longer accept more than one index at once
+        * `~` is still a valid input to any of these commands
+    * The functionality for `highlight block` has been separated into two logical subcommands: `highlight block` and `highlight blocklist`
+        * `highlight block` accepts a single argument (if text command) or multiple (if slash command) to block from highlighting
+        * `highlight blocklist` takes no arguments and sends the blocklist
+* All slash commands offer an `ephemeral` option, which controls whether or not others will be able to view your command output
+* A list of commands that currently support slash commands:
+    * `highlight` (whole group)
+    * `help`
+    * `google` and `image`
+    * `avatar`
+    * `userinfo`
+    * `serverinfo`
+    * `roleinfo`
+    * `info`
+    * `profilesettings` (whole group)
+    * `profile` (whole group)
+        * Original main command functionality has been moved to `profile show`
+    * `todo` (whole group)
+    * `serversettings` (whole group)
+    * `starboard` (whole group)
+    * `remind` (whole group*)
+        * The `remind in` and `remind on` subcommands do not have slash command analogs  
+          Instead, the functionality exists under `remind set`, a slash-command exclusive command  
+          `remind set` uses slash command features to more intuitively interpret input
+
+## Additions
+* Added brand new system for managing settings for `Profile`, `Server`, and `Starboard`, making use of the new Discord modal interaction
+    * Introduces new options on the main settings lists for setting and resetting the currently displayed setting
+    * Currently, the previously-existing `set` and `reset` commands-based system will not be affected, as it is still necessary for easily controlling options such as starboard emotes
+* Added a new user setting, `default_ephemeral`, to complement the implementation of slash commands
+    * This setting controls whether slash commands will be responded to ephemerally by default or not
+    * The default value is `True`
+    * This setting will always be overridden if the `ephemeral` parameter is passed to any slash command
+
+## Improvements
+* Commands (and all associated subcommands) are now case-insensitive
+
+## Fixes
+* Fixed a regression in query handling for the `image` shortcut command which was causing inputs to inexplicably fail to return the proper results
+
 # Release v0.13.0
 ## Additions
 * `serversettings disable`/`serversettings reenable` system

@@ -28,7 +28,7 @@ from .tools import recursive_getattr
 if TYPE_CHECKING:
     from .types.config import NeoConfig
 
-__version__ = "0.14.0a"
+__version__ = "0.14.0"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
