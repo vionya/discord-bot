@@ -44,7 +44,7 @@ class AutoEphemeralHybridCommand(commands.HybridCommand):
             if ctx.author.id in ctx.bot.profiles:
                 default = ctx.bot.profiles[ctx.author.id].default_ephemeral
 
-            passed_option = kwargs.pop('ephemeral', True)
+            passed_option = kwargs.pop('ephemeral', None)
             ctx.ephemeral = default if passed_option is None else passed_option
             ctx.kwargs = kwargs
 
