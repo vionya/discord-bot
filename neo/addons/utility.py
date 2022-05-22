@@ -125,7 +125,9 @@ class Utility(neo.Addon):
     # Uses `app_command_name` to falsify the command without interfering with
     # the actual command instance
     @commands.hybrid_command(app_command_name="help", with_command=False, hidden=True)
+    @discord.app_commands.describe(command="The command to get help for")
     async def help_slash(self, ctx, *, command: str = None):
+        """Displays help for the bot"""
         self.bot.help_command.context = ctx
         await self.bot.help_command.command_callback(ctx, command=command)
 
