@@ -243,6 +243,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         self.bot = bot
         self.ready = False
         self.starboards: dict[int, Starboard] = {}
+
+        self.bot.tree.context_menu(name="View Star Info")(self.star_info_context_command)
+
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
@@ -434,6 +437,29 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                 "Starboard is not enabled for this server!"
             ))
         return True
+
+    # Context menu command, added in __init__
+    @discord.app_commands.guild_only()
+    async def star_info_context_command(self, interaction: discord.Interaction, message: discord.Message):
+        if message.guild.id not in self.starboards:
+            return await interaction.response.send_message(
+                "This server doesn't have a starboard!",
+                ephemeral=True
+            )
+
+        starboard = self.starboards[message.guild.id]
+        star = await starboard.get_star(message.id)
+
+        if not star:
+            return await interaction.response.send_message(
+                "This message has not been starred!",
+                ephemeral=True
+            )
+
+        embed = neo.Embed(
+            description=f"**Stars** {star.stars}\n**Starboard Message** [Jump!]({star.starboard_message.jump_url})"
+        )
+        await interaction.response.send_message(embeds=[embed], ephemeral=True)
 
     @commands.hybrid_group()
     async def starboard(self, ctx: NeoContext):
