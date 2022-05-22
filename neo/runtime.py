@@ -2,6 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 import argparse
 import logging
+import types
 
 import discord
 from discord.ext import commands
@@ -14,7 +15,6 @@ from neo.classes.hybrid_command import AutoEphemeralHybridCommand
 logger = logging.getLogger("neo")
 
 guild = Patcher(discord.Guild)
-gateway = Patcher(discord.gateway.DiscordWebSocket)
 group = Patcher(commands.Group)
 message = Patcher(discord.Message)
 missing_required = Patcher(commands.MissingRequiredArgument)
@@ -101,7 +101,6 @@ hybrid_command.attribute(name="HybridCommand", value=AutoEphemeralHybridCommand)
 
 def patch_all() -> None:
     guild.patch()
-    gateway.patch()
     group.patch()
     message.patch()
     missing_required.patch()
