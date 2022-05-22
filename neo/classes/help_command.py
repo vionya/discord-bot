@@ -129,6 +129,9 @@ class NeoHelpCommand(commands.HelpCommand):
                 inline=False
             )
 
+        if getattr(command, "with_app_command", False) is True:
+            embed.set_footer(text="This command can be used as a slash command")
+
         await self.context.send(embed=embed)
 
     async def send_group_help(self, group):

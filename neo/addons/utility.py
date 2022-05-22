@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from operator import attrgetter
 import random
 import shlex
 from collections import Counter
@@ -127,6 +128,19 @@ class Utility(neo.Addon):
     async def help_slash(self, ctx, *, command: str = None):
         self.bot.help_command.context = ctx
         await self.bot.help_command.command_callback(ctx, command=command)
+
+    @help_slash.autocomplete("command")
+    async def help_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ) -> list[discord.app_commands.Choice]:
+        all_commands = set([
+            *map(attrgetter("qualified_name"), self.bot.walk_commands()),
+            *map(attrgetter("qualified_name"), self.bot.tree.walk_commands())
+        ])
+        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k),
+                     filter(lambda k: current in k, all_commands))][:25]
 
     @commands.hybrid_command(name="google", aliases=["g"])
     @discord.app_commands.describe(query="The query to search for")
