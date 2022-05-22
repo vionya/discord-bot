@@ -206,6 +206,21 @@ class Neo(commands.Bot):
     async def get_context(self, message: discord.Message | discord.Interaction, *, cls=context.NeoContext):
         return await super().get_context(message, cls=cls)
 
+    # TODO: Remove this if/when it's properly supported by discord.py
+    def add_command(self, command, /):
+        if isinstance(command, commands.HybridCommand | commands.HybridGroup):
+            if all([
+                command.app_command,
+                command.with_app_command,
+                command.cog is None or not command.cog.__cog_is_app_commands_group__
+            ]):
+                self.tree.add_command(command.app_command)
+            if getattr(command, "with_command", True):
+                commands.GroupMixin.add_command(self, command)
+            return
+        else:
+            super().add_command(command)
+
     def get_user(self, id, *, as_partial=False):
         user = self._connection.get_user(id)
         if as_partial or not user:
