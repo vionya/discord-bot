@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 import asyncio
-from operator import attrgetter
 import random
-import shlex
 from collections import Counter
 from functools import partial
+from operator import attrgetter
 from sys import version as py_version
-from types import SimpleNamespace
-from typing import TYPE_CHECKING
 
 import discord
 import neo
 from discord.ext import commands
 from googletrans import LANGUAGES, Translator
-from neo.classes.converters import mention_converter
+from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
 from neo.tools import shorten
@@ -30,9 +27,6 @@ from .auxiliary.utility import (
     result_to_embed,
     translate
 )
-
-if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
 
 BADGE_MAPPING = {
     "staff": "<:_:863197443386900541>",
@@ -86,6 +80,10 @@ class Utility(neo.Addon):
             body = body.replace("  \n", "\n")  # Ensure proper formatting on mobile
         self.privacy_embed = neo.Embed(title=header, description=body)
         self.translator = Translator(raise_exception=True)
+
+        self.bot.tree.context_menu(name="Show User Info")(self.user_info_context_command)
+        self.bot.tree.context_menu(name="View Avatar")(self.avatar_context_command)
+
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
@@ -336,6 +334,12 @@ class Utility(neo.Addon):
 
         await ctx.send(embed=embed, **kwargs)
 
+    # Context menu command added in __init__
+    async def avatar_context_command(self, interaction: discord.Interaction, user: discord.Member | discord.User):
+        ctx = await NeoContext.from_interaction(interaction)
+        ctx.ephemeral = True
+        await self.avatar_command(ctx, user=user)
+
     @commands.hybrid_command(name="userinfo", aliases=["ui"])
     @discord.app_commands.describe(user="The user to get info about. If empty, gets your own info.")
     async def user_info_command(self, ctx: NeoContext, user: discord.Member | discord.User = None):
@@ -377,6 +381,12 @@ class Utility(neo.Addon):
                        " `userinfo` can't properly display icons!")
 
         await ctx.send(content=content, embed=embed)
+
+    # Context menu command added in __init__
+    async def user_info_context_command(self, interaction: discord.Interaction, user: discord.Member | discord.User):
+        ctx = await NeoContext.from_interaction(interaction)
+        ctx.ephemeral = True
+        await self.user_info_command(ctx, user)
 
     @commands.guild_only()
     @commands.hybrid_command(name="serverinfo", aliases=["si"])
