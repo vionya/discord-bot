@@ -1,8 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 import neo
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    from neo import Neo
 
 
 class PromptButton(discord.ui.Button):
@@ -47,7 +54,7 @@ class PromptActions(discord.ui.View):
         return all(predicates)
 
 
-class NeoContext(commands.Context):
+class NeoContext(commands.Context['Neo']):
     async def prompt_user(
         self,
         prompt_message: str,

@@ -19,7 +19,7 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
             name="ephemeral",
             description="Whether to send the command result ephemerally",
             required=False,
-            default=True,
+            default=None,
             type=discord.AppCommandOptionType.boolean
         )
 
@@ -31,7 +31,7 @@ class AutoEphemeralHybridCommand(commands.HybridCommand):
         self.app_command = AutoEphemeralHybridAppCommand(self, app_command_name) \
             if self.with_app_command else None
 
-    async def _parse_arguments(self, ctx):
+    async def _parse_arguments(self, ctx: NeoContext):
         interaction = ctx.interaction
 
         if interaction is None:
@@ -39,7 +39,13 @@ class AutoEphemeralHybridCommand(commands.HybridCommand):
 
         elif self.app_command:
             kwargs = await self.app_command._transform_arguments(interaction, interaction.namespace)
-            ctx.ephemeral = kwargs.pop('ephemeral', True)
+
+            default = True
+            if ctx.author.id in ctx.bot.profiles:
+                default = ctx.bot.profiles[ctx.author.id].default_ephemeral
+
+            passed_option = kwargs.pop('ephemeral', True)
+            ctx.ephemeral = default if passed_option is None else passed_option
             ctx.kwargs = kwargs
 
     async def invoke(self, ctx: NeoContext, /) -> None:

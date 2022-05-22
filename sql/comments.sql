@@ -35,6 +35,17 @@ Default Value: `None`
 **Current Value:** `{}`
 ';
 
+COMMENT ON COLUMN profiles.default_ephemeral IS
+'Dictates whether slash command responses will be sent ephemerally by default.
+
+Ephemeral messages can be seen by you, and nobody else.
+
+Expected Value Type: A boolean-like (`yes`/`no`) value
+Default Value: `True`
+
+**Current Value:** `{}`
+';
+
 -- Table: guild_configs | Documentation for settings --
 COMMENT ON COLUMN guild_configs.prefix IS
 'Sets the bot''s prefix for the server.

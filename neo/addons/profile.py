@@ -36,6 +36,10 @@ SETTINGS_MAPPING = {
     "hl_timeout": {
         "converter": timeout_converter,
         "description": None
+    },
+    "default_ephemeral": {
+        "converter": commands.converter._convert_to_bool,
+        "description": None
     }
 }
 

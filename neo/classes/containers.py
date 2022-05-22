@@ -94,7 +94,8 @@ class NeoUser(RecordContainer):
         "receive_highlights",
         "created_at",
         "timezone",
-        "hl_timeout"
+        "hl_timeout",
+        "default_ephemeral"
     )
 
     def __repr__(self):

@@ -6,7 +6,8 @@ CREATE TABLE profiles (
     hl_blocks          BIGINT[] DEFAULT ARRAY[]::BIGINT[],
     receive_highlights BOOLEAN DEFAULT TRUE,
     timezone           TEXT DEFAULT NULL,
-    hl_timeout         BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1
+    hl_timeout         BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1,
+    default_ephemeral  BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE guild_configs (
