@@ -98,8 +98,8 @@ class Addon(commands.Cog, metaclass=AddonMeta):
         self._merge_addon(other)
         return self
 
-    @classmethod
-    def recv(cls, event: str):
+    @staticmethod
+    def recv(event: str):
         def inner(func):
             if not iscoroutinefunction(func):
                 raise ValueError("Addon receiver must be a coroutine.")
