@@ -1,4 +1,10 @@
-# Release v0.14.0
+# Release v0.15.0 - TBD
+## Additions
+* Added several context menu commands:
+    * For messages, a `View Star Info` context menu command. This will likely go away at some point.
+    * For users, shortcuts to view the user's `userinfo` output as well as their avatar. These will likely stick around.
+
+# Release v0.14.0 - May 21, 2022
 ## Initial Slash Commands
 * neo phoenix has been updated to support slash commands
     * Support is currently limited to several commands
@@ -45,7 +51,7 @@
 ## Fixes
 * Fixed a regression in query handling for the `image` shortcut command which was causing inputs to inexplicably fail to return the proper results
 
-# Release v0.13.0
+# Release v0.13.0 - Janurary 24, 2022
 ## Additions
 * `serversettings disable`/`serversettings reenable` system
     * Allows server administrators to disable neo phoenix's commands within their server
@@ -70,7 +76,7 @@
 * Updated startup code to have manual control over the event loop
 
 
-# Release v0.12.1
+# Release v0.12.1 - November 1, 2021
 ## Improvements
 * Adjust Unicode characters used for menu paging buttons
 * Adjusted the display of command aliases in flag command help
@@ -87,7 +93,7 @@
     * Updated some syntax accordingly
 
 
-# Release v0.12.0
+# Release v0.12.0 - October 3, 2021
 ## Additions
 * `roleinfo`/`ri` command
     * Displays relevant information pertaining to the given role
@@ -122,13 +128,13 @@
 * Fixed an edge case in highlights whereby, if a message event was received prior to the bot's internal cache being ready, the highlights cache would be computed incorrectly, causing all highlights to fail to be cached, thus preventing any highlights from being delivered
 
 
-# Release v0.11.1
+# Release v0.11.1 - September 16, 2021
 ## Fixes
 * `avatar` now properly fetches guild members when applicable
 * Updated the description for the `remind in` command
 
 
-# Release v0.11.0
+# Release v0.11.0 - August 26, 2021
 Release v0.11.0 standardizes certain interfaces, adds some new feature support, plus some various other changes.
 
 ## Improvements
@@ -156,7 +162,7 @@ Release v0.11.0 standardizes certain interfaces, adds some new feature support, 
 * Unnecessary runtime patches have been removed
 
 
-# Release v0.10.3
+# Release v0.10.3 - July 28, 2021
 ## Fixes
 * Fix issues with ignoring entities from a starboard
 * Fix highlights not being compiled as case-insensitive
@@ -166,17 +172,17 @@ Release v0.11.0 standardizes certain interfaces, adds some new feature support, 
 * Implement event system separate from `discord.Client.dispatch` due to volatility of that API
 
 
-# Release v0.10.2
+# Release v0.10.2 - July 26, 2021
 ## Fixes
 * Fix an AttributeError when setting a starboard channel (was caused due to residual code)
 
 
-# Release v0.10.1
+# Release v0.10.1 - July 25, 2021
 ## Fixes
 * Fix an unintentionally public IndexError
 
 
-# Release v0.10.0
+# Release v0.10.0 - July 23, 2021
 Release v0.10.0 implements a couple of utility commands.
 
 ## Additions
@@ -194,19 +200,19 @@ Release v0.10.0 implements a couple of utility commands.
 * Logically partitioned `requirements.txt`
 
 
-# Release v0.9.3
+# Release v0.9.3 - July 22, 2021
 ## Improvements
 * Rename `eval` command to `exec`
 * Remove extraneous `Starboard` attributes
 * Change type of `Starboard.ignored`
 
 
-# Release v0.9.2
+# Release v0.9.2 - July 21, 2021
 ## Fixes
 * Fixed an issue with reminders occasionally wrongly displaying "[source deleted]" when delivered in direct messages
 
 
-# Release v0.9.1
+# Release v0.9.1 - July 20, 2021
 0.9.1 fixes issues found in 0.9.0 and earlier.
 
 ## Improvements
@@ -218,7 +224,7 @@ Release v0.10.0 implements a couple of utility commands.
 * Fixed mobile formatting regression with ephemeral privacy policy
 
 
-# Release v0.9.0
+# Release v0.9.0 - July 17, 2021
 Release v0.9.0 cleans up and slightly enhances neo phoenix.
 
 ## Legal
@@ -235,7 +241,7 @@ Release v0.9.0 cleans up and slightly enhances neo phoenix.
 * Optimizations for profile code
 
 
-# Release v0.8.0
+# Release v0.8.0 - July 8, 2021
 This release is mostly comprised of polish for existing features.
 
 ## Legal
@@ -272,7 +278,7 @@ This release is mostly comprised of polish for existing features.
     * `Pages` now supports a `template_embed` keyword-only argument, for defining a static template embed that is merged with the `Pages` object's content
 
 
-# Release v0.7.0
+# Release v0.7.0 - July 2, 2021
 In large part, this release extends and improves existing features.
 
 ## Improvements
@@ -299,7 +305,7 @@ In large part, this release extends and improves existing features.
 * Updated default name for auto-generated config templates, and added a comment to the top of auto-generated files
 
 
-# Release v0.6.0
+# Release v0.6.0 - June 25, 2021
 This release fleshes out neo phoenix's feature set further.
 
 ## Highlight Collection
@@ -314,7 +320,7 @@ This release fleshes out neo phoenix's feature set further.
     * Also added an accompanying decorator to simplify the creation of timers
 
 
-# Release v0.5.0
+# Release v0.5.0 - June 24, 2021
 This release implements features to bring neo phoenix closer to a stable 1.0.0 release.
 
 ## Front-End Changes/Additions
@@ -333,7 +339,7 @@ This release implements features to bring neo phoenix closer to a stable 1.0.0 r
 * Resolved an issue causing starboards to behave improperly when their emoji setting was changed
 
 
-# Release v0.4.0
+# Release v0.4.0 - June 22, 2021
 ## Reminders
 This release implements a full `Reminders` system.
 
@@ -371,11 +377,11 @@ Below is a comparison between the system's predecessor (legacy `neo` `Reminders`
     * Depends on new `Table` class for formatting entries into an optimally readable form
 
 
-# Release v0.3.1
+# Release v0.3.1 - June 20, 2021
 * Fixed an issue with `Starboard` editing brand-new stars upon creation
 
 
-# Release v0.3.0
+# Release v0.3.0 - June 20, 2021
 This release mainly targets the profile system, and improves upon it significantly.
 * Renamed `user_settings` extension to `profile`
 * Implemented command group `profile`, which shows information pertaining to the specified user's profile (provided they have a profile, otherwise exiting)
@@ -394,19 +400,19 @@ This release mainly targets the profile system, and improves upon it significant
         * Being a profile setting, this can be reset by the user at any point via the `settings reset` command
 
 
-# Release v0.2.1
+# Release v0.2.1 - June 20, 2021
 * Addresses minor bugs in `Starboard`
 * Implements a command to manually initialize a server's config entry if, for some reason, it is not automatically generated (which it is not, yet)
 
 
-# Release v0.2.0
+# Release v0.2.0 - June 19, 2021
 This release implements the `Starboard` feature, and its full functionality. It functions largely identically to its predecessor, with several key improvements:
 * Management of starboard settings has been consolidated to a single, extensible system, utilizing SQL comments for logical, standardized documentation
 * neo phoenix's starboard features the ability to ignore/unignore message and channel IDs, preventing them from reaching starboard
 * Code style and fluency has also been improved all-around
 
 
-# Release v0.1.0
+# Release v0.1.0 - June 6, 2021
 * Includes a reasonable amount of initial features
 * Introduces various frameworks for convenience
 
