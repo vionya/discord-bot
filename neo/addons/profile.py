@@ -17,9 +17,10 @@ from .auxiliary.profile import ChangeSettingButton, ResetSettingButton
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
+    from neo.types.settings_mapping import SettingsMapping
 
 
-SETTINGS_MAPPING = {
+SETTINGS_MAPPING: SettingsMapping = {
     "receive_highlights": {
         "converter": commands.converter._convert_to_bool,
         "description": None
@@ -81,7 +82,7 @@ class Profile(neo.Addon):
         embeds = []
 
         for setting, setting_info in SETTINGS_MAPPING.items():
-            description = setting_info["description"].format(
+            description = (setting_info["description"] or "").format(
                 getattr(profile, setting)
             )
             embed = neo.Embed(

@@ -1,10 +1,18 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
 from .patcher import Patcher
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
+    from neo.types.settings_mapping import SettingsMapping
+
+T = TypeVar("T")
 
 
 def shorten(text: str, width: int) -> str:
@@ -13,14 +21,19 @@ def shorten(text: str, width: int) -> str:
     return text
 
 
-def try_or_none(func, *args, **kwargs):
+def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
     try:
         return func(*args, **kwargs)
     except Exception:
         return None
 
 
-async def convert_setting(ctx, mapping, setting, new_value):
+async def convert_setting(
+    ctx: NeoContext,
+    mapping: SettingsMapping,
+    setting: str,
+    new_value: str
+):
     # Use try/except here because, if the __getitem__ succeeds,
     # it's roughly 30% faster than using dict.get. Because of the
     # subsequent operations on success, optimizing speed on success
@@ -34,6 +47,8 @@ async def convert_setting(ctx, mapping, setting, new_value):
             "That's not a valid setting! "
             "Try `settings` for a list of settings!"
         )
+
+    value = None
 
     converter = valid_setting["converter"]
     if isinstance(converter, commands.Converter):

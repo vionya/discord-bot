@@ -1,21 +1,26 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import discord
 import neo
 from discord.ext import commands
+from neo.classes.containers import TimedCache
 from neo.classes.context import NeoContext
+from neo.classes.converters import max_days_converter
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, shorten
-from neo.classes.containers import TimedCache
-from neo.classes.converters import max_days_converter
 
 from .auxiliary.starboard import ChangeSettingButton
 
-SETTINGS_MAPPING = {
+if TYPE_CHECKING:
+    from neo.types.settings_mapping import SettingsMapping
+
+SETTINGS_MAPPING: SettingsMapping = {
     "channel": {
         "converter": commands.TextChannelConverter(),
         "description": None

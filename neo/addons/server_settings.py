@@ -16,8 +16,9 @@ from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
+    from neo.types.settings_mapping import SettingsMapping
 
-SETTINGS_MAPPING = {
+SETTINGS_MAPPING: SettingsMapping = {
     "prefix": {
         "converter": str,
         "description": None

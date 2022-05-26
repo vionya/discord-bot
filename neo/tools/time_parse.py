@@ -58,20 +58,25 @@ def parse_absolute(string: str, *, tz) -> Optional[tuple[datetime, str]]:
     for _ in range(len(split)):  # Check for every possible chunk size
         to_parse = split[:endpoint]  # Check the string in left-to-right increments
 
-        dt = None
+        parsed_datetime = None
         for format in ABSOLUTE_FORMATS:
-            if (dt := try_or_none(datetime.strptime, " ".join(to_parse), format)):
-                if dt.replace(tzinfo=tz) < (date := datetime.now(tz)):
-                    dt = date.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
+            parsed_datetime = try_or_none(datetime.strptime, " ".join(to_parse), format)
+            if parsed_datetime:
+                if parsed_datetime.replace(tzinfo=tz) < (date := datetime.now(tz)):
+                    parsed_datetime = date.replace(
+                        hour=parsed_datetime.hour,
+                        minute=parsed_datetime.minute,
+                        second=parsed_datetime.second
+                    )
                 break
 
-        if dt is not None:  # We got a hit
+        if parsed_datetime is not None:  # We got a hit
             break
         endpoint -= 1  # Increase the size of the chunk by one word
 
     else:
         raise ValueError("An invalid date format was provided.")
-    return dt, " ".join(string.split(" ")[endpoint:])
+    return parsed_datetime, " ".join(string.split(" ")[endpoint:])
 
 
 def parse_relative(string: str) -> Optional[tuple[TimedeltaWithYears, str]]:
