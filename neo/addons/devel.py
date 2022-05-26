@@ -35,15 +35,14 @@ class Devel(neo.Addon):
     async def dev_cleanup(self, ctx: NeoContext, amount: int = 5):
         """Cleanup the bot's messages from a channel"""
         can_manage = ctx.channel.permissions_for(cast(discord.Member, ctx.me)).manage_messages
-        if can_manage:
-            def check(message):
+
+        def check(message: discord.Message) -> bool:
+            if can_manage:
                 return any([
                     message.author == ctx.me,
-                    message.content.startswith(ctx.prefix)
+                    (ctx.prefix and message.content.startswith(ctx.prefix))
                 ])
-        else:
-            def check(message):
-                return message.author == ctx.me
+            return message.author == ctx.me
 
         purged = await cast(discord.TextChannel | discord.VoiceChannel, ctx.channel).purge(
             limit=amount,
@@ -122,7 +121,7 @@ class Devel(neo.Addon):
         action = getattr(self.bot, f"{args.action}_extension")
         failed = []
         if "~" in args.addons:
-            args.addons = self.bot.extensions.copy().keys()
+            args.addons = self.bot.extensions.keys()
         for addon in args.addons:
             try:
                 await action(addon)
