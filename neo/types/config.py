@@ -26,7 +26,7 @@ class NeoBotConfig(TypedDict):
     sync_app_commands: bool
 
 
-class NeoDataBaseConfig:
+class NeoDataBaseConfig(TypedDict):
     user: str
     password: str
     database: str
