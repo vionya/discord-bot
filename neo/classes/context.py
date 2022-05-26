@@ -62,7 +62,6 @@ class NeoContext(commands.Context['Neo']):
     ephemeral: bool
 
     def __init__(self, *args, **kwargs):
-        self.ephemeral = True
         super().__init__(*args, **kwargs)
 
     async def prompt_user(
