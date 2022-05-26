@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 from aiohttp import ClientSession
@@ -26,9 +27,13 @@ from .tools import *  # noqa: F403
 from .tools import recursive_getattr
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine, Mapping
+
     from asyncpg import Pool
 
+    from .modules.addon.addon import Addon
     from .types.config import NeoConfig
+
 
 __version__ = "0.15.0a"
 
@@ -40,6 +45,7 @@ intents = discord.Intents(
 class Neo(commands.Bot):
     db: Pool
     session: ClientSession
+    cogs: Mapping[str, Addon]
 
     def __init__(self, config: NeoConfig, **kwargs):
         self.cfg = config
@@ -293,10 +299,14 @@ class Neo(commands.Bot):
     # This serves as a similar implementation that will not change in the future.
 
     def broadcast(self, event: str, *args, **kwargs):
-        coros = []
+        coros: list[Coroutine[None, None, Any]] = []
         for addon in self.cogs.values():
             if event in addon.__receivers__:
-                coros.append(addon.__receivers__[event](addon, *args, **kwargs))
+                receiver = addon.__receivers__[event]
+                if not inspect.iscoroutinefunction(receiver):
+                    receiver(addon, *args, **kwargs)
+                else:
+                    coros.append(receiver(addon, *args, **kwargs))
 
         async def run_coros():
             await asyncio.gather(*coros)

@@ -2,6 +2,7 @@
 git+https://github.com/Rapptz/discord.py.git
 toml
 asyncpg
+typing_extensions
 
 ### Extension Requirements ###
 googletrans==4.0.0rc1
