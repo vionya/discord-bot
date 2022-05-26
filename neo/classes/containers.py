@@ -1,11 +1,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 import zoneinfo
 from abc import ABCMeta, abstractmethod
 from collections.abc import MutableMapping, MutableSet
 from functools import cache
-from typing import TYPE_CHECKING, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import datetime
 
 
 def add_hook(attr_name: str):
@@ -94,7 +99,7 @@ class NeoUser(RecordContainer):
     user_id: int
     hl_blocks: list[int]
     receive_highlights: bool
-    created_at: int
+    created_at: datetime.datetime
     timezone: Optional[zoneinfo.ZoneInfo]
     hl_timeout: int
     default_ephemeral: bool

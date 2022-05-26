@@ -26,6 +26,8 @@ from .tools import *  # noqa: F403
 from .tools import recursive_getattr
 
 if TYPE_CHECKING:
+    from asyncpg import Pool
+
     from .types.config import NeoConfig
 
 __version__ = "0.15.0a"
@@ -36,10 +38,12 @@ intents = discord.Intents(
 
 
 class Neo(commands.Bot):
+    db: Pool
+    session: ClientSession
+
     def __init__(self, config: NeoConfig, **kwargs):
         self.cfg = config
         self.boot_time = int(time.time())
-        self.session = None
         self.profiles: dict[int, containers.NeoUser] = {}
         self.configs: dict[int, containers.NeoGuildConfig] = {}
 
@@ -68,7 +72,11 @@ class Neo(commands.Bot):
 
     async def __ainit__(self) -> None:
         self.session = ClientSession()
-        self.db = await create_pool(**self.cfg["database"])
+
+        pool = await create_pool(**self.cfg["database"])
+        if not pool:
+            raise RuntimeError("Failed to create database connection")
+        self.db = pool
 
         # Load initial profiles from database
         for record in await self.db.fetch("SELECT * FROM profiles"):
@@ -209,8 +217,7 @@ class Neo(commands.Bot):
     # TODO: Remove this if/when it's properly supported by discord.py
     def add_command(self, command, /):
         if isinstance(command, commands.HybridCommand | commands.HybridGroup):
-            if all([
-                command.app_command,
+            if command.app_command is not None and all([
                 command.with_app_command,
                 command.cog is None or not command.cog.__cog_is_app_commands_group__
             ]):
@@ -235,12 +242,19 @@ class Neo(commands.Bot):
             return True
 
         retry_after = self.cooldown.update_rate_limit(ctx.message)
+        actual_cooldown = self.cooldown._cooldown
+        if not actual_cooldown:
+            return True
+
         if retry_after:
             raise commands.CommandOnCooldown(
-                self.cooldown, retry_after, commands.BucketType.user)
+                actual_cooldown, retry_after, commands.BucketType.user)
         return True
 
     async def channel_check(self, ctx: context.NeoContext):
+        if not ctx.guild or not isinstance(ctx.author, discord.Member):
+            return True
+
         predicates = [
             getattr(ctx.guild, "id", None) not in self.configs,
             await self.is_owner(ctx.author)
@@ -257,6 +271,9 @@ class Neo(commands.Bot):
         return True
 
     async def guild_disabled_check(self, ctx: context.NeoContext):
+        if not ctx.guild or not isinstance(ctx.author, discord.Member):
+            return True
+
         predicates = [
             getattr(ctx.guild, "id", None) not in self.configs,
             await self.is_owner(ctx.author)

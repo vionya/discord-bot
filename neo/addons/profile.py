@@ -4,17 +4,12 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
 from discord.ext import commands
-from neo.classes.converters import (
-    mention_converter,
-    timeout_converter,
-    timezone_converter
-)
-from neo.classes.partials import PartialUser
+from neo.classes.converters import timeout_converter, timezone_converter
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, is_registered_profile
 
@@ -177,7 +172,7 @@ class Profile(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        user: discord.User | discord.Member = None
+        user: Optional[discord.User | discord.Member] = None
     ):
         """Displays the neo profile of yourself, or a specified user."""
         user = user or ctx.author
