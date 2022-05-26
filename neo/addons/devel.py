@@ -2,7 +2,9 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+import discord
 
 import neo
 from discord.ext import commands
@@ -32,7 +34,7 @@ class Devel(neo.Addon):
     @commands.command(name="cleanup", aliases=["clean"])
     async def dev_cleanup(self, ctx: NeoContext, amount: int = 5):
         """Cleanup the bot's messages from a channel"""
-        can_manage = ctx.channel.permissions_for(ctx.me).manage_messages
+        can_manage = ctx.channel.permissions_for(cast(discord.Member, ctx.me)).manage_messages
         if can_manage:
             def check(message):
                 return any([
@@ -43,7 +45,7 @@ class Devel(neo.Addon):
             def check(message):
                 return message.author == ctx.me
 
-        purged = await ctx.channel.purge(
+        purged = await cast(discord.TextChannel | discord.VoiceChannel, ctx.channel).purge(
             limit=amount,
             bulk=can_manage,
             check=check
