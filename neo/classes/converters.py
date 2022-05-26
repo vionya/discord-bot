@@ -16,17 +16,15 @@ CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
 
 T = TypeVar("T")
-P = ParamSpec("P")
 
 
-def wrap_converter(func: Callable[P, T]) -> Converter[T]:
-    converter_type: Converter[T] = type(func.__name__, (Converter,), {})
+def wrap_converter(func: Callable[[str], T]) -> type[Converter[T]]:
 
-    async def convert(self: Converter[T], ctx: NeoContext, arg: str) -> T:
-        return func(arg)
+    class WrapperConverter(Converter):
+        async def convert(self: Converter[T], ctx: NeoContext, arg: str) -> T:
+            return func(arg)
 
-    converter_type.convert = MethodType(convert, converter_type)
-    return converter_type
+    return WrapperConverter
 
 
 @wrap_converter
@@ -49,24 +47,30 @@ def timezone_converter(timezone: str) -> str:
 
 @wrap_converter
 def mention_converter(mention: str) -> int:
-    return int(EXTRACT_MENTION_REGEX.match(mention)[1])
+    match = EXTRACT_MENTION_REGEX.match(mention)
+    if not match:
+        raise ValueError("Could not find a valid mention.")
+
+    return int(match[1])
 
 
 @wrap_converter
-def timeout_converter(timeout: str) -> int:
-    if not timeout.isdigit():
+def timeout_converter(provided_timeout: str) -> int:
+    if not provided_timeout.isdigit():
         raise ValueError("`timeout` must be a number.")
-    timeout = int(timeout)
+
+    timeout = int(provided_timeout)
     if not (timeout >= 1 and timeout <= 5):
         raise ValueError("`timeout` must be between 1 and 5 (inclusive).")
     return timeout
 
 
 @wrap_converter
-def max_days_converter(max_days: str) -> int:
-    if not max_days.isdigit():
+def max_days_converter(provided_max_days: str) -> int:
+    if not provided_max_days.isdigit():
         raise ValueError("`max_days` must be a number.")
-    max_days = int(max_days)
+
+    max_days = int(provided_max_days)
     if not max_days > 1:
         raise ValueError("`max_days` may not be less than 1.")
     return max_days
