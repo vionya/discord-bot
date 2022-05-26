@@ -5,18 +5,22 @@ from enum import Enum
 from logging import Formatter, LogRecord
 
 
-def format_exception(exc: BaseException | tuple) -> str | None:
+def format_exception(exc: BaseException | tuple) -> str:
     if isinstance(exc, tuple) and all(exc):
         exc_info = exc
     elif isinstance(exc, BaseException):
         exc_info = (type(exc), exc, exc.__traceback__)
     else:
-        return None
+        return ""
+
     return "".join(traceback.format_exception(*exc_info)).rstrip()
 
 
 class Table:
-    __slots__ = ("columns", "rows", "widths", "border")
+    built_columns: str
+    built_rows: str
+
+    __slots__ = ("columns", "rows", "widths", "border", "built_columns", "built_rows")
 
     def __init__(self):
         self.columns: list[str] = []
@@ -24,13 +28,13 @@ class Table:
         self.widths: list[int] = []
 
     def init_columns(self, *columns: str):
-        self.columns = columns
+        self.columns = [*columns]
         self.widths = [len(col) + 4 for col in columns]
 
     def add_row(self, *row: str):
         if len(row) > len(self.columns):
             raise ValueError("Row has too many columns")
-        self.rows.append(row)
+        self.rows.append([*row])
 
         for index, item in enumerate(row):
             if (len(item) + 4) > self.widths[index]:
@@ -40,27 +44,26 @@ class Table:
         cols = []
         for index, col in enumerate(self.columns):
             cols.append(col.center(self.widths[index]))
-        self.columns = "|" + "|".join(cols) + "|"
+        self.built_columns = "|" + "|".join(cols) + "|"
 
         separator = "+".join("-" * w for w in self.widths)
         self.border = "+" + separator + "+"
 
-        rows = []
+        rows: list[str] = []
         for row in self.rows:
             final_row = []
             for index, item in enumerate(row):
                 final_row.append(item.center(self.widths[index]))
             rows.append("|" + "|".join(final_row) + "|")
-        self.rows = rows
+        self.built_rows = "\n".join(rows)
 
     def display(self):
         self.build()
-        rows = "\n".join(self.rows)
         return (
             f"{self.border}\n"
-            f"{self.columns}\n"
+            f"{self.built_columns}\n"
             f"{self.border}\n"
-            f"{rows}\n"
+            f"{self.built_rows}\n"
             f"{self.border}"
         )
 
