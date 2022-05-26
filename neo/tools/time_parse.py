@@ -58,6 +58,7 @@ def parse_absolute(string: str, *, tz) -> Optional[tuple[datetime, str]]:
     for _ in range(len(split)):  # Check for every possible chunk size
         to_parse = split[:endpoint]  # Check the string in left-to-right increments
 
+        dt = None
         for format in ABSOLUTE_FORMATS:
             if (dt := try_or_none(datetime.strptime, " ".join(to_parse), format)):
                 if dt.replace(tzinfo=tz) < (date := datetime.now(tz)):
@@ -74,7 +75,9 @@ def parse_absolute(string: str, *, tz) -> Optional[tuple[datetime, str]]:
 
 
 def parse_relative(string: str) -> Optional[tuple[TimedeltaWithYears, str]]:
-    if any((parsed := RELATIVE_FORMATS.match(string)).groups()):
+    parsed = RELATIVE_FORMATS.match(string)
+
+    if parsed and any(parsed.groups()):
         data = {k: float(v) for k, v in parsed.groupdict().items() if v}
         return TimedeltaWithYears(**data), string.removeprefix(parsed[0]).strip()
 
