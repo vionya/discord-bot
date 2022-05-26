@@ -4,6 +4,9 @@
     * For messages, a `View Star Info` context menu command. This will likely go away at some point.
     * For users, shortcuts to view the user's `userinfo` output as well as their avatar. These will likely stick around.
 
+## Fixes
+* The help documentation for `remind set` has been corrected
+
 # Release v0.14.0 - May 21, 2022
 ## Initial Slash Commands
 * neo phoenix has been updated to support slash commands

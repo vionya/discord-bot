@@ -279,11 +279,11 @@ class Reminders(neo.Addon):
         **__Absolute__**
         A select few date/time formats are supported:
         - `month date, year`
-        Ex: `remind on Mar 2, 2022 Dance`
+        Ex: /remind set `when: Mar 2, 2022` `content: Dance`
         - `hour:minute`
-        Ex: `remind at 14:08 Do something obscure`
+        Ex: /remind set `when: 14:08` `content: Do something obscure`
         - `month date, year at hour:minute`
-        Ex: `remind on January 19, 2038 at 3:14 Y2k38`
+        Ex: /remind set `when: January 19, 2038 at 3:14` `content: Y2k38`
 
         All times are required to be in 24-hour format.
 
@@ -300,9 +300,9 @@ class Reminders(neo.Addon):
         - Time units have to be ordered by magnitude
 
         **Examples**
-        `remind in 5 years Hey, hello!`
-        `remind in 4h30m Check what time it is`
-        `remind in 3 weeks, 2 days Do something funny`
+        /remind set `when: 5 years` `content: Hey, hello!`
+        /remind set `when: 4h30m` `content: Check what time it is`
+        /remind set `when: 3 weeks, 2 days` `content: Do something funny`
         """
         profile = self.bot.profiles[ctx.author.id]
         tz = profile.timezone or timezone.utc
