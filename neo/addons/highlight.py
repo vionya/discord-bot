@@ -389,7 +389,7 @@ class Highlights(neo.Addon):
             if not id:
                 raise commands.MissingRequiredArgument(commands.Parameter(
                     name="id", kind=inspect.Parameter.POSITIONAL_ONLY))
-            ids = [id]
+            ids = [int(id)]
 
         self.perform_blocklist_action(profile=profile, ids=ids)
 
@@ -423,7 +423,18 @@ class Highlights(neo.Addon):
         await menu.start(ctx)
 
     @highlight.command(name="unblock")
-    async def highlight_unblock(self, ctx: NeoContext, id: str):
+    @discord.app_commands.describe(
+        id="The ID of a user, server, or channel to unblock",
+        user="A user to unblock",
+        channel="A channel to unblock"
+    )
+    async def highlight_unblock(
+        self,
+        ctx: NeoContext,
+        id: str = None,
+        user: discord.User | discord.Member = None,
+        channel: discord.TextChannel = None
+    ):
         """
         Unblock entities from triggering your highlights
 
@@ -431,12 +442,20 @@ class Highlights(neo.Addon):
 
         One *or more* IDs can be provided to this command
         """
-        if not (id or "").isnumeric():
+        if not (id or "").isnumeric() and not any([user, channel]):
             raise commands.BadArgument("Please input a valid ID.")
 
         profile = self.bot.profiles[ctx.author.id]
 
-        self.perform_blocklist_action(profile=profile, ids=[int(id)], action="unblock")
+        if ctx.interaction:
+            ids = [*map(lambda obj: int(getattr(obj, "id", obj)), filter(None, [user, channel, id]))]
+        else:
+            if not id:
+                raise commands.MissingRequiredArgument(commands.Parameter(
+                    name="id", kind=inspect.Parameter.POSITIONAL_ONLY))
+            ids = [int(id)]
+
+        self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
 
         if not ctx.interaction:
             await ctx.message.add_reaction("\U00002611")
@@ -459,7 +478,7 @@ class Highlights(neo.Addon):
 
         return [
             discord.app_commands.Choice(name=transform_mention(_id), value=str(_id))
-            for _id in filter(lambda block: current in block, profile.hl_blocks)
+            for _id in filter(lambda block: current in block, map(str, profile.hl_blocks))
         ][:25]
 
 

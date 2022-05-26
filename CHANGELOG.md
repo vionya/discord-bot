@@ -4,6 +4,9 @@
     * For messages, a `View Star Info` context menu command. This will likely go away at some point.
     * For users, shortcuts to view the user's `userinfo` output as well as their avatar. These will likely stick around.
 
+## Improvements
+* The `highlight unblock` slash command now accepts the same form of arguments as `highlight block`
+
 ## Fixes
 * The help documentation for `remind set` has been corrected
 
