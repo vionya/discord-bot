@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
-from discord import Object, User, abc
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable
+
+from discord import DMChannel, Object, User, abc
+
+if TYPE_CHECKING:
+    from collections.abc import Coroutine
 
 
 class PartialUser(abc.Messageable, Object):
@@ -22,6 +29,6 @@ class PartialUser(abc.Messageable, Object):
         data = await self._state.http.get_user(self.id)
         return User(state=self._state, data=data)
 
-    _get_channel = User._get_channel
+    _get_channel: Callable[..., Coroutine[Any, Any, DMChannel]] = User._get_channel
     dm_channel = User.dm_channel
     create_dm = User.create_dm
