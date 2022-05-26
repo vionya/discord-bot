@@ -5,6 +5,7 @@ import zoneinfo
 from abc import ABCMeta, abstractmethod
 from collections.abc import MutableMapping, MutableSet
 from functools import cache
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 
 def add_hook(attr_name: str):
@@ -34,7 +35,8 @@ class RecordContainer(metaclass=ABCMeta):
     """
     Provides an OOP interface for getting data from and updating a database record
     """
-    __slots__ = ("ready", "pool", "hooks")
+
+    __slots__ = ("ready", "pool", "hooks", "_data")
 
     def __init__(self, *, pool, **record):
         super().__setattr__("ready", False)
@@ -47,14 +49,14 @@ class RecordContainer(metaclass=ABCMeta):
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
-        super().__setattr__(instance, "hooks", {})
+        object.__setattr__(instance, "hooks", {})
 
         for name in dir(instance):
             attr = getattr(instance, name, None)
             if hasattr(attr, "_hooks_to"):
                 instance.hooks[attr._hooks_to] = attr
 
-        super().__setattr__(instance, "ready", True)
+        object.__setattr__(instance, "ready", True)
         return instance
 
     def __repr__(self):
@@ -64,6 +66,7 @@ class RecordContainer(metaclass=ABCMeta):
         if attribute not in self.__slots__:
             raise AttributeError("{0.__class__.__name__!r} object has no attribute {1!r}".format(
                 self, attribute))
+
         if getattr(self, "ready", False):
             asyncio.create_task(self.update_relation(attribute, value))
 
@@ -88,6 +91,14 @@ class RecordContainer(metaclass=ABCMeta):
 
 
 class NeoUser(RecordContainer):
+    user_id: int
+    hl_blocks: list[int]
+    receive_highlights: bool
+    created_at: int
+    timezone: Optional[zoneinfo.ZoneInfo]
+    hl_timeout: int
+    default_ephemeral: bool
+
     __slots__ = (
         "user_id",
         "hl_blocks",
@@ -142,6 +153,12 @@ class NeoUser(RecordContainer):
 
 
 class NeoGuildConfig(RecordContainer):
+    guild_id: int
+    prefix: str
+    starboard: bool
+    disabled_channels: list[int]
+    disabled_commands: list[str]
+
     __slots__ = ("guild_id", "prefix", "starboard", "disabled_channels", "disabled_commands")
 
     def __repr__(self):
@@ -183,7 +200,7 @@ class NeoGuildConfig(RecordContainer):
 class TimedSet(MutableSet):
     __slots__ = ("__underlying_set__", "__running_store__", "loop", "timeout")
 
-    def __init__(self, *args, timeout: int = 60, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, *args, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 
@@ -228,7 +245,7 @@ class TimedSet(MutableSet):
 class TimedCache(MutableMapping):
     __slots__ = ("__dict__", "__running_store__", "loop", "timeout")
 
-    def __init__(self, timeout: int = 60, loop: asyncio.AbstractEventLoop = None, **kwargs):
+    def __init__(self, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 

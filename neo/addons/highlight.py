@@ -2,26 +2,27 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from enum import Enum
 import asyncio
 import inspect
 import re
 from collections import defaultdict
+from enum import Enum
 from functools import cached_property
 from operator import attrgetter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, cast
 
 import discord
 import neo
 from discord.ext import commands
 from neo.classes.containers import TimedSet
+from neo.classes.partials import PartialUser
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
 from neo.tools import is_registered_profile
 
 if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
     from neo.classes.containers import NeoUser
+    from neo.classes.context import NeoContext
 
 
 class DefaultAvatars(Enum):
@@ -58,6 +59,7 @@ def format_hl_context(message: discord.Message, is_trigger=False):
         case 3: enum_member = DefaultAvatars.ORANGE
         case 4: enum_member = DefaultAvatars.RED
         case 5: enum_member = DefaultAvatars.PINK
+        case _: enum_member = DefaultAvatars.BLURPLE
 
     return fmt.format(enum_member.value, message)
 
@@ -78,6 +80,7 @@ class Highlight:
     async def predicate(self, message: discord.Message):
         if not message.guild:
             return
+
         if any([message.author.id == self.user_id,
                 message.author.bot]):
             return
@@ -94,10 +97,12 @@ class Highlight:
             return  # Don't highlight users with messages they are mentioned in
 
         try:  # This lets us update the channel members and make sure the user exists
-            member = await message.guild.fetch_member(self.user_id, cache=True)
+            member = await message.guild.fetch_member(self.user_id, cache=True)  # type: ignore
         except discord.NotFound:
             return
 
+        message.channel = cast(discord.TextChannel | discord.VoiceChannel, message.channel)
+        members: list[discord.Member] = []
         if isinstance(message.channel, discord.Thread):
             if message.channel.is_private():  # Need to fetch members explicitly
                 try:
@@ -105,10 +110,16 @@ class Highlight:
                     members = [member]  # If member is in thread, then they pass
                 except discord.NotFound:
                     return  # Otherwise... they don't
-            else:
+
+            elif isinstance(message.channel.parent, discord.ForumChannel):
+                if message.channel.parent.permissions_for(member).read_messages:
+                    members = [member]
+
+            elif message.channel.parent is not None:
                 members = message.channel.parent.members
         else:
             members = message.channel.members
+
         if member not in members:  # Check channel membership
             return
 
@@ -137,7 +148,7 @@ class Highlight:
             "view": view
         }
 
-    def matches(self, other: Highlight):
+    def matches(self, other: str):
         return self.pattern.search(other)
 
 
@@ -347,7 +358,8 @@ class Highlights(neo.Addon):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        (opts := ["~"]).extend([*range(1, len(self.highlights[interaction.user.id]) + 1)][:24])
+        opts: list[str | int] = ["~"]
+        opts.extend([*range(1, len(self.highlights[interaction.user.id]) + 1)][:24])
         return [*map(
             lambda opt: discord.app_commands.Choice(name=opt, value=opt),
             map(str, opts)
@@ -355,12 +367,12 @@ class Highlights(neo.Addon):
 
     def perform_blocklist_action(self, *, profile: NeoUser, ids: list[int], action="block"):
         blacklist = {*profile.hl_blocks, }
-        ids = {*ids, }
+        ids_set = {*ids, }
 
         if action == "unblock":
-            blacklist -= ids
+            blacklist -= ids_set
         else:
-            blacklist |= ids
+            blacklist |= ids_set
 
         profile.hl_blocks = [*blacklist]
 
@@ -373,9 +385,9 @@ class Highlights(neo.Addon):
     async def highlight_block(
         self,
         ctx: NeoContext,
-        id: str = None,
-        user: discord.User | discord.Member = None,
-        channel: discord.TextChannel = None
+        id: Optional[str] = None,
+        user: Optional[discord.User | discord.Member] = None,
+        channel: Optional[discord.TextChannel] = None
     ):
         """Block a target from highlighting you"""
         if not (id or "").isnumeric() and not any([user, channel]):
@@ -431,9 +443,9 @@ class Highlights(neo.Addon):
     async def highlight_unblock(
         self,
         ctx: NeoContext,
-        id: str = None,
-        user: discord.User | discord.Member = None,
-        channel: discord.TextChannel = None
+        id: Optional[str] = None,
+        user: Optional[discord.User | discord.Member] = None,
+        channel: Optional[discord.TextChannel] = None
     ):
         """
         Unblock entities from triggering your highlights
@@ -471,10 +483,17 @@ class Highlights(neo.Addon):
         profile = self.bot.profiles[interaction.user.id]
 
         def transform_mention(id):
-            mention = getattr(self.bot.get_guild(id), "name",
-                              getattr(self.bot.get_channel(id), "name",
-                                      getattr(self.bot.get_user(id), "name", "Unknown")))
-            return "{0} [{1}]".format(id, mention)
+            mention: Optional[
+                discord.Guild
+                | discord.TextChannel
+                | PartialUser
+                | discord.User
+                | str
+            ] = getattr(self.bot.get_guild(id), "name",
+                        getattr(self.bot.get_channel(id), "name",
+                                getattr(self.bot.get_user(id), "name")))
+
+            return "{0} [{1}]".format(id, mention or "Unknown")
 
         return [
             discord.app_commands.Choice(name=transform_mention(_id), value=str(_id))

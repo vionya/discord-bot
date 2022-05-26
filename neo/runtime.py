@@ -3,6 +3,8 @@
 import argparse
 import logging
 import types
+from typing import Callable, cast
+from typing_extensions import reveal_type
 
 import discord
 from discord.ext import commands
@@ -24,7 +26,7 @@ hybrid_command = Patcher(commands.hybrid)
 
 
 @guild.attribute()
-async def fetch_member(self, member_id, *, cache=False):
+async def fetch_member(self: discord.Guild, member_id, *, cache=False):
     data = await self._state.http.get_member(self.id, member_id)
     mem = discord.Member(data=data, state=self._state, guild=self)
     if cache:

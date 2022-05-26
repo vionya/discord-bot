@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+from typing import cast
 
 import toml
 
@@ -44,7 +45,7 @@ runtime.patch_all()
 
 async def main():
     with open("config.toml", "r") as file:
-        config: NeoConfig = toml.load(file)
+        config: NeoConfig = cast(NeoConfig, toml.load(file))
 
     neo = Neo(config)
 

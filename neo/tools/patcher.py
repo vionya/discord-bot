@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 from collections import defaultdict
+from typing import Any, Callable, Literal, Optional, ParamSpec, overload
+from typing_extensions import Never
 
 
 class Patcher:
@@ -12,10 +14,11 @@ class Patcher:
 
     __slots__ = ("targets", "_patches", "_original")
 
-    def __init__(self, *targets):
+    def __init__(self, *targets: Any):
         self.targets = targets
-        self._patches = {}
-        self._original = defaultdict(dict)
+        self._patches: dict[str, Any] = {}
+        self._original: dict[str, dict[str, Any]] = defaultdict(dict)
+
         for target in self.targets:
             for name, attr in map(
                 lambda _attr: (_attr, getattr(target, _attr)),
@@ -23,7 +26,19 @@ class Patcher:
             ):
                 self._original[target.__name__][name] = attr
 
-    def attribute(self, value=None, *, name=None):
+    @overload
+    def attribute(self, *, value: Any, name: Optional[str]) -> None:
+        ...
+
+    @overload
+    def attribute(self) -> Callable[[Callable[..., Any]], None]:
+        ...
+
+    @overload
+    def attribute(self, *, name: str) -> Callable[[Callable[..., Any]], None]:
+        ...
+
+    def attribute(self, *, value=None, name=None) -> Callable[[Callable[..., Any]], None] | None:
         """
         Patch an attribute onto the target.
 
@@ -42,8 +57,9 @@ class Patcher:
             self._patches[name or getattr(value, "__name__", name)] = value
             return
 
-        def inner(attr):
+        def inner(attr: Callable[..., Any]):
             self._patches[name or getattr(attr, "__name__", name)] = attr
+
         return inner
 
     def patch(self):

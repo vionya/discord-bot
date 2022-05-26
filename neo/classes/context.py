@@ -2,7 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class PromptButton(discord.ui.Button):
+    view: PromptActions
+
     def __init__(self, edited_content: str, value: bool, **kwargs):
         self.edited_content = edited_content
         self.value = value
@@ -27,6 +29,8 @@ class PromptButton(discord.ui.Button):
 
 
 class PromptActions(discord.ui.View):
+    value: Optional[bool]
+
     def __init__(
         self,
         ctx,
