@@ -8,6 +8,7 @@ from collections import Counter
 from functools import partial
 from operator import attrgetter
 from sys import version as py_version
+from typing import Optional
 
 import discord
 import neo
@@ -66,7 +67,7 @@ def get_browser_links(avatar: discord.Asset):
         formats.append("GIF")
 
     return " • " .join(
-        f"[{fmt}]({avatar.with_format(fmt.lower())})" for fmt in formats)
+        f"[{fmt}]({avatar.with_format(fmt.lower())})" for fmt in formats)  # type: ignore
 
 
 class Utility(neo.Addon):
@@ -88,6 +89,9 @@ class Utility(neo.Addon):
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
+
+        # Since we wait for bot ready, this has to be true
+        assert self.bot.user
 
         # These both take a ClientSession, so we wait until ready so we can use the bot's
         self.google = cse.Search(
@@ -112,7 +116,7 @@ class Utility(neo.Addon):
         self.info_buttons = partial(
             InfoButtons,
             self.privacy_embed,
-            False,  # not self.appinfo.bot_public,
+            not self.appinfo.bot_public,
             buttons=buttons,
             presets=self.bot.cfg["invite_presets"],
             application_id=self.bot.user.id
@@ -124,8 +128,11 @@ class Utility(neo.Addon):
     # the actual command instance
     @commands.hybrid_command(app_command_name="help", with_command=False, hidden=True)
     @discord.app_commands.describe(command="The command to get help for")
-    async def help_slash(self, ctx, *, command: str = None):
+    async def help_slash(self, ctx, *, command: Optional[str] = None):
         """Displays help for the bot"""
+        if self.bot.help_command is None:
+            return
+
         self.bot.help_command.context = ctx
         await self.bot.help_command.command_callback(ctx, command=command)
 
@@ -268,14 +275,14 @@ class Utility(neo.Addon):
         await ctx.send(embed=embed, delete_after=10)
 
     @commands.command(name="choose")
-    async def choose_command(self, ctx, *, options: str):
+    async def choose_command(self, ctx, *, choices: str):
         """
         Make a random choice from a set of options
 
         To separate each option, use a comma (`,`)
         Ex: `choose option a, option b, option c`
         """
-        options = [opt.strip() for opt in options.split(",")]
+        options = [opt.strip() for opt in choices.split(",")]
         if len(options) < 2:
             raise ValueError("At least 2 options must be provided")
 
@@ -301,36 +308,35 @@ class Utility(neo.Addon):
     # Information commands below
 
     @commands.hybrid_command(name="avatar", aliases=["av", "avy", "pfp"])
-    async def avatar_command(self, ctx: NeoContext, *, user: discord.User | discord.Member = None):
+    async def avatar_command(self, ctx: NeoContext, *, user: Optional[discord.User | discord.Member] = None):
         """Retrieves the avatar of yourself, or a specified user"""
         kwargs = {}
-        embed = neo.Embed(description="")
+        embed = neo.Embed()
+        embed.description = ""
 
-        if not user:
+        if isinstance(user, neo.partials.PartialUser) or user is None:
+            id = (user or ctx.author).id
             try:
-                user = await ctx.guild.fetch_member(user or ctx.author.id)
+                user_object = await ctx.guild.fetch_member(id)  # type: ignore
             except (discord.HTTPException, AttributeError):
-                user = await self.bot.fetch_user(user or ctx.author.id)
+                user_object = await self.bot.fetch_user(id)
 
-        if isinstance(user, neo.partials.PartialUser):
-            try:
-                user = await ctx.guild.fetch_member(user.id)
-            except (discord.HTTPException, AttributeError):
-                user = await user.fetch()
+        else:
+            user_object = user
 
-        if getattr(user, "guild_avatar", None) is not None:
-            embed.set_thumbnail(url=user.guild_avatar.url)
+        if isinstance(user_object, discord.Member) and user_object.guild_avatar is not None:
+            embed.set_thumbnail(url=user_object.guild_avatar.url)
             embed.description += "**View server avatar in browser**\n" \
-                + get_browser_links(user.guild_avatar) + "\n\n"
+                + get_browser_links(user_object.guild_avatar) + "\n\n"
             view = discord.ui.View()
             view.add_item(SwappableEmbedButton())
             kwargs["view"] = view
 
-        avatar = user.avatar or user.default_avatar
+        avatar = user_object.avatar or user_object.default_avatar
 
         embed.description += "**View user avatar in browser**\n" \
             + get_browser_links(avatar)
-        embed = embed.set_image(url=avatar).set_author(name=user)
+        embed = embed.set_image(url=avatar).set_author(name=user_object)
 
         await ctx.send(embed=embed, **kwargs)
 
@@ -342,34 +348,33 @@ class Utility(neo.Addon):
 
     @commands.hybrid_command(name="userinfo", aliases=["ui"])
     @discord.app_commands.describe(user="The user to get info about. If empty, gets your own info.")
-    async def user_info_command(self, ctx: NeoContext, user: discord.Member | discord.User = None):
+    async def user_info_command(self, ctx: NeoContext, user: Optional[discord.Member | discord.User] = None):
         """Retrieves information of yourself, or a specified user"""
-        if not user:
+        if isinstance(user, neo.partials.PartialUser) or user is None:
+            id = (user or ctx.author).id
             try:
-                user = await ctx.guild.fetch_member(user or ctx.author.id)
+                user_object = await ctx.guild.fetch_member(id)  # type: ignore
             except (discord.HTTPException, AttributeError):
-                user = await self.bot.fetch_user(user or ctx.author.id)
+                user_object = await self.bot.fetch_user(id)
 
-        if isinstance(user, neo.partials.PartialUser):
-            try:
-                user = await ctx.guild.fetch_member(user.id)
-            except (discord.HTTPException, AttributeError):
-                user = await user.fetch()
+        else:
+            user_object = user
 
-        embed = neo.Embed().set_thumbnail(url=user.display_avatar)
+        embed = neo.Embed().set_thumbnail(url=user_object.display_avatar)
         flags = [v for k, v in BADGE_MAPPING.items() if k in
-                 {flag.name for flag in user.public_flags.all()}]
-        title = str(user)
+                 {flag.name for flag in user_object.public_flags.all()}]
+        title = str(user_object)
         description = " ".join(flags) + ("\n" * bool(flags))
-        description += f"**Created Account** <t:{int(user.created_at.timestamp())}:D>"
+        description += f"**Created Account** <t:{int(user_object.created_at.timestamp())}:D>"
 
-        if user.bot:
-            title = (ICON_MAPPING["verified_bot_tag"] if user.public_flags
+        if user_object.bot:
+            title = (ICON_MAPPING["verified_bot_tag"] if user_object.public_flags
                      .verified_bot else ICON_MAPPING["bot_tag"]) + " " + title
 
-        if isinstance(user, discord.Member):
-            description += f"\n**Joined Server** <t:{int(user.joined_at.timestamp())}:D>"
-            if user.id == ctx.guild.owner_id:
+        if isinstance(user_object, discord.Member) and ctx.guild:
+            description += f"\n**Joined Server** <t:{int(user_object.joined_at.timestamp())}:D>" \
+                if user_object.joined_at else ""
+            if user_object.id == ctx.guild.owner_id:
                 title = "{0} {1}".format(ICON_MAPPING["guild_owner"], title)
 
         embed.title = title
@@ -392,6 +397,9 @@ class Utility(neo.Addon):
     @commands.hybrid_command(name="serverinfo", aliases=["si"])
     async def guild_info_command(self, ctx: NeoContext):
         """Retrieves information about the current server"""
+        # The guild_only check guarantees that this will always work
+        assert ctx.guild
+
         animated_emotes = len([e for e in ctx.guild.emojis if e.animated])
         static_emotes = len(ctx.guild.emojis) - animated_emotes
 
@@ -462,7 +470,9 @@ class Utility(neo.Addon):
                 discord.__version__
             )
         )
-        embed.set_thumbnail(url=self.bot.user.display_avatar)
+
+        if self.bot.user:
+            embed.set_thumbnail(url=self.bot.user.display_avatar)
         embed.set_author(
             name=f"Developed by {self.appinfo.owner}",
             icon_url=self.appinfo.owner.display_avatar
