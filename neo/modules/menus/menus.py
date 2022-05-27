@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 import discord
 from neo.tools import shorten
@@ -12,6 +12,12 @@ from .pages import EmbedPages, Pages
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
+
+
+class SendKwargs(TypedDict):
+    content: Optional[str]
+    embed: Optional[discord.Embed]
+    reference: Optional[discord.MessageReference]
 
 
 class BaseMenu(discord.ui.View):
@@ -32,7 +38,7 @@ class BaseMenu(discord.ui.View):
         self.pages = pages
 
         self.message = None
-        self.ctx: NeoContext = None
+        self.ctx: Optional[NeoContext] = None
         self.current_page = 0
         self.running = False
 
@@ -56,11 +62,9 @@ class BaseMenu(discord.ui.View):
 
         if self.ctx.interaction is None:
             if as_reply:
-                send_kwargs.update(
-                    reference=discord.MessageReference(
-                        message_id=self.ctx.message.id,
-                        channel_id=self.ctx.channel.id
-                    )
+                send_kwargs["reference"] = discord.MessageReference(
+                    message_id=self.ctx.message.id,
+                    channel_id=self.ctx.channel.id,
                 )
             self.message = await self.ctx.send(view=self, **send_kwargs)
         else:
@@ -71,13 +75,16 @@ class BaseMenu(discord.ui.View):
 
         self.running = True
 
-    def _get_msg_kwargs(self, item):
+    def _get_msg_kwargs(self, item) -> dict[str, Any]:
+        kwargs = {}
+
         if isinstance(item, discord.Embed):
             item.set_footer(text=f"Page {self.current_page + 1}/{len(self.pages)}")
-            return {"embed": item}
+            kwargs["embed"] = item
         elif isinstance(item, str):
             item += f"\nPage {self.current_page + 1}/{len(self.pages)}"
-            return {"content": item}
+            kwargs["content"] = item
+        return kwargs
 
     def get_current_page(self, index):
         if index < 0:
@@ -89,33 +96,36 @@ class BaseMenu(discord.ui.View):
 
     async def refresh_page(self):
         kwargs = self._get_msg_kwargs(self.pages[self.current_page])
-        if self.ctx.interaction:
+        if self.ctx and self.ctx.interaction:
             if not self.ctx.interaction.response.is_done():
                 await self.ctx.interaction.response.defer()
             await self.ctx.interaction.edit_original_message(**kwargs)
-        else:
+
+        elif self.message:
             await self.message.edit(**kwargs)
 
-    async def close(self, *, interaction: discord.Interaction = None, manual=False):
+    async def close(self, *, interaction: Optional[discord.Interaction] = None, manual=False):
         self.stop()
         self.running = False
         try:
             if manual is True and getattr(self.ctx, "ephemeral", False) is False:
-                if self.ctx.interaction:
+                if self.ctx and self.ctx.interaction and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
                     await interaction.delete_original_message()
-                else:
+
+                elif self.message:
                     await self.message.delete()
             else:
                 for item in self.children:
-                    item.disabled = True
+                    if isinstance(item, discord.ui.Button | discord.ui.Select):
+                        item.disabled = True
 
-                if self.ctx.interaction:
+                if self.ctx and self.ctx.interaction and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
                     await interaction.edit_original_message(view=self)
-                else:
+                elif self.message:
                     await self.message.edit(view=self)
         except discord.NotFound:
             return
@@ -136,12 +146,17 @@ class BaseMenu(discord.ui.View):
     async def interaction_check(self, interaction):
         (predicates := []).append(interaction.user.id in (
             self.author.id,
-            *self.bot.owner_ids,
+            *(self.bot.owner_ids or []),
             self.bot.owner_id)
         )
         return all(predicates)
 
     async def on_timeout(self):
+        if not self.ctx:
+            self.stop()
+            self.running = False
+            return
+
         if not self.ctx.interaction:
             await self.close()
         else:
@@ -200,7 +215,7 @@ class DropdownMenu(ButtonsMenu, BaseMenu):
                 if embed_auto_desc:
                     description = shorten(page.description or "", 100)
             options.append(discord.SelectOption(
-                label=label, value=index - 1, description=description))
+                label=label, value=str(index - 1), description=description))
 
         return cls.from_options(options=options, pages=pages)
 

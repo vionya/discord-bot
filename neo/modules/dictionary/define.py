@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from typing import Optional
+
 from aiohttp import ClientSession
 from yarl import URL
 
@@ -12,7 +14,7 @@ DefinitionError = type("DefinitionError", (Exception,), {})
 class Define:
     __slots__ = ("session",)
 
-    def __init__(self, session: ClientSession = None):
+    def __init__(self, session: Optional[ClientSession] = None):
         self.session = session or ClientSession()
 
     async def _do_definition(self, query, *, lang_code="en"):

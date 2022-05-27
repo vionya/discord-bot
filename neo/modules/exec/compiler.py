@@ -27,7 +27,7 @@ def compile_all(code_input):
     code_in = ast.parse(code_input)
     base = ast.parse(code_base)
 
-    try_block = base.body[-1].body[-1].body
+    try_block = base.body[-1].body[-1].body  # type: ignore
     try_block.extend(code_in.body)
 
     ast.fix_missing_locations(base)

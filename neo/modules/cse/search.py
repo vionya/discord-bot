@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 from random import choice
+from typing import Optional
 
 from aiohttp import ClientSession
 from yarl import URL
@@ -18,7 +19,7 @@ def _safe(_input):
 class Search:
     __slots__ = ("key", "engine_id", "session")
 
-    def __init__(self, *, key, engine_id, session: ClientSession = None):
+    def __init__(self, *, key, engine_id, session: Optional[ClientSession] = None):
         self.key = key
         self.engine_id = engine_id
         self.session = session or ClientSession()

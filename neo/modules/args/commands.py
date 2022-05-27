@@ -38,7 +38,7 @@ class ArgCommand(commands.Command):
                 continue
 
             argname = f"--{arg.dest}" if arg.option_strings else arg.dest
-            description = getattr(arg, "help", None)
+            description = getattr(arg, "help", "")
 
             if len(arg.option_strings) > 1:
                 aliases = ", ".join(arg.option_strings)
@@ -77,7 +77,7 @@ class ArgCommand(commands.Command):
                     return
 
                 try:
-                    to_parse = shlex.split(to_parse, " ", posix=False)
+                    to_parse = shlex.split(to_parse, comments=False, posix=False)
                     parsed = self.callback.parser.parse_args(to_parse)
                 except Exception:
                     kwargs[name] = None

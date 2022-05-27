@@ -1,12 +1,18 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 from argparse import ArgumentError, ArgumentParser
+from typing import TYPE_CHECKING
 
 from discord.ext.commands import (
     CommandError,
     Converter,
     MissingRequiredArgument
 )
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
 
 
 class MockParam(str):
@@ -16,6 +22,8 @@ class MockParam(str):
 
 
 class Parser(ArgumentParser):
+    ctx: NeoContext | None
+
     def __init__(self, *args, **kwargs):
         self.ctx = None
         kwargs.setdefault("add_help", False)
@@ -28,13 +36,15 @@ class Parser(ArgumentParser):
         raise _error(message)
 
     def _get_value(self, action, arg_string):
+        if not self.ctx:
+            raise RuntimeError("Failed to get context in flags parser")
+
         converter = self._registry_get("type", action.type, action.type)
 
         if not callable(converter):
-            msg = "%r is not callable"
-            raise ArgumentError(action, msg % converter)
+            raise ArgumentError(action, f"{converter} is not callable")
 
-        if isinstance(converter, type) and issubclass(converter, Converter):
+        if isinstance(converter, type) and issubclass(converter, type(Converter)):
             return converter().convert(self.ctx, arg_string)
             # Above tries to return an awaitable from a converter
 

@@ -1,8 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, cast
 
 from neo.classes import Embed
+
+if TYPE_CHECKING:
+    from discord.embeds import EmbedData
+    from .menus import BaseMenu
 
 
 class Pages:
@@ -58,15 +64,15 @@ class Pages:
         *,
         use_embed: bool = False,
         joiner: str = "\n",
-        prefix: str = None,
-        suffix: str = None,
+        prefix: Optional[str] = None,
+        suffix: Optional[str] = None,
         template_embed: Optional[Embed] = None
     ):
         self.items = items
         self.joiner = joiner
         self.per_page = per_page
         self.use_embed = use_embed
-        self.menu = None
+        self.menu: Optional[BaseMenu] = None
 
         if (prefix or suffix) and not isinstance(items, str):
             raise TypeError(
@@ -74,7 +80,7 @@ class Pages:
             )
         self.prefix = prefix
         self.suffix = suffix
-        self.template_embed = {}
+        self.template_embed: EmbedData = {}
         if template_embed is not None:
             self.template_embed = template_embed.to_dict()
 
@@ -108,7 +114,7 @@ class Pages:
     def __getitem__(self, index):
         content = self.joiner.join(self.pages[index])
         if self.use_embed:
-            return Embed.from_dict(self.template_embed | {"description": content})
+            return Embed.from_dict(cast(dict, self.template_embed | {"description": content}))
         return content
 
     def append(self, new):
@@ -118,7 +124,7 @@ class Pages:
         else:
             self.items.append(new)
 
-        if getattr(self.menu, "bot", None):
+        if self.menu and self.menu.running is True:
             self.menu.dispatch_update()
 
     def prepend(self, new):
@@ -128,7 +134,7 @@ class Pages:
         else:
             self.items.insert(0, new)
 
-        if getattr(self.menu, "bot", None):
+        if self.menu and self.menu.running is True:
             self.menu.dispatch_update()
 
     def __len__(self):
