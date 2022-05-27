@@ -125,11 +125,7 @@ class Todos(neo.Addon):
         )
 
         self.todos[ctx.author.id].append(TodoItem(**data))
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @todo.command(name="remove", aliases=["rm"])
     async def todo_remove(self, ctx, index: str):
@@ -167,11 +163,7 @@ class Todos(neo.Addon):
             [*map(attrgetter("message_id"), todos)],
             ctx.author.id
         )
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @todo_remove.autocomplete("index")
     async def todo_remove_autocomplete(self, interaction: discord.Interaction, current: str):
@@ -229,11 +221,7 @@ class Todos(neo.Addon):
             """,
             new_content, todo.message_id, todo.user_id
         )
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @todo_view.autocomplete("index")
     @todo_edit.autocomplete("index")

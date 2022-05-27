@@ -414,11 +414,7 @@ class Reminders(neo.Addon):
 
         for reminder in reminders:
             await reminder.delete()
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @remind_cancel.autocomplete("index")
     async def remind_cancel_autocomplete(self, interaction: discord.Interaction, current: str):

@@ -132,14 +132,14 @@ class Devel(neo.Addon):
             menu = ButtonsMenu.from_iterable(failed, use_embed=True)
             await menu.start(ctx)
             return
-        await ctx.message.add_reaction("\U00002611")
+        await ctx.send_confirmation()
 
     @commands.command(name="sync")
     async def dev_sync(self, ctx):
         """Sync all global app commands to the current guild"""
         self.bot.tree.copy_global_to(guild=ctx.guild)
         await self.bot.tree.sync(guild=ctx.guild)
-        await ctx.message.add_reaction("\U00002611")
+        await ctx.send_confirmation()
 
 
 async def setup(bot):

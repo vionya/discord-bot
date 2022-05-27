@@ -91,3 +91,9 @@ class NeoContext(commands.Context['Neo']):
             return await self.interaction.original_message()
         else:
             return await super().send(*args, **kwargs)
+
+    async def send_confirmation(self):
+        if not self.interaction:
+            await self.message.add_reaction("\U00002611")
+        else:
+            await self.send("\U00002611")

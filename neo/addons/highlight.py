@@ -299,11 +299,7 @@ class Highlights(neo.Addon):
         )
         self.highlights[ctx.author.id].append(Highlight(self.bot, **result))
         self.recompute_flattened()
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @highlight.command(name="remove", aliases=["rm"])
     @discord.app_commands.describe(
@@ -347,11 +343,7 @@ class Highlights(neo.Addon):
             [*map(attrgetter("content"), highlights)]
         )
         self.recompute_flattened()
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @highlight_remove.autocomplete("index")
     async def highlight_remove_autocomplete(self, interaction: discord.Interaction, current: str):
@@ -404,11 +396,7 @@ class Highlights(neo.Addon):
             ids = [int(id)]
 
         self.perform_blocklist_action(profile=profile, ids=ids)
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @highlight.command(name="blocklist")
     async def highlight_block_list(self, ctx: NeoContext):
@@ -468,11 +456,7 @@ class Highlights(neo.Addon):
             ids = [int(id)]
 
         self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
-
-        if not ctx.interaction:
-            await ctx.message.add_reaction("\U00002611")
-        else:
-            await ctx.send("\U00002611")
+        await ctx.send_confirmation()
 
     @highlight_unblock.autocomplete("id")
     async def highlight_unblock_autocomplete(

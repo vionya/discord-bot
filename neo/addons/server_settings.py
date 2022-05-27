@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
@@ -58,7 +58,7 @@ class ServerSettings(neo.Addon):
             SETTINGS_MAPPING[col_name]["description"] = col_desc
 
     async def cog_check(self, ctx: NeoContext):
-        if not ctx.guild:
+        if not ctx.guild or not isinstance(ctx.author, discord.Member):
             raise commands.NoPrivateMessage()
 
         if not any([
@@ -76,20 +76,21 @@ class ServerSettings(neo.Addon):
     @server_settings.command(name="list")
     async def server_settings_list(self, ctx: NeoContext):
         """Lists server settings"""
+        # Guaranteed by cog check
+        assert ctx.guild
+
         await is_registered_guild().predicate(ctx)
         config = self.bot.configs[ctx.guild.id]
         embeds = []
 
         for setting, setting_info in SETTINGS_MAPPING.items():
-            description = setting_info["description"].format(
+            description = (setting_info["description"] or "").format(
                 getattr(config, setting)
             )
             embed = neo.Embed(
                 title=f"Settings for {ctx.guild}",
                 description=f"**Setting: `{setting}`**\n\n" + description
-            ).set_thumbnail(
-                url=ctx.guild.icon or neo.Embed.Empty
-            )
+            ).set_thumbnail(url=ctx.guild.icon)
             embeds.append(embed)
 
         menu = ButtonsMenu.from_embeds(embeds)
@@ -113,12 +114,16 @@ class ServerSettings(neo.Addon):
         await menu.start(ctx)
 
     async def set_option(self, ctx: NeoContext, setting: str, new_value: str):
+        assert ctx.guild
+
         value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
         config = self.bot.configs[ctx.guild.id]
         setattr(config, setting, value)
         self.bot.broadcast("config_update", ctx.guild, config)
 
     async def reset_option(self, ctx: NeoContext, setting: str):
+        assert ctx.guild
+
         if not SETTINGS_MAPPING.get(setting):
             raise commands.BadArgument(
                 "That's not a valid setting! "
@@ -172,6 +177,8 @@ class ServerSettings(neo.Addon):
         joins your server, so you can start
         configuring your server
         """
+        assert ctx.guild
+
         if ctx.guild.id in self.bot.configs:
             raise RuntimeError("Your server already has a config entry!")
 
@@ -183,6 +190,8 @@ class ServerSettings(neo.Addon):
     @is_registered_guild()
     async def server_settings_delete(self, ctx: NeoContext):
         """Permanently deletes this server's config"""
+        assert ctx.guild
+
         if await ctx.prompt_user(
             "Are you sure you want to delete the config?"
             "\nThis will delete your config and all associated "
@@ -198,7 +207,7 @@ class ServerSettings(neo.Addon):
     @server_settings.command(name="ignore")
     @is_registered_guild()
     async def server_settings_ignore_channel(
-            self, ctx: NeoContext, channel: discord.TextChannel = None):
+            self, ctx: NeoContext, channel: Optional[discord.TextChannel] = None):
         """
         Ignores a channel. Run without arguments to view ignored channels
 
@@ -207,6 +216,8 @@ class ServerSettings(neo.Addon):
         *executed by someone with administrator*
         *permissions*
         """
+        assert ctx.guild
+
         config = self.bot.configs[ctx.guild.id]
         if not channel:
             menu = ButtonsMenu.from_iterable(
@@ -224,23 +235,25 @@ class ServerSettings(neo.Addon):
 
         (channel_ids := {*config.disabled_channels, }).add(channel.id)
         config.disabled_channels = [*channel_ids]
-        await ctx.message.add_reaction("\U00002611")
+        await ctx.send_confirmation()
 
     @server_settings.command(name="unignore")
     @is_registered_guild()
     async def server_settings_unignore_channel(
             self, ctx: NeoContext, channel: discord.TextChannel):
         """Unignores a channel for command responses"""
+        assert ctx.guild
+
         config = self.bot.configs[ctx.guild.id]
         (channel_ids := {*config.disabled_channels, }).discard(channel.id)
 
         config.disabled_channels = [*channel_ids]
-        await ctx.message.add_reaction("\U00002611")
+        await ctx.send_confirmation()
 
     @server_settings.command(name="disable")
     @is_registered_guild()
     async def server_settings_disable_command(
-            self, ctx: NeoContext, *, command: command_converter = None):
+            self, ctx: NeoContext, *, command: Optional[command_converter] = None):
         """
         Disables a command in the server. Run without arguments to view
         disabled commands
@@ -256,6 +269,8 @@ class ServerSettings(neo.Addon):
         will be ignored, *unless executed by*
         *someone with administrator permissions*
         """
+        assert ctx.guild
+
         config = self.bot.configs[ctx.guild.id]
         if not command:
             menu = ButtonsMenu.from_iterable(
@@ -273,17 +288,19 @@ class ServerSettings(neo.Addon):
 
         (commands := {*config.disabled_commands, }).add(str(command))
         config.disabled_commands = [*commands]
-        await ctx.message.add_reaction("\U00002611")
+        await ctx.send_confirmation()
 
     @server_settings.command(name="reenable", aliases=["enable"])
     @is_registered_guild()
     async def server_settings_reenable_command(self, ctx: NeoContext, *, command: command_converter):
         """Re-enables a disabled command"""
+        assert ctx.guild
+
         config = self.bot.configs[ctx.guild.id]
         (commands := {*config.disabled_commands, }).discard(str(command))
 
         config.disabled_commands = [*commands]
-        await ctx.message.add_reaction("\U00002611")
+        await ctx.send_confirmation()
 
 
 async def setup(bot: neo.Neo):
