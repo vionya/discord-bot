@@ -10,6 +10,9 @@
 ## Fixes
 * The help documentation for `remind set` has been corrected
 
+## Other
+* The entire source has been (loosely) typed - not yet strictly typed
+
 # Release v0.14.0 - May 21, 2022
 ## Initial Slash Commands
 * neo phoenix has been updated to support slash commands

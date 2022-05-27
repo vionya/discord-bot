@@ -2,10 +2,9 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import discord
-
 import neo
 from discord.ext import commands
 from neo.classes.converters import codeblock_converter
@@ -34,9 +33,11 @@ class Devel(neo.Addon):
     @commands.command(name="cleanup", aliases=["clean"])
     async def dev_cleanup(self, ctx: NeoContext, amount: int = 5):
         """Cleanup the bot's messages from a channel"""
-        can_manage = ctx.channel.permissions_for(
-            cast(discord.Member, ctx.me)
-        ).manage_messages
+        assert isinstance(ctx.me, discord.Member) and isinstance(
+            ctx.channel, discord.TextChannel | discord.VoiceChannel
+        )
+
+        can_manage = ctx.channel.permissions_for(ctx.me).manage_messages
 
         def check(message: discord.Message) -> bool:
             if can_manage:
@@ -48,9 +49,7 @@ class Devel(neo.Addon):
                 )
             return message.author == ctx.me
 
-        purged = await cast(
-            discord.TextChannel | discord.VoiceChannel, ctx.channel
-        ).purge(limit=amount, bulk=can_manage, check=check)
+        purged = await ctx.channel.purge(limit=amount, bulk=can_manage, check=check)
         await ctx.send(f"Cleaned {len(purged)} message(s).", delete_after=5)
 
     @commands.command(name="exec", aliases=["e"])
@@ -86,7 +85,10 @@ class Devel(neo.Addon):
 
     @commands.command(name="sql")
     async def dev_sql(
-        self, ctx, *, query: str = commands.parameter(converter=codeblock_converter)
+        self,
+        ctx: NeoContext,
+        *,
+        query: str = commands.parameter(converter=codeblock_converter),
     ):
         """Perform an SQL query"""
         data = await self.bot.db.fetch(query)
@@ -113,7 +115,7 @@ class Devel(neo.Addon):
     )
     @args.add_arg("addons", nargs="+", help="Addons to action, `~ = all`")
     @args.command(name="addon")
-    async def dev_addon(self, ctx, *, args):
+    async def dev_addon(self, ctx: NeoContext, *, args):
         """
         Manage addons
 
@@ -135,10 +137,16 @@ class Devel(neo.Addon):
             return
         await ctx.send_confirmation()
 
+    @commands.guild_only()
     @commands.command(name="sync")
-    async def dev_sync(self, ctx):
+    async def dev_sync(self, ctx: NeoContext, clear_commands: bool = False):
         """Sync all global app commands to the current guild"""
-        self.bot.tree.copy_global_to(guild=ctx.guild)
+        assert ctx.guild
+
+        if clear_commands:
+            self.bot.tree.clear_commands(guild=ctx.guild)
+        else:
+            self.bot.tree.copy_global_to(guild=ctx.guild)
         await self.bot.tree.sync(guild=ctx.guild)
         await ctx.send_confirmation()
 
