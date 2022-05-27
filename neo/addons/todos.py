@@ -178,7 +178,8 @@ class Todos(neo.Addon):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        (opts := ["~"]).extend([*range(1, len(self.todos[interaction.user.id]) + 1)][:24])
+        opts: list[str | int] = ["~"]
+        opts.extend([*range(1, len(self.todos[interaction.user.id]) + 1)][:24])
         return [*map(
             lambda opt: discord.app_commands.Choice(name=opt, value=opt),
             map(str, opts)

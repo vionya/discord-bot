@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 import neo
@@ -85,7 +85,7 @@ class Starboard:
     def __init__(
         self,
         *,
-        channel: discord.TextChannel,
+        channel: Optional[discord.TextChannel],
         stars: list,
         threshold: int,
         format: str,
@@ -108,7 +108,10 @@ class Starboard:
         self.lock = asyncio.Lock()
         self.pool = pool
 
-    async def get_star(self, id: int) -> Star:
+    async def get_star(self, id: int) -> Star | None:
+        if not self.channel:
+            return None
+
         if id in self.cached_stars:
             return self.cached_stars[id]
 
@@ -126,14 +129,13 @@ class Starboard:
         return None
 
     async def create_star(self, message: discord.Message, stars: int):
-        if any([
+        if not message.guild or not self.channel or any([
             message.id in self.star_ids,
             self.lock.locked()
         ]):
             return
 
         async with self.lock:
-            kwargs = {"message_id": message.id, "stars": stars}
             embed = neo.Embed(description="") \
                 .set_author(
                     name=message.author,
@@ -165,12 +167,12 @@ class Starboard:
             view = discord.ui.View(timeout=0)
             view.add_item(discord.ui.Button(url=message.jump_url, label="Jump to original"))
 
-            kwargs["starboard_message"] = await self.channel.send(
+            starboard_message = await self.channel.send(
                 self.format.format(stars=stars),
                 embed=embed,
                 view=view
             )
-            star = Star(**kwargs)
+            star = Star(message_id=message.id, stars=stars, starboard_message=starboard_message)
 
             await self.pool.execute(
                 """
@@ -197,31 +199,28 @@ class Starboard:
 
     async def delete_star(self, id: int):
         star = await self.get_star(id)
-        try:
+        if star:
             await star.starboard_message.delete()
-        finally:
-            await self.pool.execute(
-                "DELETE FROM stars WHERE message_id=$1",
-                star.message_id
-            )
-            del self.cached_stars[id]
-            self.star_ids.remove(id)
-            return star
+
+        await self.pool.execute(
+            "DELETE FROM stars WHERE message_id=$1",
+            id
+        )
+        del self.cached_stars[id]
+        self.star_ids.remove(id)
+        return star
 
     async def edit_star(self, id: int, stars: int):
         star = await self.get_star(id)
+        if not star:
+            return await self.delete_star(id)
+
         star.stars = stars
 
         try:
             await star.edit(content=self.format.format(stars=star.stars))
         except discord.NotFound:  # Delete star from records if its message has been deleted
-            await self.pool.execute(
-                "DELETE FROM stars WHERE message_id=$1",
-                star.message_id
-            )
-            del self.cached_stars[id]
-            self.star_ids.remove(id)
-            return star
+            return await self.delete_star(id)
 
         await self.pool.execute(
             """
@@ -293,8 +292,14 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             WHERE guild_id=$1
             """, guild_id
         )
+
+        channel = self.bot.get_channel(starboard_settings["channel"])
+        # The converter for the `channel` setting guarantees that this
+        # will be a text channel
+        assert isinstance(channel, discord.TextChannel)
+
         return Starboard(
-            channel=self.bot.get_channel(starboard_settings["channel"]),
+            channel=channel,
             stars=star_records,
             threshold=starboard_settings["threshold"],
             format=starboard_settings["format"],
@@ -331,7 +336,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     @commands.Cog.listener("on_raw_reaction_add")
     @commands.Cog.listener("on_raw_reaction_remove")
     async def handle_individual_reaction(self, payload: discord.RawReactionActionEvent):
-        starboard: Starboard = self.starboards.get(payload.guild_id)
+        if payload.guild_id not in self.starboards or not payload.guild_id:
+            return
+        starboard = self.starboards[payload.guild_id]
 
         if not self.predicate(starboard, payload):
             return
@@ -342,6 +349,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                 return
 
             channel = self.bot.get_channel(payload.channel_id)
+            if not isinstance(channel, discord.TextChannel):
+                return
             message = await channel.fetch_message(payload.message_id)
 
             reaction_count = getattr(
@@ -380,25 +389,27 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     @commands.Cog.listener("on_raw_reaction_clear_emoji")
     @commands.Cog.listener("on_raw_message_delete")
     async def handle_terminations(self, payload):
-        starboard: Starboard = self.starboards.get(payload.guild_id)
+        if payload.guild_id not in self.starboards or not payload.guild_id:
+            return
+        starboard = self.starboards[payload.guild_id]
 
         if not self.predicate(starboard, payload):
             return
 
         if isinstance(payload, discord.RawReactionClearEmojiEvent):
-            if not self.reaction_check(payload.emoji):
+            if not self.reaction_check(starboard, payload.emoji):
                 return
 
         if payload.message_id in starboard.star_ids:
             await starboard.delete_star(payload.message_id)
 
     @commands.Cog.listener("on_guild_channel_delete")
-    async def handle_starboard_channel_delete(self, channel):
+    async def handle_starboard_channel_delete(self, channel: discord.abc.GuildChannel):
         if channel.guild.id not in self.starboards:
             return
 
         starboard = self.starboards[channel.guild.id]
-        if channel.id == starboard.channel.id:
+        if channel.id == getattr(starboard.channel, "id", None):
             await self.bot.db.execute("DELETE FROM stars WHERE guild_id=$1", channel.guild.id)
             starboard.cached_stars.clear()
         starboard.channel = None
@@ -446,6 +457,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     # Context menu command, added in __init__
     @discord.app_commands.guild_only()
     async def star_info_context_command(self, interaction: discord.Interaction, message: discord.Message):
+        # Always true because of the `guild_only` check
+        assert message.guild
+
         if message.guild.id not in self.starboards:
             return await interaction.response.send_message(
                 "This server doesn't have a starboard!",
@@ -474,11 +488,14 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     @commands.has_permissions(manage_channels=True)
     async def starboard_list(self, ctx: NeoContext):
         """Lists starboard settings"""
+        # Guaranteed by the global check
+        assert ctx.guild
+
         starboard = self.starboards[ctx.guild.id]
         embeds = []
 
         for setting, setting_info in SETTINGS_MAPPING.items():
-            description = setting_info["description"].format(
+            description = (setting_info["description"] or "").format(
                 getattr(starboard, setting)
             )
             embed = neo.Embed(
@@ -523,6 +540,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                      filter(lambda k: current in k, SETTINGS_MAPPING.keys()))]
 
     async def set_option(self, ctx: NeoContext, setting: str, new_value: Any):
+        assert ctx.guild
+
         value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
         starboard = self.starboards[ctx.guild.id]
         setattr(starboard, setting, value)
@@ -555,8 +574,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     async def starboard_ignore(
         self,
         ctx: NeoContext,
-        channel: discord.TextChannel = None,
-        message: discord.PartialMessage = None
+        channel: Optional[discord.TextChannel] = None,
+        message: Optional[str] = None
     ):
         """
         Ignores a channel or message
@@ -567,15 +586,24 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         Note: If an already starred message is ignored, the
         star will be deleted, *and* the message will be ignored
         """
+        assert ctx.guild
+
+        message_obj = None
+        if message:
+            try:
+                message_obj = await commands.PartialMessageConverter().convert(ctx, message)
+            except commands.CommandError | commands.BadArgument:
+                ...
+
         if not any([
             isinstance(channel, discord.TextChannel),
-            isinstance(message, discord.PartialMessage)
+            isinstance(message_obj, discord.PartialMessage)
         ]):
             raise TypeError("You must provide at least one valid argument to ignore.")
 
         starboard = self.starboards[ctx.guild.id]
 
-        for snowflake in filter(None, [channel, message]):
+        for snowflake in filter(None, [channel, message_obj]):
             id = snowflake.id
 
             starboard.ignored.add(id)
@@ -607,25 +635,35 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     async def starboard_unignore(
         self,
         ctx: NeoContext,
-        id: str = None,
-        channel: discord.TextChannel = None,
-        message: discord.PartialMessage = None
+        id: Optional[str] = None,
+        channel: Optional[discord.TextChannel] = None,
+        message: Optional[str] = None
     ):
         """Unignores a channel or message"""
+        assert ctx.guild
+
+        message_obj = None
+        if message:
+            try:
+                message_obj = await commands.PartialMessageConverter().convert(ctx, message)
+            except commands.CommandError | commands.BadArgument:
+                ...
+
+        id = id or ""
         if not any([
-            (id or "").isdigit(),
+            id.isdigit(),
             isinstance(channel, discord.TextChannel),
-            isinstance(message, discord.PartialMessage)
+            isinstance(message_obj, discord.PartialMessage)
         ]):
             raise TypeError("You must provide at least one valid argument to unignore.")
 
         starboard = self.starboards[ctx.guild.id]
-        id = int(id) if (id or "").isdigit() else None
+        target_id = int(id) if id.isdigit() else None
 
-        for snowflake in filter(None, [id, channel, message]):
-            _id = getattr(snowflake, "id", snowflake)
+        for snowflake in filter(None, [target_id, channel, message_obj]):
+            object_id = getattr(snowflake, "id", snowflake)
 
-            starboard.ignored.discard(_id)
+            starboard.ignored.discard(object_id)
             await self.bot.db.execute(
                 """
                 UPDATE starboards
@@ -634,7 +672,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                 WHERE
                     guild_id=$2
                 """,
-                _id,
+                object_id,
                 ctx.guild.id
             )
 
@@ -644,11 +682,13 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     @commands.has_permissions(manage_messages=True)
     async def starboard_ignored(self, ctx: NeoContext):
         """Displays a list of all ignored items"""
+        assert ctx.guild
+
         starboard = self.starboards[ctx.guild.id]
 
         formatted: list[str] = []
         for id in starboard.ignored:
-            if (channel := self.bot.get_channel(id)):
+            if isinstance(channel := self.bot.get_channel(id), discord.abc.GuildChannel):
                 formatted.insert(0, f"**Channel** {channel.mention}")
             else:
                 formatted.append(f"**Message ID** `{id}`")
