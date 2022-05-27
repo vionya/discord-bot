@@ -30,9 +30,11 @@ def add_hook(attr_name: str):
         The decorated method must return a type. Usually, this is
         a transformed version of the original attribute
     """
+
     def inner(func):
         setattr(func, "_hooks_to", attr_name)
         return func
+
     return inner
 
 
@@ -69,8 +71,11 @@ class RecordContainer(metaclass=ABCMeta):
 
     def __setattr__(self, attribute, value):
         if attribute not in self.__slots__:
-            raise AttributeError("{0.__class__.__name__!r} object has no attribute {1!r}".format(
-                self, attribute))
+            raise AttributeError(
+                "{0.__class__.__name__!r} object has no attribute {1!r}".format(
+                    self, attribute
+                )
+            )
 
         if getattr(self, "ready", False):
             asyncio.create_task(self.update_relation(attribute, value))
@@ -79,7 +84,7 @@ class RecordContainer(metaclass=ABCMeta):
 
     def __getattribute__(self, attribute):
         value = object.__getattribute__(self, attribute)
-        if (hook := object.__getattribute__(self, "hooks").get(attribute)):
+        if hook := object.__getattribute__(self, "hooks").get(attribute):
             value = hook(value)
         return value
 
@@ -111,7 +116,7 @@ class NeoUser(RecordContainer):
         "created_at",
         "timezone",
         "hl_timeout",
-        "default_ephemeral"
+        "default_ephemeral",
     )
 
     def __repr__(self):
@@ -132,15 +137,18 @@ class NeoUser(RecordContainer):
                 {attribute}=$1
             WHERE
                 user_id=$2
-            """,    # While it isn't ideal to use string formatting with SQL,
+            """,  # While it isn't ideal to use string formatting with SQL,
             value,  # the class implements __slots__, so possible attribute names are restricted
-            self.user_id
+            self.user_id,
         )
 
     async def reset_attribute(self, attribute):
         if attribute not in self.__slots__:
-            raise AttributeError("{0.__class__.__name__!r} object has no attribute {1!r}".format(
-                self, attribute))
+            raise AttributeError(
+                "{0.__class__.__name__!r} object has no attribute {1!r}".format(
+                    self, attribute
+                )
+            )
 
         value = await self.pool.fetchval(
             f"""
@@ -152,7 +160,7 @@ class NeoUser(RecordContainer):
             RETURNING
                 {attribute}
             """,
-            self.user_id
+            self.user_id,
         )
         super().__setattr__(attribute, value)
 
@@ -164,7 +172,13 @@ class NeoGuildConfig(RecordContainer):
     disabled_channels: list[int]
     disabled_commands: list[str]
 
-    __slots__ = ("guild_id", "prefix", "starboard", "disabled_channels", "disabled_commands")
+    __slots__ = (
+        "guild_id",
+        "prefix",
+        "starboard",
+        "disabled_channels",
+        "disabled_commands",
+    )
 
     def __repr__(self):
         return "<{0.__class__.__name__} guild_id={0.guild_id}>".format(self)
@@ -177,15 +191,18 @@ class NeoGuildConfig(RecordContainer):
                 {attribute}=$1
             WHERE
                 guild_id=$2
-            """,    # While it isn't ideal to use string formatting with SQL,
+            """,  # While it isn't ideal to use string formatting with SQL,
             value,  # the class implements __slots__, so possible attribute names are restricted
-            self.guild_id
+            self.guild_id,
         )
 
     async def reset_attribute(self, attribute):
         if attribute not in self.__slots__:
-            raise AttributeError("{0.__class__.__name__!r} object has no attribute {1!r}".format(
-                self, attribute))
+            raise AttributeError(
+                "{0.__class__.__name__!r} object has no attribute {1!r}".format(
+                    self, attribute
+                )
+            )
 
         value = await self.pool.fetchval(
             f"""
@@ -197,7 +214,7 @@ class NeoGuildConfig(RecordContainer):
             RETURNING
                 {attribute}
             """,
-            self.guild_id
+            self.guild_id,
         )
         super().__setattr__(attribute, value)
 
@@ -205,7 +222,9 @@ class NeoGuildConfig(RecordContainer):
 class TimedSet(MutableSet):
     __slots__ = ("__underlying_set__", "__running_store__", "loop", "timeout")
 
-    def __init__(self, *args, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None):
+    def __init__(
+        self, *args, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None
+    ):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 
@@ -225,7 +244,9 @@ class TimedSet(MutableSet):
             active.cancel()
 
         self.__underlying_set__.add(element)
-        self.__running_store__[element] = self.loop.create_task(self.invalidate(element))
+        self.__running_store__[element] = self.loop.create_task(
+            self.invalidate(element)
+        )
 
     def discard(self, element):
         self.__running_store__[element].cancel()
@@ -250,7 +271,12 @@ class TimedSet(MutableSet):
 class TimedCache(MutableMapping):
     __slots__ = ("__dict__", "__running_store__", "loop", "timeout")
 
-    def __init__(self, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None, **kwargs):
+    def __init__(
+        self,
+        timeout: int = 60,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        **kwargs,
+    ):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 

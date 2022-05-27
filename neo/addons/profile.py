@@ -23,20 +23,14 @@ if TYPE_CHECKING:
 SETTINGS_MAPPING: SettingsMapping = {
     "receive_highlights": {
         "converter": commands.converter._convert_to_bool,
-        "description": None
+        "description": None,
     },
-    "timezone": {
-        "converter": timezone_converter,
-        "description": None
-    },
-    "hl_timeout": {
-        "converter": timeout_converter,
-        "description": None
-    },
+    "timezone": {"converter": timezone_converter, "description": None},
+    "hl_timeout": {"converter": timeout_converter, "description": None},
     "default_ephemeral": {
         "converter": commands.converter._convert_to_bool,
-        "description": None
-    }
+        "description": None,
+    },
 }
 
 
@@ -65,12 +59,14 @@ class Profile(neo.Addon):
                 )
                 """,
                 self.bot.cfg["database"]["database"],
-                col_name
+                col_name,
             )
 
             SETTINGS_MAPPING[col_name]["description"] = col_desc
 
-    @commands.hybrid_group(name="profilesettings", aliases=["settings"], invoke_without_command=True)
+    @commands.hybrid_group(
+        name="profilesettings", aliases=["settings"], invoke_without_command=True
+    )
     @is_registered_profile()
     async def profile_settings(self, ctx: NeoContext):
         """Group command for managing profile settings"""
@@ -87,29 +83,31 @@ class Profile(neo.Addon):
             )
             embed = neo.Embed(
                 title=f"Settings for {ctx.author}",
-                description=f"**Setting: `{setting}`**\n\n" + description
-            ).set_thumbnail(
-                url=ctx.author.display_avatar
-            )
+                description=f"**Setting: `{setting}`**\n\n" + description,
+            ).set_thumbnail(url=ctx.author.display_avatar)
             embeds.append(embed)
 
         menu = ButtonsMenu.from_embeds(embeds)
-        menu.add_item(ChangeSettingButton(
-            ctx=ctx,
-            addon=self,
-            settings=SETTINGS_MAPPING,
-            label="Change this setting",
-            style=discord.ButtonStyle.primary,
-            row=0
-        ))
-        menu.add_item(ResetSettingButton(
-            ctx=ctx,
-            addon=self,
-            settings=SETTINGS_MAPPING,
-            label="Reset this setting",
-            style=discord.ButtonStyle.danger,
-            row=0
-        ))
+        menu.add_item(
+            ChangeSettingButton(
+                ctx=ctx,
+                addon=self,
+                settings=SETTINGS_MAPPING,
+                label="Change this setting",
+                style=discord.ButtonStyle.primary,
+                row=0,
+            )
+        )
+        menu.add_item(
+            ResetSettingButton(
+                ctx=ctx,
+                addon=self,
+                settings=SETTINGS_MAPPING,
+                label="Reset this setting",
+                style=discord.ButtonStyle.danger,
+                row=0,
+            )
+        )
 
         await menu.start(ctx)
 
@@ -122,8 +120,7 @@ class Profile(neo.Addon):
     async def reset_option(self, ctx: NeoContext, setting: str):
         if not SETTINGS_MAPPING.get(setting):
             raise commands.BadArgument(
-                "That's not a valid setting! "
-                "Try `settings` for a list of settings!"
+                "That's not a valid setting! " "Try `settings` for a list of settings!"
             )
         profile = self.bot.profiles[ctx.author.id]
         await profile.reset_attribute(setting)
@@ -133,10 +130,12 @@ class Profile(neo.Addon):
     @discord.app_commands.describe(
         setting="The setting to set. More information can be found in the settings list",
         new_value="The new value to assign to this setting. More information"
-        " can be found in the settings list"
+        " can be found in the settings list",
     )
     @is_registered_profile()
-    async def profile_settings_set(self, ctx: NeoContext, setting: str, *, new_value: str):
+    async def profile_settings_set(
+        self, ctx: NeoContext, setting: str, *, new_value: str
+    ):
         """
         Updates the value of a profile setting
 
@@ -159,21 +158,26 @@ class Profile(neo.Addon):
 
     @profile_settings_set.autocomplete("setting")
     @profile_settings_reset.autocomplete("setting")
-    async def profile_settings_set_reset_autocomplete(self, interaction: discord.Interaction, current: str):
-        return [*map(lambda k: discord.app_commands.Choice(name=k, value=k),
-                     filter(lambda k: current in k, SETTINGS_MAPPING.keys()))]
+    async def profile_settings_set_reset_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
+        return [
+            *map(
+                lambda k: discord.app_commands.Choice(name=k, value=k),
+                filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
+            )
+        ]
 
     @commands.hybrid_group()
     async def profile(self, ctx: NeoContext):
         """Group command for profiles"""
 
     @profile.command(name="show")
-    @discord.app_commands.describe(user="The user to view the profile for. Yourself if empty")
+    @discord.app_commands.describe(
+        user="The user to view the profile for. Yourself if empty"
+    )
     async def profile_show(
-        self,
-        ctx: NeoContext,
-        *,
-        user: Optional[discord.User | discord.Member] = None
+        self, ctx: NeoContext, *, user: Optional[discord.User | discord.Member] = None
     ):
         """Displays the neo profile of yourself, or a specified user."""
         user = user or ctx.author
@@ -190,17 +194,17 @@ class Profile(neo.Addon):
                 f"**Created** <t:{int(profile.created_at.timestamp())}>"
             )
         ).set_thumbnail(
-            url=ctx.me.display_avatar if user != ctx.author
+            url=ctx.me.display_avatar
+            if user != ctx.author
             else ctx.author.display_avatar
         )
         if getattr(profile, "timezone", None):
             embed.add_field(
                 name="Time",
                 value="**Timezone** {0}\n**Local Time** {1:%B %d, %Y %H:%M}".format(
-                    profile.timezone,
-                    datetime.now(profile.timezone)
+                    profile.timezone, datetime.now(profile.timezone)
                 ),
-                inline=False
+                inline=False,
             )
         await ctx.send(embed=embed)
 
@@ -218,14 +222,17 @@ class Profile(neo.Addon):
     @is_registered_profile()
     async def profile_delete(self, ctx: NeoContext):
         """Permanently deletes your neo profile"""
-        if await ctx.prompt_user(
-            "Are you sure you want to delete your profile?"
-            "\nThis will delete your profile and all associated "
-            "info (todos, highlights, etc), and **cannot** be undone.",
-            label_confirm="I'm sure. Delete my profile.",
-            label_cancel="Nevermind, don't delete my profile.",
-            content_confirmed="Confirmed. Your profile is being deleted."
-        ) is False:
+        if (
+            await ctx.prompt_user(
+                "Are you sure you want to delete your profile?"
+                "\nThis will delete your profile and all associated "
+                "info (todos, highlights, etc), and **cannot** be undone.",
+                label_confirm="I'm sure. Delete my profile.",
+                label_cancel="Nevermind, don't delete my profile.",
+                content_confirmed="Confirmed. Your profile is being deleted.",
+            )
+            is False
+        ):
             return
 
         await self.bot.delete_profile(ctx.author.id)

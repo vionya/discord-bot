@@ -10,4 +10,5 @@ class SettingData(TypedDict):
     converter: Converter[Any] | Callable[[str], Any]
     description: Optional[str]
 
+
 SettingsMapping = dict[str, SettingData]

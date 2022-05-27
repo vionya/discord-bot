@@ -94,7 +94,7 @@ class NeoLoggingFormatter(Formatter):
         "INFO": Color.GREEN,
         "WARNING": Color.TAN,
         "ERROR": Color.ORANGE,
-        "CRITICAL": Color.RED
+        "CRITICAL": Color.RED,
     }
 
     def __init__(self, **kwargs):

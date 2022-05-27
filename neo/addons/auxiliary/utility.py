@@ -27,7 +27,7 @@ for code, lang in [
     ("ko", "Korean"),
     ("pt-BR", "Portuguese"),
     ("ar", "Arabic"),
-    ("tr", "Turkish")
+    ("tr", "Turkish"),
 ]:
     _language_codes.add_row(code, lang)
 LANGUAGE_CODES = _language_codes.display()
@@ -37,11 +37,7 @@ TRANSLATION_DIRECTIVE = re.compile(
 
 
 def result_to_embed(result):
-    embed = neo.Embed(
-        title=result.title,
-        description=result.snippet,
-        url=result.url
-    )
+    embed = neo.Embed(title=result.title, description=result.snippet, url=result.url)
     embed.set_image(url=result.image_url or "")
     return embed
 
@@ -51,10 +47,10 @@ def definitions_to_embed(word):
         for definition in meaning.definitions:
             embed = neo.Embed(
                 description=definition.definition,
-                title=f"{word.word}: {meaning.part_of_speech}"
+                title=f"{word.word}: {meaning.part_of_speech}",
             ).add_field(
                 name="Synonyms",
-                value=", ".join((definition.synonyms or ["No synonyms"])[:5])
+                value=", ".join((definition.synonyms or ["No synonyms"])[:5]),
             )
             yield embed
 
@@ -80,7 +76,9 @@ def do_translate(translator, content: str, *, dest: str, src: str):
         e.args = (f"An {e.args[0]} was provided",)
         raise
     except Exception:
-        raise RuntimeError("Something went wrong with translation. Maybe try again later?")
+        raise RuntimeError(
+            "Something went wrong with translation. Maybe try again later?"
+        )
     return translation
 
 
@@ -88,7 +86,7 @@ async def translate(translator, *args, **kwargs):  # Lazy async wrapper
     return await asyncio.to_thread(do_translate, translator, *args, **kwargs)
 
 
-class InviteDropdown(discord.ui.Select['InviteMenu']):
+class InviteDropdown(discord.ui.Select["InviteMenu"]):
     def __init__(self, *args, **kwargs):
         kwargs["custom_id"] = "neo phoenix:invite dropdown menu"
         super().__init__(*args, **kwargs)
@@ -99,11 +97,10 @@ class InviteDropdown(discord.ui.Select['InviteMenu']):
 
         url = discord.utils.oauth_url(
             self.view.application_id,
-            permissions=discord.Permissions(int(self.values[0]))
+            permissions=discord.Permissions(int(self.values[0])),
         )
         await interaction.response.send_message(
-            f"[**Click here to invite neo phoenix**]({url})",
-            ephemeral=True
+            f"[**Click here to invite neo phoenix**]({url})", ephemeral=True
         )
 
 
@@ -114,9 +111,7 @@ class InviteMenu(discord.ui.View):
         dropdown = InviteDropdown(placeholder="Choose Invite Preset")
         for preset in presets:
             dropdown.add_option(
-                label=preset["name"],
-                description=preset["desc"],
-                value=preset["value"]
+                label=preset["name"], description=preset["desc"], value=preset["value"]
             )
         self.add_item(dropdown)
 
@@ -136,12 +131,10 @@ class InviteButton(discord.ui.Button):
             "Discord automatically. This role cannot be deleted while the "
             "bot is in a server. Consider `No Permissions` to avoid managed roles."
             "\n\n**Everything** This can be used to be selective with permissions by "
-            "disabling what you don't want to grant."
+            "disabling what you don't want to grant.",
         )
         await interaction.response.send_message(
-            embed=embed,
-            ephemeral=True,
-            view=InviteMenu(**self.view_kwargs)
+            embed=embed, ephemeral=True, view=InviteMenu(**self.view_kwargs)
         )
 
 
@@ -152,19 +145,18 @@ class InfoButtons(discord.ui.View):
         invite_disabled: bool,
         *,
         buttons: list[discord.ui.Button],
-        **invite_menu_kwargs
+        **invite_menu_kwargs,
     ):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
-        self.add_item(InviteButton(
-            view_kwargs=invite_menu_kwargs, disabled=invite_disabled))
+        self.add_item(
+            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
+        )
         for button in buttons:
             self.add_item(button)
 
     @discord.ui.button(
-        custom_id="neo phoenix:privacy policy",
-        label="Privacy Policy",
-        row=1
+        custom_id="neo phoenix:privacy policy", label="Privacy Policy", row=1
     )
     async def callback(self, interaction: discord.Interaction, button):
         await interaction.response.send_message(

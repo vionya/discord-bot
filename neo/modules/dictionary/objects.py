@@ -20,7 +20,9 @@ class Meaning:
         self.definitions = [*map(Definition, meaning_data.pop("definitions"))]
 
     def __repr__(self):
-        return "<{0.__class__.__name__} part_of_speech={0.part_of_speech!r} definitions={1}>".format(self, len(self.definitions))
+        return "<{0.__class__.__name__} part_of_speech={0.part_of_speech!r} definitions={1}>".format(
+            self, len(self.definitions)
+        )
 
 
 class Word:
@@ -32,7 +34,9 @@ class Word:
         self.meanings = [*map(Meaning, word_data.pop("meanings"))]
 
     def __repr__(self):
-        return "<{0.__class__.__name__} word={0.word!r} meanings={1}>".format(self, len(self.meanings))
+        return "<{0.__class__.__name__} word={0.word!r} meanings={1}>".format(
+            self, len(self.meanings)
+        )
 
 
 class DictionaryResponse:

@@ -20,8 +20,7 @@ class Patcher:
 
         for target in self.targets:
             for name, attr in map(
-                lambda _attr: (_attr, getattr(target, _attr)),
-                dir(target)
+                lambda _attr: (_attr, getattr(target, _attr)), dir(target)
             ):
                 self._original[target.__name__][name] = attr
 
@@ -37,7 +36,9 @@ class Patcher:
     def attribute(self, *, name: str) -> Callable[[Callable[..., Any]], None]:
         ...
 
-    def attribute(self, *, value=None, name=None) -> Callable[[Callable[..., Any]], None] | None:
+    def attribute(
+        self, *, value=None, name=None
+    ) -> Callable[[Callable[..., Any]], None] | None:
         """
         Patch an attribute onto the target.
 

@@ -28,4 +28,5 @@ class Embed(discord.Embed):
         data.setdefault("color", 0xA29BFE)
         return super().from_dict(data)
 
+
 del discord  # Avoids re-exporting discord

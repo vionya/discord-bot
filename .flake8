@@ -8,4 +8,5 @@ ignore =
     F401,  # Unused import
     E731,
     W503,  # Despite flake8 complaints, best practice is line break before operator
-    E704   # Allow multiple defs on one line
+    E704,  # Allow multiple defs on one line
+    E203   # black likes to format things like this

@@ -14,14 +14,7 @@ from aiohttp import ClientSession
 from asyncpg import create_pool
 from discord.ext import commands
 
-from .classes import (
-    Embed,
-    containers,
-    context,
-    formatters,
-    help_command,
-    partials
-)
+from .classes import Embed, containers, context, formatters, help_command, partials
 from .modules import *  # noqa: F403
 from .tools import *  # noqa: F403
 from .tools import recursive_getattr
@@ -39,7 +32,8 @@ __version__ = "0.15.0a"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
-    **dict.fromkeys(["messages", "guilds", "guild_reactions", "message_content"], True))
+    **dict.fromkeys(["messages", "guilds", "guild_reactions", "message_content"], True)
+)
 
 
 class Neo(commands.Bot):
@@ -57,7 +51,7 @@ class Neo(commands.Bot):
         kwargs["activity"] = discord.Activity(
             name=config["bot"]["activity_name"],
             type=discord.ActivityType[config["bot"]["activity_type"]],
-            url="https://twitch.tv/#"  # for spoofing Discord when activity type is streaming
+            url="https://twitch.tv/#",  # for spoofing Discord when activity type is streaming
         )
         kwargs["status"] = discord.Status[config["bot"]["status"]]
         kwargs["allowed_mentions"] = discord.AllowedMentions.none()
@@ -68,9 +62,12 @@ class Neo(commands.Bot):
         super().__init__(**kwargs)
 
         self.cooldown = commands.CooldownMapping.from_cooldown(
-            2, 4, commands.BucketType.user)
+            2, 4, commands.BucketType.user
+        )
         self.add_check(self.global_cooldown, call_once=True)  # Register global cooldown
-        self.add_check(self.channel_check, call_once=True)  # Register channel disabled check
+        self.add_check(
+            self.channel_check, call_once=True
+        )  # Register channel disabled check
         self.add_check(self.guild_disabled_check)  # Register command disabled check
 
         self._async_ready = asyncio.Event()
@@ -117,7 +114,7 @@ class Neo(commands.Bot):
                     $1
                 ) RETURNING *
                 """,
-                user_id
+                user_id,
             )
         profile = containers.NeoUser(pool=self.db, **record)
         self.profiles[user_id] = profile
@@ -132,7 +129,7 @@ class Neo(commands.Bot):
             WHERE
                 user_id=$1
             """,
-            user_id
+            user_id,
         )
         self.broadcast("profile_delete", user_id)
 
@@ -146,7 +143,7 @@ class Neo(commands.Bot):
                     $1
                 ) RETURNING *
                 """,
-                guild_id
+                guild_id,
             )
         config = containers.NeoGuildConfig(pool=self.db, **record)
         self.configs[guild_id] = config
@@ -161,7 +158,7 @@ class Neo(commands.Bot):
             WHERE
                 guild_id=$1
             """,
-            guild_id
+            guild_id,
         )
         self.broadcast("config_delete", guild_id)
 
@@ -190,11 +187,13 @@ class Neo(commands.Bot):
 
     async def get_prefix(self, message: discord.Message) -> list[str]:
         if message.guild:
-            return commands.when_mentioned_or(getattr(
-                self.configs.get(message.guild.id),
-                "prefix",
-                self.cfg["bot"]["prefix"]
-            ))(self, message)
+            return commands.when_mentioned_or(
+                getattr(
+                    self.configs.get(message.guild.id),
+                    "prefix",
+                    self.cfg["bot"]["prefix"],
+                )
+            )(self, message)
 
         return commands.when_mentioned_or(self.cfg["bot"]["prefix"])(self, message)
 
@@ -211,22 +210,31 @@ class Neo(commands.Bot):
             if not ctx.interaction:
                 await ctx.send(original_error)
             else:
-                await ctx.interaction.response.send_message(original_error, ephemeral=True)
+                await ctx.interaction.response.send_message(
+                    original_error, ephemeral=True
+                )
         except discord.Forbidden:
             pass  # Maybe we can't send messages in the channel
-        log.error(f"In command invocation: {ctx.message.content}\n" + formatters
-                  .format_exception(original_error))
+        log.error(
+            f"In command invocation: {ctx.message.content}\n"
+            + formatters.format_exception(original_error)
+        )
 
-    async def get_context(self, message: discord.Message | discord.Interaction, *, cls=context.NeoContext):
+    async def get_context(
+        self, message: discord.Message | discord.Interaction, *, cls=context.NeoContext
+    ):
         return await super().get_context(message, cls=cls)
 
     # TODO: Remove this if/when it's properly supported by discord.py
     def add_command(self, command, /):
         if isinstance(command, commands.HybridCommand | commands.HybridGroup):
-            if command.app_command is not None and all([
-                command.with_app_command,
-                command.cog is None or not command.cog.__cog_is_app_commands_group__
-            ]):
+            if command.app_command is not None and all(
+                [
+                    command.with_app_command,
+                    command.cog is None
+                    or not command.cog.__cog_is_app_commands_group__,
+                ]
+            ):
                 self.tree.add_command(command.app_command)
             if getattr(command, "with_command", True):
                 commands.GroupMixin.add_command(self, command)
@@ -254,7 +262,8 @@ class Neo(commands.Bot):
 
         if retry_after:
             raise commands.CommandOnCooldown(
-                actual_cooldown, retry_after, commands.BucketType.user)
+                actual_cooldown, retry_after, commands.BucketType.user
+            )
         return True
 
     async def channel_check(self, ctx: context.NeoContext):
@@ -263,7 +272,7 @@ class Neo(commands.Bot):
 
         predicates = [
             getattr(ctx.guild, "id", None) not in self.configs,
-            await self.is_owner(ctx.author)
+            await self.is_owner(ctx.author),
         ]
 
         if hasattr(ctx.channel, "permissions_for"):
@@ -282,7 +291,7 @@ class Neo(commands.Bot):
 
         predicates = [
             getattr(ctx.guild, "id", None) not in self.configs,
-            await self.is_owner(ctx.author)
+            await self.is_owner(ctx.author),
         ]
 
         if hasattr(ctx.channel, "permissions_for"):
@@ -310,4 +319,5 @@ class Neo(commands.Bot):
 
         async def run_coros():
             await asyncio.gather(*coros)
+
         asyncio.create_task(run_coros())

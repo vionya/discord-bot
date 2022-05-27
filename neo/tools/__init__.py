@@ -17,7 +17,7 @@ T = TypeVar("T")
 
 def shorten(text: str, width: int) -> str:
     if len(text) > width:
-        text = text[:width - 3] + "..."
+        text = text[: width - 3] + "..."
     return text
 
 
@@ -29,10 +29,7 @@ def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
 
 
 async def convert_setting(
-    ctx: NeoContext,
-    mapping: SettingsMapping,
-    setting: str,
-    new_value: str
+    ctx: NeoContext, mapping: SettingsMapping, setting: str, new_value: str
 ):
     # Use try/except here because, if the __getitem__ succeeds,
     # it's roughly 30% faster than using dict.get. Because of the
@@ -44,8 +41,7 @@ async def convert_setting(
         valid_setting = mapping[setting]
     except KeyError:
         raise commands.BadArgument(
-            "That's not a valid setting! "
-            "Try `settings` for a list of settings!"
+            "That's not a valid setting! " "Try `settings` for a list of settings!"
         )
 
     value = None
@@ -76,5 +72,6 @@ def recursive_getattr(target: Any, attr: str, default: Any = None) -> Any:
 
     # If `found` has no attribute named `attr` then return it
     # Otherwise, recurse until we do find something
-    return found if not hasattr(found, attr) else \
-        recursive_getattr(found, attr, default)
+    return (
+        found if not hasattr(found, attr) else recursive_getattr(found, attr, default)
+    )

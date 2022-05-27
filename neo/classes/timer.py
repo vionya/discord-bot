@@ -9,14 +9,7 @@ from .formatters import format_exception
 class PeriodicTimer:
     """Implements simple async periodicity with a coroutine callback"""
 
-    __slots__ = (
-        "callback",
-        "interval",
-        "instance",
-        "is_stopped",
-        "logger",
-        "task"
-    )
+    __slots__ = ("callback", "interval", "instance", "is_stopped", "logger", "task")
 
     def __init__(self, callback, interval: int):
         self.callback = callback
@@ -60,4 +53,5 @@ class PeriodicTimer:
 def periodic(interval: int = 60):
     def inner(func):
         return PeriodicTimer(func, interval)
+
     return inner

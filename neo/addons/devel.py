@@ -34,34 +34,36 @@ class Devel(neo.Addon):
     @commands.command(name="cleanup", aliases=["clean"])
     async def dev_cleanup(self, ctx: NeoContext, amount: int = 5):
         """Cleanup the bot's messages from a channel"""
-        can_manage = ctx.channel.permissions_for(cast(discord.Member, ctx.me)).manage_messages
+        can_manage = ctx.channel.permissions_for(
+            cast(discord.Member, ctx.me)
+        ).manage_messages
 
         def check(message: discord.Message) -> bool:
             if can_manage:
-                return any([
-                    message.author == ctx.me,
-                    (ctx.prefix and message.content.startswith(ctx.prefix))
-                ])
+                return any(
+                    [
+                        message.author == ctx.me,
+                        (ctx.prefix and message.content.startswith(ctx.prefix)),
+                    ]
+                )
             return message.author == ctx.me
 
-        purged = await cast(discord.TextChannel | discord.VoiceChannel, ctx.channel).purge(
-            limit=amount,
-            bulk=can_manage,
-            check=check
-        )
+        purged = await cast(
+            discord.TextChannel | discord.VoiceChannel, ctx.channel
+        ).purge(limit=amount, bulk=can_manage, check=check)
         await ctx.send(f"Cleaned {len(purged)} message(s).", delete_after=5)
 
     @commands.command(name="exec", aliases=["e"])
-    async def dev_exec(self, ctx: NeoContext, *, code: str = commands.parameter(converter=codeblock_converter)):
+    async def dev_exec(
+        self,
+        ctx: NeoContext,
+        *,
+        code: str = commands.parameter(converter=codeblock_converter),
+    ):
         """Executes some code, retaining the result"""
         (globals_ := env_from_context(ctx)).update(**(self._exec_scope | globals()))
         pages = Pages(
-            "\r",
-            1500,
-            joiner="",
-            prefix="```py\n",
-            suffix="\n```",
-            use_embed=True
+            "\r", 1500, joiner="", prefix="```py\n", suffix="\n```", use_embed=True
         )
         menu = ButtonsMenu(pages)
 
@@ -83,7 +85,9 @@ class Devel(neo.Addon):
             await menu.start(ctx, as_reply=True)
 
     @commands.command(name="sql")
-    async def dev_sql(self, ctx, *, query: str = commands.parameter(converter=codeblock_converter)):
+    async def dev_sql(
+        self, ctx, *, query: str = commands.parameter(converter=codeblock_converter)
+    ):
         """Perform an SQL query"""
         data = await self.bot.db.fetch(query)
         if len(data) == 0:
@@ -95,20 +99,17 @@ class Devel(neo.Addon):
             table.add_row(*map(str, row.values()))
 
         pages = Pages(
-            table.display(),
-            1500,
-            joiner="",
-            prefix="```py\n",
-            suffix="\n```"
+            table.display(), 1500, joiner="", prefix="```py\n", suffix="\n```"
         )
         menu = ButtonsMenu(pages)
         await menu.start(ctx)
 
     @args.add_arg(
-        "-a", "--action",
+        "-a",
+        "--action",
         choices=["reload", "load", "unload"],
         default="reload",
-        help="Controls the action to perform"
+        help="Controls the action to perform",
     )
     @args.add_arg("addons", nargs="+", help="Addons to action, `~ = all`")
     @args.command(name="addon")

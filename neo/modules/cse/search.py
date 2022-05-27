@@ -27,12 +27,7 @@ class Search:
     async def _perform_search(self, query, *, safesearch=True, image=False):
 
         key = self._get_key()
-        params = dict(
-            q=query,
-            key=key,
-            cx=self.engine_id,
-            safe=_safe(safesearch)
-        )
+        params = dict(q=query, key=key, cx=self.engine_id, safe=_safe(safesearch))
 
         if image is True:
             params.update(searchType="image")
@@ -45,9 +40,7 @@ class Search:
                     if isinstance(self.key, list):
                         self.key.remove(key)
                         return await self._perform_search(
-                            query,
-                            safesearch=safesearch,
-                            image=image
+                            query, safesearch=safesearch, image=image
                         )  # Try to get a new key to use
                     raise GoogleError(f"Error with search ({error['code']})")
 

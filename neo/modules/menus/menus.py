@@ -30,7 +30,7 @@ class BaseMenu(discord.ui.View):
         "update_lock",
         "buttons",
         "bot",
-        "author"
+        "author",
     )
 
     def __init__(self, pages: Pages):
@@ -104,7 +104,9 @@ class BaseMenu(discord.ui.View):
         elif self.message:
             await self.message.edit(**kwargs)
 
-    async def close(self, *, interaction: Optional[discord.Interaction] = None, manual=False):
+    async def close(
+        self, *, interaction: Optional[discord.Interaction] = None, manual=False
+    ):
         self.stop()
         self.running = False
         try:
@@ -144,10 +146,9 @@ class BaseMenu(discord.ui.View):
         self.bot.loop.create_task(inner())
 
     async def interaction_check(self, interaction):
-        (predicates := []).append(interaction.user.id in (
-            self.author.id,
-            *(self.bot.owner_ids or []),
-            self.bot.owner_id)
+        (predicates := []).append(
+            interaction.user.id
+            in (self.author.id, *(self.bot.owner_ids or []), self.bot.owner_id)
         )
         return all(predicates)
 
@@ -164,7 +165,6 @@ class BaseMenu(discord.ui.View):
 
 
 class ButtonsMenu(BaseMenu):
-
     @discord.ui.button(label="≪", row=4)
     async def previous_button(self, interaction, button):
         current_page = self.get_current_page(self.current_page - 1)
@@ -196,14 +196,13 @@ class DropdownMenuItem(discord.ui.Select):
 
 
 class DropdownMenu(ButtonsMenu, BaseMenu):
-
     @classmethod
     def from_pages(
         cls,
         pages: Pages,
         *,
         embed_auto_label: bool = False,
-        embed_auto_desc: bool = False
+        embed_auto_desc: bool = False,
     ):
         options: list[discord.SelectOption] = []
         for index, page in enumerate(pages.items, 1):
@@ -214,8 +213,11 @@ class DropdownMenu(ButtonsMenu, BaseMenu):
                     label = shorten(page.title or f"Page {index}", 100)
                 if embed_auto_desc:
                     description = shorten(page.description or "", 100)
-            options.append(discord.SelectOption(
-                label=label, value=str(index - 1), description=description))
+            options.append(
+                discord.SelectOption(
+                    label=label, value=str(index - 1), description=description
+                )
+            )
 
         return cls.from_options(options=options, pages=pages)
 

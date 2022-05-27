@@ -13,7 +13,7 @@ from neo.tools import try_or_none
 ABSOLUTE_FORMATS = {  # Use a set so %H:%M doesn't get duplicated
     "%b %d, %Y",
     "%H:%M",
-    "%b %d, %Y at %H:%M"
+    "%b %d, %Y at %H:%M",
 }  # Define a very rigid set of formats that can be passed
 ABSOLUTE_FORMATS |= {i.replace("%b", "%B") for i in ABSOLUTE_FORMATS}
 RELATIVE_FORMATS = re.compile(
@@ -25,7 +25,7 @@ RELATIVE_FORMATS = re.compile(
     \s?((?P<minutes>[0-9]{1,4})\s?(?:m(inutes?)?,?))?  # Parse minutes, allow 1-4 digits
     \s?((?P<seconds>[0-9]{1,4})\s?(?:s(econds?)?))?    # Parse seconds, allow 1-4 digits
     """,
-    re.X | re.I
+    re.X | re.I,
 )
 
 
@@ -42,12 +42,7 @@ class TimedeltaWithYears(timedelta):
     ):
         days = days + (years * 365)
         return super().__new__(
-            cls,
-            weeks=weeks,
-            days=days,
-            hours=hours,
-            minutes=minutes,
-            seconds=seconds
+            cls, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds
         )
 
 
@@ -66,7 +61,7 @@ def parse_absolute(string: str, *, tz) -> tuple[datetime, str] | NoReturn:
                     parsed_datetime = date.replace(
                         hour=parsed_datetime.hour,
                         minute=parsed_datetime.minute,
-                        second=parsed_datetime.second
+                        second=parsed_datetime.second,
                     )
                 break
 

@@ -21,7 +21,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         settings: dict[str, Any],
         addon: StarboardAddon,
         ctx: neo.context.NeoContext,
-        **kwargs
+        **kwargs,
     ):
         self.ctx = ctx
         self.addon = addon
@@ -43,7 +43,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
                 label=f"Changing {current_setting}",
                 placeholder="New value",
                 min_length=1,
-                max_length=500
+                max_length=500,
             )
 
             async def on_submit(self, interaction):
@@ -51,20 +51,27 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
                     return
 
                 try:
-                    await outer_self.addon.set_option(outer_self.ctx, current_setting, self.new_value.value)
+                    await outer_self.addon.set_option(
+                        outer_self.ctx, current_setting, self.new_value.value
+                    )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
                     await interaction.response.send_message(
-                        f"Setting `{current_setting}` has been changed!",
-                        ephemeral=True
+                        f"Setting `{current_setting}` has been changed!", ephemeral=True
                     )
 
-                    description = outer_self.settings[current_setting]["description"].format(
-                        getattr(outer_self.addon.starboards[outer_self.ctx.guild.id], current_setting)
+                    description = outer_self.settings[current_setting][
+                        "description"
+                    ].format(
+                        getattr(
+                            outer_self.addon.starboards[outer_self.ctx.guild.id],
+                            current_setting,
+                        )
                     )
-                    outer_self.view.pages.items[index].description = \
+                    outer_self.view.pages.items[index].description = (
                         f"**Setting: `{current_setting}`**\n\n" + description
+                    )
                     await outer_self.view.refresh_page()
 
         modal = ChangeSettingModal()

@@ -30,7 +30,7 @@ class Reminder:
         "content",
         "end_time",
         "bot",
-        "wait_task"
+        "wait_task",
     )
 
     def __init__(
@@ -41,7 +41,7 @@ class Reminder:
         channel_id: int,
         content: str,
         end_time: datetime,
-        bot: neo.Neo
+        bot: neo.Neo,
     ):
         self.user_id = user_id
         self.message_id = message_id
@@ -73,7 +73,7 @@ class Reminder:
             try:
                 await self.message.reply(
                     f"**Reminder**:\n{self.content}",
-                    allowed_mentions=discord.AllowedMentions(replied_user=True)
+                    allowed_mentions=discord.AllowedMentions(replied_user=True),
                 )
             except discord.HTTPException:
                 await self.fallback_deliver()
@@ -87,12 +87,11 @@ class Reminder:
             dest = self.bot.get_user(self.user_id, as_partial=True)
             await dest.send(
                 "<@{0}> **Reminder** [source unavailable]:\n> {1}".format(
-                    self.user_id,
-                    self.content
+                    self.user_id, self.content
                 ),
                 allowed_mentions=discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
-                )
+                ),
             )
         except discord.HTTPException:
             return
@@ -112,7 +111,7 @@ class Reminder:
             self.user_id,
             self.message_id,
             self.content,
-            self.end_time
+            self.end_time,
         )
         try:  # Need to cancel the task
             self.wait_task.cancel()
@@ -142,10 +141,9 @@ class Reminders(neo.Addon):
 
     @neo.Addon.recv("reminder_removed")
     async def handle_removed_reminder(self, user_id: int):
-        self.reminders[user_id] = [*filter(
-            lambda r: not r.wait_task.done(),
-            self.reminders[user_id].copy()
-        )]
+        self.reminders[user_id] = [
+            *filter(lambda r: not r.wait_task.done(), self.reminders[user_id].copy())
+        ]
 
     async def cog_check(self, ctx: NeoContext):
         return await is_registered_profile().predicate(ctx)
@@ -162,7 +160,7 @@ class Reminders(neo.Addon):
         message_id: int,
         channel_id: int,
         content: str,
-        end_time: datetime
+        end_time: datetime,
     ):
         data = await self.bot.db.fetchrow(
             """
@@ -180,7 +178,7 @@ class Reminders(neo.Addon):
             message_id,
             channel_id,
             content,
-            end_time
+            end_time,
         )
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
@@ -190,7 +188,9 @@ class Reminders(neo.Addon):
         """Group command for managing reminders"""
 
     @remind.command(name="in", usage="<offset> <content>", with_app_command=False)
-    @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
+    @discord.app_commands.describe(
+        input="View the help command output for this command. It will be improved soon."
+    )
     async def remind_relative(self, ctx: NeoContext, *, input: str):
         """
         Schedule a reminder for a relative offset
@@ -211,7 +211,9 @@ class Reminders(neo.Addon):
 
         (delta, remainder) = parse_relative(input)
         if len(remainder) > MAX_REMINDER_LEN:
-            raise ValueError(f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!")
+            raise ValueError(
+                f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!"
+            )
 
         future_time: datetime = datetime.now(timezone.utc) + delta
         timestamp: int = int(future_time.timestamp())
@@ -220,12 +222,21 @@ class Reminders(neo.Addon):
             message_id=ctx.message.id,
             channel_id=ctx.channel.id,
             content=remainder or "...",
-            end_time=future_time
+            end_time=future_time,
         )
-        await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
+        await ctx.reply(
+            f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]"
+        )
 
-    @remind.command(name="on", aliases=["at"], usage="<absolute time> <content>", with_app_command=False)
-    @discord.app_commands.describe(input="View the help command output for this command. It will be improved soon.")
+    @remind.command(
+        name="on",
+        aliases=["at"],
+        usage="<absolute time> <content>",
+        with_app_command=False,
+    )
+    @discord.app_commands.describe(
+        input="View the help command output for this command. It will be improved soon."
+    )
     async def remind_absolute(self, ctx: NeoContext, *, input: str):
         """
         Schedule a reminder for an absolute date/time
@@ -249,29 +260,35 @@ class Reminders(neo.Addon):
         if len(self.reminders[ctx.author.id]) >= MAX_REMINDERS:
             raise ValueError("You've used up all of your reminder slots!")
 
-        (future_time, remainder) = parse_absolute(input, tz=profile.timezone or timezone.utc)
-        if len(remainder) > MAX_REMINDER_LEN:
-            raise ValueError(f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!")
-
-        future_time = future_time.replace(
-            tzinfo=profile.timezone or timezone.utc
+        (future_time, remainder) = parse_absolute(
+            input, tz=profile.timezone or timezone.utc
         )
+        if len(remainder) > MAX_REMINDER_LEN:
+            raise ValueError(
+                f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!"
+            )
+
+        future_time = future_time.replace(tzinfo=profile.timezone or timezone.utc)
         timestamp: int = int(future_time.timestamp())
         await self.add_reminder(
             user_id=ctx.author.id,
             message_id=ctx.message.id,
             channel_id=ctx.channel.id,
             content=remainder or "...",
-            end_time=future_time
+            end_time=future_time,
         )
-        await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
+        await ctx.reply(
+            f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]"
+        )
 
     @remind.command(name="set", with_command=False)
     @discord.app_commands.describe(
         when="When the reminder should be delivered. See this command's help entry for more info",
-        content="The content to remind yourself about. Can be empty"
+        content="The content to remind yourself about. Can be empty",
     )
-    async def reminder_set(self, ctx: NeoContext, when: str, *, content: Optional[str] = None):
+    async def reminder_set(
+        self, ctx: NeoContext, when: str, *, content: Optional[str] = None
+    ):
         """
         Schedule a reminder
 
@@ -311,11 +328,14 @@ class Reminders(neo.Addon):
         if len(self.reminders[ctx.author.id]) >= MAX_REMINDERS:
             raise ValueError("You've used up all of your reminder slots!")
 
-        (time_data, remainder) = try_or_none(parse_relative, when) or \
-            parse_absolute(when, tz=profile.timezone or timezone.utc)
+        (time_data, remainder) = try_or_none(parse_relative, when) or parse_absolute(
+            when, tz=profile.timezone or timezone.utc
+        )
 
         if len(remainder) > MAX_REMINDER_LEN:
-            raise ValueError(f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!")
+            raise ValueError(
+                f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!"
+            )
 
         match time_data:
             case TimedeltaWithYears():
@@ -331,9 +351,11 @@ class Reminders(neo.Addon):
             message_id=ctx.message.id,
             channel_id=ctx.channel.id,
             content=content or "...",
-            end_time=future_time
+            end_time=future_time,
         )
-        await ctx.reply(f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]")
+        await ctx.reply(
+            f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]"
+        )
 
     @remind.command(name="list")
     async def remind_list(self, ctx: NeoContext):
@@ -344,16 +366,18 @@ class Reminders(neo.Addon):
         for index, reminder in enumerate(reminders, 1):
             formatted_reminders.append(
                 "`{0}` {1}\n> Triggers <t:{2}:R>".format(
-                    index, shorten(reminder.content, 50), int(reminder.end_time.timestamp())
-                ))
+                    index,
+                    shorten(reminder.content, 50),
+                    int(reminder.end_time.timestamp()),
+                )
+            )
         menu = ButtonsMenu.from_iterable(
             formatted_reminders or ["No reminders"],
             per_page=5,
             use_embed=True,
             template_embed=neo.Embed().set_author(
-                name=f"{ctx.author}'s reminders",
-                icon_url=ctx.author.display_avatar
-            )
+                name=f"{ctx.author}'s reminders", icon_url=ctx.author.display_avatar
+            ),
         )
         await menu.start(ctx)
 
@@ -365,28 +389,33 @@ class Reminders(neo.Addon):
         except IndexError:
             raise IndexError("Couldn't find that reminder.")
 
-        embed = neo.Embed(
-            description=reminder.content
-        ).add_field(
-            name=f"Created on <t:{int(snowflake_time(reminder.message_id).timestamp())}>",
-            value=(f"Triggers on <t:{int(reminder.end_time.timestamp())}>"
-                   f"\n[Jump to origin]({reminder.message.jump_url})")
-        ).set_author(
-            name="Viewing a reminder",
-            icon_url=ctx.author.display_avatar
+        embed = (
+            neo.Embed(description=reminder.content)
+            .add_field(
+                name=f"Created on <t:{int(snowflake_time(reminder.message_id).timestamp())}>",
+                value=(
+                    f"Triggers on <t:{int(reminder.end_time.timestamp())}>"
+                    f"\n[Jump to origin]({reminder.message.jump_url})"
+                ),
+            )
+            .set_author(name="Viewing a reminder", icon_url=ctx.author.display_avatar)
         )
         await ctx.send(embed=embed)
 
     @remind_view.autocomplete("index")
-    async def remind_view_autocomplete(self, interaction: discord.Interaction, current: str):
+    async def remind_view_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
         opts = [*range(1, len(self.reminders[interaction.user.id]) + 1)][:24]
-        return [*map(
-            lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
-            map(str, opts)
-        )]
+        return [
+            *map(
+                lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
+                map(str, opts),
+            )
+        ]
 
     @remind.command(name="cancel", aliases=["remove", "rm"])
     async def remind_cancel(self, ctx: NeoContext, index: str):
@@ -407,8 +436,10 @@ class Reminders(neo.Addon):
         else:
             (indices := [*map(str, indices)]).sort(reverse=True)
             try:
-                reminders = [self.reminders[ctx.author.id].pop(index - 1) for index in map(
-                    int, filter(str.isdigit, indices))]
+                reminders = [
+                    self.reminders[ctx.author.id].pop(index - 1)
+                    for index in map(int, filter(str.isdigit, indices))
+                ]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
 
@@ -417,16 +448,20 @@ class Reminders(neo.Addon):
         await ctx.send_confirmation()
 
     @remind_cancel.autocomplete("index")
-    async def remind_cancel_autocomplete(self, interaction: discord.Interaction, current: str):
+    async def remind_cancel_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
         opts: list[str | int] = ["~"]
         opts.extend([*range(1, len(self.reminders[interaction.user.id]) + 1)][:24])
-        return [*map(
-            lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-            map(str, opts)
-        )]
+        return [
+            *map(
+                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
+                map(str, opts),
+            )
+        ]
 
 
 async def setup(bot: neo.Neo):

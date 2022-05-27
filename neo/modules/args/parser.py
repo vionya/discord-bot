@@ -5,11 +5,7 @@ from __future__ import annotations
 from argparse import ArgumentError, ArgumentParser
 from typing import TYPE_CHECKING
 
-from discord.ext.commands import (
-    CommandError,
-    Converter,
-    MissingRequiredArgument
-)
+from discord.ext.commands import CommandError, Converter, MissingRequiredArgument
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
@@ -51,7 +47,9 @@ class Parser(ArgumentParser):
         try:
             return converter(arg_string)
         except ValueError:
-            self.error(f"Bad value type for flag argument `{action.dest}`"
-                       f" (expected type: `{converter.__name__}`)")
+            self.error(
+                f"Bad value type for flag argument `{action.dest}`"
+                f" (expected type: `{converter.__name__}`)"
+            )
         except Exception as e:
             self.error(str(e))

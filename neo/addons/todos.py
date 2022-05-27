@@ -25,7 +25,7 @@ class TodoItem:
         guild_id: str,
         channel_id: int,
         message_id: int,
-        edited: bool
+        edited: bool,
     ):
         self.user_id = user_id
         self.content = content
@@ -35,11 +35,15 @@ class TodoItem:
         self.edited = edited
 
     def __repr__(self):
-        return "<{0.__class__.__name__} user_id={0.user_id} message_id={0.message_id}>".format(self)
+        return "<{0.__class__.__name__} user_id={0.user_id} message_id={0.message_id}>".format(
+            self
+        )
 
     @property
     def jump_url(self):
-        return 'https://discord.com/channels/{0.guild_id}/{0.channel_id}/{0.message_id}'.format(self)
+        return "https://discord.com/channels/{0.guild_id}/{0.channel_id}/{0.message_id}".format(
+            self
+        )
 
     @property
     def created_at(self):
@@ -78,18 +82,19 @@ class Todos(neo.Addon):
         formatted_todos = []
 
         for index, todo in enumerate(self.todos[ctx.author.id], 1):
-            formatted_todos.append("`{0}` {1}".format(
-                index, escape_markdown(shorten(todo.content, width=75))
-            ))
+            formatted_todos.append(
+                "`{0}` {1}".format(
+                    index, escape_markdown(shorten(todo.content, width=75))
+                )
+            )
 
         menu = ButtonsMenu.from_iterable(
             formatted_todos or ["No todos"],
             per_page=10,
             use_embed=True,
             template_embed=neo.Embed().set_author(
-                name=f"{ctx.author}'s todos",
-                icon_url=ctx.author.display_avatar
-            )
+                name=f"{ctx.author}'s todos", icon_url=ctx.author.display_avatar
+            ),
         )
         await menu.start(ctx)
 
@@ -105,7 +110,7 @@ class Todos(neo.Addon):
             "guild_id": str(getattr(ctx.guild, "id", "@me")),
             "channel_id": ctx.channel.id,
             "message_id": ctx.message.id,
-            "edited": False
+            "edited": False,
         }
 
         await self.bot.db.execute(
@@ -121,7 +126,7 @@ class Todos(neo.Addon):
                 $1, $2, $3, $4, $5, $6
             )
             """,
-            *data.values()
+            *data.values(),
         )
 
         self.todos[ctx.author.id].append(TodoItem(**data))
@@ -146,10 +151,13 @@ class Todos(neo.Addon):
             self.todos[ctx.author.id].clear()
 
         else:
-            (indices := [*map(str, indices)]).sort(reverse=True)  # Pop in an way that preserves the list's original order
+            (indices := [*map(str, indices)]).sort(
+                reverse=True
+            )  # Pop in an way that preserves the list's original order
             try:
-                todos = [self.todos[ctx.author.id].pop(index - 1) for index in map(
-                    int, filter(str.isdigit, indices))
+                todos = [
+                    self.todos[ctx.author.id].pop(index - 1)
+                    for index in map(int, filter(str.isdigit, indices))
                 ]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
@@ -161,21 +169,25 @@ class Todos(neo.Addon):
                 user_id=$2
             """,
             [*map(attrgetter("message_id"), todos)],
-            ctx.author.id
+            ctx.author.id,
         )
         await ctx.send_confirmation()
 
     @todo_remove.autocomplete("index")
-    async def todo_remove_autocomplete(self, interaction: discord.Interaction, current: str):
+    async def todo_remove_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
         opts: list[str | int] = ["~"]
         opts.extend([*range(1, len(self.todos[interaction.user.id]) + 1)][:24])
-        return [*map(
-            lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-            map(str, opts)
-        )]
+        return [
+            *map(
+                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
+                map(str, opts),
+            )
+        ]
 
     @todo.command(name="view", aliases=["show"])
     async def todo_view(self, ctx, index: int):
@@ -185,16 +197,16 @@ class Todos(neo.Addon):
         except IndexError:
             raise IndexError("Couldn't find that todo.")
 
-        embed = neo.Embed(
-            description=todo.content
-        ).add_field(
-            name=f"Created on <t:{int(todo.created_at.timestamp())}>",
-            value=f"[Jump to origin]({todo.jump_url})"
-        ).set_author(
-            name="Viewing a todo {}".format(
-                "[edited]" if todo.edited else ""
-            ),
-            icon_url=ctx.author.display_avatar
+        embed = (
+            neo.Embed(description=todo.content)
+            .add_field(
+                name=f"Created on <t:{int(todo.created_at.timestamp())}>",
+                value=f"[Jump to origin]({todo.jump_url})",
+            )
+            .set_author(
+                name="Viewing a todo {}".format("[edited]" if todo.edited else ""),
+                icon_url=ctx.author.display_avatar,
+            )
         )
 
         await ctx.send(embed=embed)
@@ -219,21 +231,27 @@ class Todos(neo.Addon):
                 message_id=$2 AND
                 user_id=$3
             """,
-            new_content, todo.message_id, todo.user_id
+            new_content,
+            todo.message_id,
+            todo.user_id,
         )
         await ctx.send_confirmation()
 
     @todo_view.autocomplete("index")
     @todo_edit.autocomplete("index")
-    async def todo_edit_view_autocomplete(self, interaction: discord.Interaction, current: str):
+    async def todo_edit_view_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
         opts = [*range(1, len(self.todos[interaction.user.id]) + 1)][:24]
-        return [*map(
-            lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
-            map(str, opts)
-        )]
+        return [
+            *map(
+                lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
+                map(str, opts),
+            )
+        ]
 
 
 async def setup(bot):

@@ -38,27 +38,26 @@ class PromptActions(discord.ui.View):
         content_confirmed: str,
         content_cancelled: str,
         label_confirm: str,
-        label_cancel: str
+        label_cancel: str,
     ):
         super().__init__()
         self.ctx = ctx
         for content, value, style, label in [
             (content_confirmed, True, discord.ButtonStyle.green, label_confirm),
-            (content_cancelled, False, discord.ButtonStyle.red, label_cancel)
+            (content_cancelled, False, discord.ButtonStyle.red, label_cancel),
         ]:
             self.add_item(PromptButton(content, value, style=style, label=label))
         self.value = None
 
     async def interaction_check(self, interaction):
-        (predicates := []).append(interaction.user.id in (
-            self.ctx.author.id,
-            *self.ctx.bot.owner_ids,
-            self.ctx.bot.owner_id)
+        (predicates := []).append(
+            interaction.user.id
+            in (self.ctx.author.id, *self.ctx.bot.owner_ids, self.ctx.bot.owner_id)
         )
         return all(predicates)
 
 
-class NeoContext(commands.Context['Neo']):
+class NeoContext(commands.Context["Neo"]):
     ephemeral: bool
 
     def __init__(self, *args, **kwargs):
@@ -71,14 +70,14 @@ class NeoContext(commands.Context['Neo']):
         content_confirmed: str = "Confirmed",
         content_cancelled: str = "Cancelled",
         label_confirm: str = "✓",
-        label_cancel: str = "⨉"
+        label_cancel: str = "⨉",
     ):
         actions = PromptActions(
             self,
             content_confirmed=content_confirmed,
             content_cancelled=content_cancelled,
             label_confirm=label_confirm,
-            label_cancel=label_cancel
+            label_cancel=label_cancel,
         )
         embed = neo.Embed(description=prompt_message)
         await self.send(embed=embed, view=actions)
@@ -87,7 +86,9 @@ class NeoContext(commands.Context['Neo']):
 
     async def send(self, *args, **kwargs) -> discord.Message:
         if self.interaction is not None:
-            await self.interaction.response.send_message(*args, ephemeral=getattr(self, "ephemeral", True), **kwargs)
+            await self.interaction.response.send_message(
+                *args, ephemeral=getattr(self, "ephemeral", True), **kwargs
+            )
             return await self.interaction.original_message()
         else:
             return await super().send(*args, **kwargs)

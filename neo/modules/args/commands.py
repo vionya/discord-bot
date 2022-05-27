@@ -10,7 +10,6 @@ from .parser import Parser
 
 
 class ArgCommand(commands.Command):
-
     @property
     def signature(self):
         if self.usage is not None:
@@ -44,8 +43,7 @@ class ArgCommand(commands.Command):
                 aliases = ", ".join(arg.option_strings)
                 description += f"\n↳ **Flag Aliases** {aliases}"
 
-            converter = self.callback.parser._registry_get(
-                "type", arg.type, arg.type)
+            converter = self.callback.parser._registry_get("type", arg.type, arg.type)
             if converter.__name__ != "identity":
                 description += f"\n↳ **Expected type** `{converter.__name__}`"
 
@@ -128,6 +126,7 @@ def add_arg(*args, **kwargs):
     Note: The `type` kwarg can be a commands.Converter subclass,
     and will attempt to convert the given values.
     """
+
     def inner(func):
         _func = func.callback if isinstance(func, commands.Command) else func
 
@@ -136,6 +135,7 @@ def add_arg(*args, **kwargs):
 
         _func.parser.add_argument(*args, **kwargs)
         return func
+
     return inner
 
 
@@ -147,6 +147,7 @@ class ArgGroup(ArgCommand, commands.Group):
             result = cls(func, **kwargs)
             self.add_command(result)
             return result
+
         return inner
 
     def arg_group(self, **kwargs):
@@ -156,6 +157,7 @@ class ArgGroup(ArgCommand, commands.Group):
             result = cls(func, **kwargs)
             self.add_command(result)
             return result
+
         return inner
 
 
@@ -163,6 +165,7 @@ def command(**kwargs):
     def inner(func):
         cls = kwargs.get("cls", ArgCommand)
         return cls(func, **kwargs)
+
     return inner
 
 
@@ -170,4 +173,5 @@ def group(**kwargs):
     def inner(func):
         cls = kwargs.get("cls", ArgGroup)
         return cls(func, **kwargs)
+
     return inner

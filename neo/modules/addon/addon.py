@@ -16,7 +16,10 @@ class Receiver(Protocol):
     __receiver__: bool
     __event_name__: str
 
-    def __call__(self, addon: Addon, *args, **kwargs) -> Any | Coroutine[None, None, Any]: ...
+    def __call__(
+        self, addon: Addon, *args, **kwargs
+    ) -> Any | Coroutine[None, None, Any]:
+        ...
 
 
 class AddonMeta(commands.CogMeta):
@@ -28,8 +31,9 @@ class AddonMeta(commands.CogMeta):
         receivers = {}
 
         for attr in vars(_cls).values():
-            if not isinstance(attr, FunctionType) or \
-                    not getattr(attr, "__receiver__", False):
+            if not isinstance(attr, FunctionType) or not getattr(
+                attr, "__receiver__", False
+            ):
                 continue
 
             recv_func: Receiver = cast(Receiver, attr)
@@ -82,11 +86,9 @@ class Addon(commands.Cog, metaclass=AddonMeta):
             self,
             listener.__name__,
             MethodType(
-                listener.__func__ if isinstance(
-                    listener,
-                    MethodType) else listener,
-                self
-            )
+                listener.__func__ if isinstance(listener, MethodType) else listener,
+                self,
+            ),
         )  # Bind the listener to the object as a method
         self.__cog_listeners__.append(
             (name or listener.__name__, listener.__name__)
@@ -94,7 +96,9 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
         for name, method_name in self.__cog_listeners__:
             self.bot.remove_listener(getattr(self, method_name))  # Just in case I guess
-            self.bot.add_listener(getattr(self, method_name), name)  # Register it as a listener
+            self.bot.add_listener(
+                getattr(self, method_name), name
+            )  # Register it as a listener
 
     def _merge_addon(self, other):
         """
@@ -124,4 +128,5 @@ class Addon(commands.Cog, metaclass=AddonMeta):
             receiver.__receiver__ = True
             receiver.__event_name__ = event
             return receiver
+
         return inner

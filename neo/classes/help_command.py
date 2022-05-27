@@ -70,19 +70,16 @@ class NeoHelpCommand(commands.HelpCommand):
             cog_name = getattr(cog, "qualified_name", "Uncategorized")
             embeds.append(
                 neo.Embed(
-                    title=cog_name,
-                    description=getattr(cog, "description", "")
+                    title=cog_name, description=getattr(cog, "description", "")
                 ).add_field(
-                    name="Commands",
-                    value="\n".join(map(
-                        format_command,
-                        cog_commands
-                    ))
-                ))
+                    name="Commands", value="\n".join(map(format_command, cog_commands))
+                )
+            )
 
         pages = EmbedPages(embeds)
         menu = DropdownMenu.from_pages(
-            pages, embed_auto_label=True, embed_auto_desc=True)
+            pages, embed_auto_label=True, embed_auto_desc=True
+        )
         await menu.start(self.context)
 
     async def send_cog_help(self, cog):
@@ -90,27 +87,21 @@ class NeoHelpCommand(commands.HelpCommand):
         cog_commands = await self.filter_commands(cog.get_commands())
 
         embed = neo.Embed(
-            title=cog_name,
-            description=getattr(cog, "description", "No description")
-        ).add_field(
-            name="Commands",
-            value="\n".join(map(
-                format_command,
-                cog_commands
-            ))
-        )
+            title=cog_name, description=getattr(cog, "description", "No description")
+        ).add_field(name="Commands", value="\n".join(map(format_command, cog_commands)))
 
         await self.context.send(embed=embed)
 
     async def send_command_help(self, command):
         embed = neo.Embed(
             title=f"{self.context.clean_prefix}{command.qualified_name} {command.signature}",
-            description="{}\n".format(command.help or "No description")
+            description="{}\n".format(command.help or "No description"),
         )
 
         if command.aliases:
             aliases = ", ".join(
-                f"**{alias}**" for alias in [command.name, *command.aliases])
+                f"**{alias}**" for alias in [command.name, *command.aliases]
+            )
             embed.add_field(name="Command Aliases", value=aliases, inline=False)
 
         if hasattr(command, "get_args_help"):
@@ -122,11 +113,14 @@ class NeoHelpCommand(commands.HelpCommand):
         if isinstance(command, commands.Group):
             embed.add_field(
                 name="Subcommands",
-                value="\n".join(map(
-                    lambda sub: f"{sub.full_parent_name} **{sub.name}**",
-                    command.walk_commands()
-                )) or "No subcommands",
-                inline=False
+                value="\n".join(
+                    map(
+                        lambda sub: f"{sub.full_parent_name} **{sub.name}**",
+                        command.walk_commands(),
+                    )
+                )
+                or "No subcommands",
+                inline=False,
             )
 
         if getattr(command, "with_app_command", False) is True:

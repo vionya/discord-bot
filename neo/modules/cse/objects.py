@@ -1,21 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 class SearchResult:
-    __slots__ = (
-        "title",
-        "title_html",
-        "url",
-        "snippet",
-        "snippet_html",
-        "image_url"
-    )
+    __slots__ = ("title", "title_html", "url", "snippet", "snippet_html", "image_url")
 
     def __init__(self, result_data):
         self.title = result_data.get("title")
         self.snippet = result_data.get("snippet")
 
         self.image_url = None
-        if (image := result_data.get("image")):
+        if image := result_data.get("image"):
             self.image_url = result_data.get("link")
             self.url = image.get("contextLink", self.image_url)
         else:
@@ -40,7 +33,9 @@ class GoogleResponse:
         self.results = [*map(SearchResult, _results)]
 
     def __repr__(self):
-        return "<{0.__class__.__name__} result_count={1!r}>".format(self, len(self.results))
+        return "<{0.__class__.__name__} result_count={1!r}>".format(
+            self, len(self.results)
+        )
 
     def __iter__(self):
         return iter(self.results)

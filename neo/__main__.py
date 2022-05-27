@@ -11,6 +11,7 @@ from neo.types.config import NeoConfig
 
 try:
     import uvloop  # type: ignore
+
     uvloop.install()
 except ImportError:
     pass
@@ -24,16 +25,15 @@ from . import runtime
 if os.name == "nt":
     os.system("color")  # Enable ANSI escapes on win32
 
-loggers = [logging.getLogger("discord"),
-           logging.getLogger("neo")]
+loggers = [logging.getLogger("discord"), logging.getLogger("neo")]
 
 formatter = NeoLoggingFormatter(
-    fmt="[{asctime}] [{levelname} {name} {funcName}] {message}")
+    fmt="[{asctime}] [{levelname} {name} {funcName}] {message}"
+)
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 
-[(logger.setLevel(logging.INFO),
-  logger.addHandler(handler)) for logger in loggers]
+[(logger.setLevel(logging.INFO), logger.addHandler(handler)) for logger in loggers]
 
 # /Sect: Logging
 
@@ -50,6 +50,7 @@ async def main():
     neo = Neo(config)
 
     await neo.start()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

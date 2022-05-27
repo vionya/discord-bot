@@ -33,6 +33,7 @@ class DefaultAvatars(Enum):
     RED = "<:_:863449885834739712>"
     PINK = "<:_:863449887403147314>"
 
+
 MAX_TRIGGERS = 10
 MAX_TRIGGER_LEN = 100
 CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
@@ -41,10 +42,12 @@ CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
 def format_hl_context(message: discord.Message, is_trigger=False):
     fmt = (
         "[{0} **{1.author.display_name}**]({1.jump_url}) {1.content}"
-        if is_trigger else
-        "{0} **{1.author.display_name}** {1.content}"
+        if is_trigger
+        else "{0} **{1.author.display_name}** {1.content}"
     )
-    message.content = CUSTOM_EMOJI.sub("❔", message.content)  # Replace custom emojis to preserve formatting
+    message.content = CUSTOM_EMOJI.sub(
+        "❔", message.content
+    )  # Replace custom emojis to preserve formatting
     if message.attachments:
         message.content += " *[Attachment x{}]*".format(len(message.attachments))
     if message.embeds:
@@ -53,13 +56,20 @@ def format_hl_context(message: discord.Message, is_trigger=False):
         message.content += " *[Sticker x{}]*".format(len(message.stickers))
 
     match int(message.author.default_avatar.key):
-        case 0: enum_member = DefaultAvatars.BLURPLE
-        case 1: enum_member = DefaultAvatars.GREY
-        case 2: enum_member = DefaultAvatars.GREEN
-        case 3: enum_member = DefaultAvatars.ORANGE
-        case 4: enum_member = DefaultAvatars.RED
-        case 5: enum_member = DefaultAvatars.PINK
-        case _: enum_member = DefaultAvatars.BLURPLE
+        case 0:
+            enum_member = DefaultAvatars.BLURPLE
+        case 1:
+            enum_member = DefaultAvatars.GREY
+        case 2:
+            enum_member = DefaultAvatars.GREEN
+        case 3:
+            enum_member = DefaultAvatars.ORANGE
+        case 4:
+            enum_member = DefaultAvatars.RED
+        case 5:
+            enum_member = DefaultAvatars.PINK
+        case _:
+            enum_member = DefaultAvatars.BLURPLE
 
     return fmt.format(enum_member.value, message)
 
@@ -71,26 +81,27 @@ class Highlight:
         self.bot = bot
         self.content = content
         self.user_id = user_id
-        self.pattern = re.compile(fr"\b{self.content}\b", re.I)
+        self.pattern = re.compile(rf"\b{self.content}\b", re.I)
 
     def __repr__(self):
-        return ("<{0.__class__.__name__} user_id={0.user_id!r} "
-                "content={0.content!r}>").format(self)
+        return (
+            "<{0.__class__.__name__} user_id={0.user_id!r} " "content={0.content!r}>"
+        ).format(self)
 
     async def predicate(self, message: discord.Message):
         if not message.guild:
             return
 
-        if any([message.author.id == self.user_id,
-                message.author.bot]):
+        if any([message.author.id == self.user_id, message.author.bot]):
             return
         if self.bot.profiles[self.user_id].receive_highlights is False:
             return  # Don't highlight users who have disabled highlight receipt
 
         blacklist = self.bot.profiles[self.user_id].hl_blocks
-        if any(attrgetter(attr)(message) in blacklist for attr in (
-                "id", "guild.id", "channel.id", "author.id")
-               ):
+        if any(
+            attrgetter(attr)(message) in blacklist
+            for attr in ("id", "guild.id", "channel.id", "author.id")
+        ):
             return
 
         if self.user_id in [m.id for m in message.mentions]:
@@ -101,7 +112,9 @@ class Highlight:
         except discord.NotFound:
             return
 
-        message.channel = cast(discord.TextChannel | discord.VoiceChannel, message.channel)
+        message.channel = cast(
+            discord.TextChannel | discord.VoiceChannel, message.channel
+        )
         members: list[discord.Member] = []
         if isinstance(message.channel, discord.Thread):
             if message.channel.is_private():  # Need to fetch members explicitly
@@ -125,7 +138,9 @@ class Highlight:
 
         return True
 
-    async def to_send_kwargs(self, message: discord.Message, later_triggers: set[discord.Message]):
+    async def to_send_kwargs(
+        self, message: discord.Message, later_triggers: set[discord.Message]
+    ):
         content = ""
         triggers: set[discord.Message] = {message, *later_triggers}
         async for m in message.channel.history(limit=6, around=message):
@@ -136,7 +151,7 @@ class Highlight:
 
         embed = neo.Embed(
             title="In {0.guild.name}/#{0.channel.name}".format(message),
-            description=content
+            description=content,
         )
 
         view = discord.ui.View(timeout=0)
@@ -145,7 +160,7 @@ class Highlight:
         return {
             "content": "{0.author}: {0.content}".format(message)[:1500],
             "embed": embed,
-            "view": view
+            "view": view,
         }
 
     def matches(self, other: str):
@@ -225,9 +240,7 @@ class Highlights(neo.Addon):
                 return
             self.grace_periods.pop(user.id).clear()
 
-        self.grace_periods[profile.user_id] = TimedSet(
-            timeout=profile.hl_timeout * 60
-        )
+        self.grace_periods[profile.user_id] = TimedSet(timeout=profile.hl_timeout * 60)
 
     # Need to dynamically account for deleted profiles
     @neo.Addon.recv("profile_delete")
@@ -251,14 +264,13 @@ class Highlights(neo.Addon):
         user_highlights = self.highlights.get(ctx.author.id, [])
 
         for index, hl in enumerate(user_highlights, 1):
-            description += "`{0}` `{1}`\n".format(
-                index,
-                hl.content
-            )
+            description += "`{0}` `{1}`\n".format(index, hl.content)
 
-        embed = neo.Embed(description=description or "You have no highlights") \
-            .set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used") \
+        embed = (
+            neo.Embed(description=description or "You have no highlights")
+            .set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used")
             .set_author(name=f"{ctx.author}'s highlights", icon_url=ctx.author.avatar)
+        )
 
         await ctx.send(embeds=[embed])
 
@@ -278,7 +290,8 @@ class Highlights(neo.Addon):
             raise ValueError("Highlights must contain more than 1 character.")
         elif len(content) >= MAX_TRIGGER_LEN:
             raise ValueError(
-                f"Highlights cannot be longer than {MAX_TRIGGER_LEN:,} characters!")
+                f"Highlights cannot be longer than {MAX_TRIGGER_LEN:,} characters!"
+            )
 
         if len(self.highlights.get(ctx.author.id, [])) >= MAX_TRIGGERS:
             raise ValueError("You've used up all of your highlight slots!")
@@ -295,7 +308,7 @@ class Highlights(neo.Addon):
             RETURNING *
             """,
             ctx.author.id,
-            content
+            content,
         )
         self.highlights[ctx.author.id].append(Highlight(self.bot, **result))
         self.recompute_flattened()
@@ -303,7 +316,7 @@ class Highlights(neo.Addon):
 
     @highlight.command(name="remove", aliases=["rm"])
     @discord.app_commands.describe(
-        index="A highlight index to remove, or \"~\" to clear all highlights"
+        index='A highlight index to remove, or "~" to clear all highlights'
     )
     async def highlight_remove(self, ctx: NeoContext, index: str):
         """
@@ -323,10 +336,13 @@ class Highlights(neo.Addon):
             self.highlights.pop(ctx.author.id, None)
 
         else:
-            (indices := [*map(str, indices)]).sort(reverse=True)  # Pop in an way that preserves the list's original order
+            (indices := [*map(str, indices)]).sort(
+                reverse=True
+            )  # Pop in an way that preserves the list's original order
             try:
-                highlights = [self.highlights[ctx.author.id].pop(index - 1) for index in map(
-                    int, filter(str.isdigit, indices))
+                highlights = [
+                    self.highlights[ctx.author.id].pop(index - 1)
+                    for index in map(int, filter(str.isdigit, indices))
                 ]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
@@ -340,26 +356,36 @@ class Highlights(neo.Addon):
                 content = ANY($2::TEXT[])
             """,
             ctx.author.id,
-            [*map(attrgetter("content"), highlights)]
+            [*map(attrgetter("content"), highlights)],
         )
         self.recompute_flattened()
         await ctx.send_confirmation()
 
     @highlight_remove.autocomplete("index")
-    async def highlight_remove_autocomplete(self, interaction: discord.Interaction, current: str):
+    async def highlight_remove_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
         opts: list[str | int] = ["~"]
         opts.extend([*range(1, len(self.highlights[interaction.user.id]) + 1)][:24])
-        return [*map(
-            lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-            map(str, opts)
-        )]
+        return [
+            *map(
+                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
+                map(str, opts),
+            )
+        ]
 
-    def perform_blocklist_action(self, *, profile: NeoUser, ids: list[int], action="block"):
-        blacklist = {*profile.hl_blocks, }
-        ids_set = {*ids, }
+    def perform_blocklist_action(
+        self, *, profile: NeoUser, ids: list[int], action="block"
+    ):
+        blacklist = {
+            *profile.hl_blocks,
+        }
+        ids_set = {
+            *ids,
+        }
 
         if action == "unblock":
             blacklist -= ids_set
@@ -372,14 +398,14 @@ class Highlights(neo.Addon):
     @discord.app_commands.describe(
         id="The ID of a user, server, or channel to block",
         user="A user to block",
-        channel="A channel to block"
+        channel="A channel to block",
     )
     async def highlight_block(
         self,
         ctx: NeoContext,
         id: Optional[str] = None,
         user: Optional[discord.User | discord.Member] = None,
-        channel: Optional[discord.TextChannel] = None
+        channel: Optional[discord.TextChannel] = None,
     ):
         """Block a target from highlighting you"""
         if not (id or "").isnumeric() and not any([user, channel]):
@@ -388,11 +414,19 @@ class Highlights(neo.Addon):
         profile = self.bot.profiles[ctx.author.id]
 
         if ctx.interaction:
-            ids = [*map(lambda obj: int(getattr(obj, "id", obj)), filter(None, [user, channel, id]))]
+            ids = [
+                *map(
+                    lambda obj: int(getattr(obj, "id", obj)),
+                    filter(None, [user, channel, id]),
+                )
+            ]
         else:
             if not id:
-                raise commands.MissingRequiredArgument(commands.Parameter(
-                    name="id", kind=inspect.Parameter.POSITIONAL_ONLY))
+                raise commands.MissingRequiredArgument(
+                    commands.Parameter(
+                        name="id", kind=inspect.Parameter.POSITIONAL_ONLY
+                    )
+                )
             ids = [int(id)]
 
         self.perform_blocklist_action(profile=profile, ids=ids)
@@ -406,9 +440,11 @@ class Highlights(neo.Addon):
         profile = self.bot.profiles[ctx.author.id]
 
         def transform_mention(id):
-            mention = getattr(self.bot.get_guild(id), "name",
-                              getattr(self.bot.get_channel(id), "mention",
-                                      f"<@{id}>"))  # Yes, this could lead to fake user mentions
+            mention = getattr(
+                self.bot.get_guild(id),
+                "name",
+                getattr(self.bot.get_channel(id), "mention", f"<@{id}>"),
+            )  # Yes, this could lead to fake user mentions
             return "`{0}` [{1}]".format(id, mention)
 
         menu = ButtonsMenu.from_iterable(
@@ -417,8 +453,8 @@ class Highlights(neo.Addon):
             use_embed=True,
             template_embed=neo.Embed().set_author(
                 name=f"{ctx.author}'s highlight blocks",
-                icon_url=ctx.author.display_avatar
-            )
+                icon_url=ctx.author.display_avatar,
+            ),
         )
         await menu.start(ctx)
 
@@ -426,14 +462,14 @@ class Highlights(neo.Addon):
     @discord.app_commands.describe(
         id="The ID of a user, server, or channel to unblock",
         user="A user to unblock",
-        channel="A channel to unblock"
+        channel="A channel to unblock",
     )
     async def highlight_unblock(
         self,
         ctx: NeoContext,
         id: Optional[str] = None,
         user: Optional[discord.User | discord.Member] = None,
-        channel: Optional[discord.TextChannel] = None
+        channel: Optional[discord.TextChannel] = None,
     ):
         """
         Unblock entities from triggering your highlights
@@ -448,11 +484,19 @@ class Highlights(neo.Addon):
         profile = self.bot.profiles[ctx.author.id]
 
         if ctx.interaction:
-            ids = [*map(lambda obj: int(getattr(obj, "id", obj)), filter(None, [user, channel, id]))]
+            ids = [
+                *map(
+                    lambda obj: int(getattr(obj, "id", obj)),
+                    filter(None, [user, channel, id]),
+                )
+            ]
         else:
             if not id:
-                raise commands.MissingRequiredArgument(commands.Parameter(
-                    name="id", kind=inspect.Parameter.POSITIONAL_ONLY))
+                raise commands.MissingRequiredArgument(
+                    commands.Parameter(
+                        name="id", kind=inspect.Parameter.POSITIONAL_ONLY
+                    )
+                )
             ids = [int(id)]
 
         self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
@@ -460,28 +504,30 @@ class Highlights(neo.Addon):
 
     @highlight_unblock.autocomplete("id")
     async def highlight_unblock_autocomplete(
-        self,
-        interaction: discord.Interaction,
-        current: str
+        self, interaction: discord.Interaction, current: str
     ):
         profile = self.bot.profiles[interaction.user.id]
 
         def transform_mention(id):
             mention: Optional[
-                discord.Guild
-                | discord.TextChannel
-                | PartialUser
-                | discord.User
-                | str
-            ] = getattr(self.bot.get_guild(id), "name",
-                        getattr(self.bot.get_channel(id), "name",
-                                getattr(self.bot.get_user(id), "name")))
+                discord.Guild | discord.TextChannel | PartialUser | discord.User | str
+            ] = getattr(
+                self.bot.get_guild(id),
+                "name",
+                getattr(
+                    self.bot.get_channel(id),
+                    "name",
+                    getattr(self.bot.get_user(id), "name"),
+                ),
+            )
 
             return "{0} [{1}]".format(id, mention or "Unknown")
 
         return [
             discord.app_commands.Choice(name=transform_mention(_id), value=str(_id))
-            for _id in filter(lambda block: current in block, map(str, profile.hl_blocks))
+            for _id in filter(
+                lambda block: current in block, map(str, profile.hl_blocks)
+            )
         ][:25]
 
 

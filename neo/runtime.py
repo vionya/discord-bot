@@ -39,6 +39,7 @@ def arg_command(self, **kwargs):
         result = cls(func, **kwargs)
         self.add_command(result)
         return result
+
     return inner
 
 
@@ -50,6 +51,7 @@ def arg_group(self, **kwargs):
         result = cls(func, **kwargs)
         self.add_command(result)
         return result
+
     return inner
 
 
@@ -74,8 +76,9 @@ async def add_reaction(self, emoji):
 @missing_required.attribute(name="__init__")
 def missing_required_init(self, param):
     self.param = param
-    super(commands.MissingRequiredArgument, self) \
-        .__init__(f'Missing required argument(s): `{param.name}`')
+    super(commands.MissingRequiredArgument, self).__init__(
+        f"Missing required argument(s): `{param.name}`"
+    )
 
 
 @argument_error.attribute()

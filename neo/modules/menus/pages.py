@@ -53,7 +53,7 @@ class Pages:
         "suffix",
         "template_embed",
         "menu",
-        "_old_page_count"
+        "_old_page_count",
     )
 
     def __init__(
@@ -66,7 +66,7 @@ class Pages:
         joiner: str = "\n",
         prefix: Optional[str] = None,
         suffix: Optional[str] = None,
-        template_embed: Optional[Embed] = None
+        template_embed: Optional[Embed] = None,
     ):
         self.items = items
         self.joiner = joiner
@@ -76,7 +76,7 @@ class Pages:
 
         if (prefix or suffix) and not isinstance(items, str):
             raise TypeError(
-                "Arguments \"prefix\" and \"suffix\" may only be used in conjunction with an input of type str"
+                'Arguments "prefix" and "suffix" may only be used in conjunction with an input of type str'
             )
         self.prefix = prefix
         self.suffix = suffix
@@ -96,14 +96,14 @@ class Pages:
         while _items:
 
             if self.suffix or self.prefix:
-                prefix = (self.prefix if isinstance(_items, str) else [self.prefix])
-                suffix = (self.suffix if isinstance(_items, str) else [self.suffix])
-                to_append = prefix + _items[:self.per_page] + suffix
+                prefix = self.prefix if isinstance(_items, str) else [self.prefix]
+                suffix = self.suffix if isinstance(_items, str) else [self.suffix]
+                to_append = prefix + _items[: self.per_page] + suffix
 
             else:
-                to_append = _items[:self.per_page]
+                to_append = _items[: self.per_page]
             _pages.append(to_append)
-            _items = _items[self.per_page:]
+            _items = _items[self.per_page :]
 
         return _pages
 
@@ -114,7 +114,9 @@ class Pages:
     def __getitem__(self, index):
         content = self.joiner.join(self.pages[index])
         if self.use_embed:
-            return Embed.from_dict(cast(dict, self.template_embed | {"description": content}))
+            return Embed.from_dict(
+                cast(dict, self.template_embed | {"description": content})
+            )
         return content
 
     def append(self, new):
