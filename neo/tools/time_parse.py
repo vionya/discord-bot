@@ -6,7 +6,7 @@ a string of text.
 """
 import re
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import NoReturn
 
 from neo.tools import try_or_none
 
@@ -51,7 +51,7 @@ class TimedeltaWithYears(timedelta):
         )
 
 
-def parse_absolute(string: str, *, tz) -> Optional[tuple[datetime, str]]:
+def parse_absolute(string: str, *, tz) -> tuple[datetime, str] | NoReturn:
     split = string.split(" ")
     endpoint = len(split)
 
@@ -79,7 +79,7 @@ def parse_absolute(string: str, *, tz) -> Optional[tuple[datetime, str]]:
     return parsed_datetime, " ".join(string.split(" ")[endpoint:])
 
 
-def parse_relative(string: str) -> Optional[tuple[TimedeltaWithYears, str]]:
+def parse_relative(string: str) -> tuple[TimedeltaWithYears, str] | NoReturn:
     parsed = RELATIVE_FORMATS.match(string)
 
     if parsed and any(parsed.groups()):

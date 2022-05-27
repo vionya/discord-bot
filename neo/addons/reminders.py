@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
@@ -54,7 +54,8 @@ class Reminder:
 
     @property
     def channel(self) -> discord.TextChannel | discord.DMChannel:
-        if (channel := self.bot.get_channel(self.channel_id)) is not None:
+        channel = self.bot.get_channel(self.channel_id)
+        if isinstance(channel, discord.TextChannel | discord.DMChannel):
             return channel
         return discord.DMChannel._from_message(self.bot._connection, self.channel_id)
 
@@ -161,7 +162,7 @@ class Reminders(neo.Addon):
         message_id: int,
         channel_id: int,
         content: str,
-        end_time: int
+        end_time: datetime
     ):
         data = await self.bot.db.fetchrow(
             """
@@ -270,7 +271,7 @@ class Reminders(neo.Addon):
         when="When the reminder should be delivered. See this command's help entry for more info",
         content="The content to remind yourself about. Can be empty"
     )
-    async def reminder_set(self, ctx: NeoContext, when: str, *, content: str = None):
+    async def reminder_set(self, ctx: NeoContext, when: str, *, content: Optional[str] = None):
         """
         Schedule a reminder
 
@@ -424,7 +425,8 @@ class Reminders(neo.Addon):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        (opts := ["~"]).extend([*range(1, len(self.reminders[interaction.user.id]) + 1)][:24])
+        opts: list[str | int] = ["~"]
+        opts.extend([*range(1, len(self.reminders[interaction.user.id]) + 1)][:24])
         return [*map(
             lambda opt: discord.app_commands.Choice(name=opt, value=opt),
             map(str, opts)
