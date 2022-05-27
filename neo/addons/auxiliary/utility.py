@@ -3,6 +3,8 @@
 """
 An auxiliary module for the `Utility` addon
 """
+from __future__ import annotations
+
 import asyncio
 import re
 from functools import cache
@@ -59,7 +61,9 @@ def definitions_to_embed(word):
 
 def get_translation_kwargs(content: str) -> tuple[str, dict[str, str]]:
     kwargs = {"dest": "en", "src": "auto"}
-    if (match := TRANSLATION_DIRECTIVE.match(content))[0]:
+
+    match = TRANSLATION_DIRECTIVE.match(content)
+    if match:
         content = content.replace(match[0], "")
         kwargs = match.groupdict()
         if kwargs["src"] in {"*", "_"}:
@@ -84,12 +88,15 @@ async def translate(translator, *args, **kwargs):  # Lazy async wrapper
     return await asyncio.to_thread(do_translate, translator, *args, **kwargs)
 
 
-class InviteDropdown(discord.ui.Select):
+class InviteDropdown(discord.ui.Select['InviteMenu']):
     def __init__(self, *args, **kwargs):
         kwargs["custom_id"] = "neo phoenix:invite dropdown menu"
         super().__init__(*args, **kwargs)
 
     async def callback(self, interaction: discord.Interaction):
+        if not self.view:
+            return
+
         url = discord.utils.oauth_url(
             self.view.application_id,
             permissions=discord.Permissions(int(self.values[0]))
@@ -171,6 +178,9 @@ class SwappableEmbedButton(discord.ui.Button):
         super().__init__(*args, **kwargs)
 
     async def callback(self, interaction: discord.Interaction):
+        if not interaction.message:
+            return
+
         embed = interaction.message.embeds[0]
         image, thumbnail = embed.image, embed.thumbnail
         embed = embed.set_image(url=thumbnail.url).set_thumbnail(url=image.url)

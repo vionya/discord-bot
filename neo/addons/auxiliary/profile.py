@@ -3,10 +3,14 @@
 """
 An auxiliary module for the `Profile` addon
 """
-from typing import Any
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any
 
 import discord
 import neo
+
+if TYPE_CHECKING:
+    from ..profile import Profile
 
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
@@ -14,7 +18,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         self,
         *,
         settings: dict[str, Any],
-        addon: neo.Addon,
+        addon: Profile,
         ctx: neo.context.NeoContext,
         **kwargs
     ):
@@ -25,8 +29,13 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         super().__init__(**kwargs)
 
     async def callback(self, interaction):
+        if not self.view:
+            return
+
         index = self.view.current_page
         current_setting = [*self.settings.keys()][index]
+
+        outer_self = self
 
         class ChangeSettingModal(discord.ui.Modal, title="Edit profile settings"):
             new_value = discord.ui.TextInput(
@@ -36,9 +45,13 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
                 max_length=500
             )
 
-            async def on_submit(modal_self, interaction):
+            async def on_submit(self, interaction):
+                if not outer_self.view:
+                    return
+
                 try:
-                    await self.addon.set_option(self.ctx, current_setting, modal_self.new_value.value)
+                    if self.new_value.value:
+                        await outer_self.addon.set_option(outer_self.ctx, current_setting, self.new_value.value)
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
@@ -47,12 +60,12 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
                         ephemeral=True
                     )
 
-                    description = self.settings[current_setting]["description"].format(
-                        getattr(self.addon.bot.profiles[self.ctx.author.id], current_setting)
+                    description = outer_self.settings[current_setting]["description"].format(
+                        getattr(outer_self.addon.bot.profiles[outer_self.ctx.author.id], current_setting)
                     )
-                    self.view.pages.items[index].description = \
+                    outer_self.view.pages.items[index].description = \
                         f"**Setting: `{current_setting}`**\n\n" + description
-                    await self.view.refresh_page()
+                    await outer_self.view.refresh_page()
 
         modal = ChangeSettingModal()
 
@@ -64,7 +77,7 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         self,
         *,
         settings: dict[str, Any],
-        addon: neo.Addon,
+        addon: Profile,
         ctx: neo.context.NeoContext,
         **kwargs
     ):
@@ -75,6 +88,9 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         super().__init__(**kwargs)
 
     async def callback(self, interaction):
+        if not self.ctx.guild or not self.view:
+            return
+
         index = self.view.current_page
         current_setting = [*self.settings.keys()][index]
 
