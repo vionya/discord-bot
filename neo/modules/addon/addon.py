@@ -2,7 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from types import FunctionType, MethodType
+from types import MethodType
 from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeGuard, cast
 
 from discord.ext import commands
