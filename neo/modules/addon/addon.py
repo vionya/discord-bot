@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import FunctionType, MethodType
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeGuard, cast
 
 from discord.ext import commands
 from typing_extensions import Self
@@ -11,15 +11,19 @@ from typing_extensions import Self
 if TYPE_CHECKING:
     from collections.abc import Coroutine
 
+ReceiverRet = Any | Coroutine[None, None, Any]
+
 
 class Receiver(Protocol):
     __receiver__: bool
     __event_name__: str
 
-    def __call__(
-        self, addon: Addon, *args, **kwargs
-    ) -> Any | Coroutine[None, None, Any]:
+    def __call__(self, addon: Addon, *args: Any, **kwargs: Any) -> ReceiverRet:
         ...
+
+
+def is_receiver(val: Callable[..., ReceiverRet]) -> TypeGuard[Receiver]:
+    return callable(val) and hasattr(val, "__receiver__")
 
 
 class AddonMeta(commands.CogMeta):
@@ -31,12 +35,10 @@ class AddonMeta(commands.CogMeta):
         receivers = {}
 
         for attr in vars(_cls).values():
-            if not isinstance(attr, FunctionType) or not getattr(
-                attr, "__receiver__", False
-            ):
+            if not is_receiver(attr):
                 continue
 
-            recv_func: Receiver = cast(Receiver, attr)
+            recv_func = attr
             receivers[recv_func.__event_name__] = recv_func
 
         _cls.__receivers__ = receivers
@@ -123,10 +125,11 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
     @staticmethod
     def recv(event: str):
-        def inner(func):
+        def inner(func: Callable[..., ReceiverRet]) -> Receiver:
             receiver = func
             receiver.__receiver__ = True
             receiver.__event_name__ = event
+            assert is_receiver(receiver), f"Receiver {func!r} failed assertion"
             return receiver
 
         return inner
