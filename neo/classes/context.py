@@ -88,7 +88,7 @@ class NeoContext(commands.Context["Neo"]):
         if self.interaction is not None:
             await self.interaction.response.send_message(
                 *args,
-                ephemeral=kwargs.get("ephemeral", getattr(self, "ephemeral", True)),
+                ephemeral=kwargs.pop("ephemeral", getattr(self, "ephemeral", True)),
                 **kwargs,
             )
             return await self.interaction.original_message()

@@ -265,7 +265,7 @@ class Utility(neo.Addon):
         help="Purge only messages from the given member (can be used"
         " multiple times to select multiple)",
     )
-    @args.command(name="purge", aliases=["clear", "c"])
+    @args.command(name="purge", aliases=["c"])
     async def purge_command(self, ctx, *, input):
         """Purge messages from the current channel"""
         purged = await ctx.channel.purge(
@@ -283,6 +283,42 @@ class Utility(neo.Addon):
             ),
         ).set_footer(text="This message will expire in 10 seconds")
         await ctx.send(embed=embed, delete_after=10)
+
+    @commands.hybrid_command(name="purge", with_command=False)
+    @discord.app_commands.guild_only()
+    @discord.app_commands.describe(
+        before="Delete only messages sent before this message ID or URL",
+        after="Delete only messages sent after this message ID or URL",
+        user="Delete only messages sent by this user",
+        limit="The number of messages to delete",
+    )
+    async def purge_app_command(
+        self,
+        ctx: NeoContext,
+        before: Optional[str],
+        after: Optional[str],
+        user: Optional[discord.Member],
+        limit: Optional[discord.app_commands.Range[int, 0, 2000]] = 5,
+    ):
+        """Clear messages from the current channel"""
+        assert isinstance(ctx.channel, discord.abc.GuildChannel)
+
+        parse_ids = commands.PartialMessageConverter._get_id_matches
+        purged = await ctx.channel.purge(
+            limit=limit,
+            check=(lambda m: m.author == user if user else True),
+            before=discord.Object(parse_ids(ctx, before)[1]) if before else None,
+            after=discord.Object(parse_ids(ctx, after)[1]) if after else None,
+        )
+
+        deleted = Counter([m.author for m in purged])
+        embed = neo.Embed(
+            title="Channel Purge Breakdown",
+            description="\n".join(
+                f"**{m.name}** {times} messages" for m, times in deleted.items()
+            ),
+        )
+        await ctx.send(embed=embed)
 
     @commands.command(name="choose")
     async def choose_command(self, ctx, *, choices: str):

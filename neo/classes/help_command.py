@@ -130,3 +130,6 @@ class NeoHelpCommand(commands.HelpCommand):
 
     async def send_group_help(self, group):
         await self.send_command_help(group)
+
+    def get_destination(self) -> NeoContext:
+        return self.context
