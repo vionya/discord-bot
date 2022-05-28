@@ -2,14 +2,12 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
+from collections.abc import Coroutine
 from types import MethodType
-from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeGuard, cast
+from typing import Any, Callable, Protocol, TypeGuard, cast
 
 from discord.ext import commands
 from typing_extensions import Self
-
-if TYPE_CHECKING:
-    from collections.abc import Coroutine
 
 ReceiverRet = Any | Coroutine[None, None, Any]
 

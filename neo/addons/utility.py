@@ -8,7 +8,7 @@ from collections import Counter
 from functools import partial
 from operator import attrgetter
 from sys import version as py_version
-from typing import Optional
+from typing import Any, Optional
 
 import discord
 import neo
@@ -87,6 +87,9 @@ class Utility(neo.Addon):
             self.user_info_context_command
         )
         self.bot.tree.context_menu(name="View Avatar")(self.avatar_context_command)
+        self.bot.tree.context_menu(name="Show Message Info")(
+            self.message_info_context_command
+        )
 
         asyncio.create_task(self.__ainit__())
 
@@ -512,7 +515,7 @@ class Utility(neo.Addon):
     @commands.hybrid_command(
         name="info", aliases=["about", "invite", "support", "source", "privacy"]
     )
-    async def neo_info_command(self, ctx):
+    async def neo_info_command(self, ctx: NeoContext):
         """Show information about neo phoenix"""
         embed = neo.Embed(
             description=(
@@ -537,6 +540,50 @@ class Utility(neo.Addon):
             icon_url=self.appinfo.owner.display_avatar,
         )
         await ctx.send(embed=embed, view=self.info_buttons())
+
+    async def message_info_context_command(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        flags_str = ", ".join(
+            f"`{flag[0]}`" for flag in filter(lambda p: p[1], message.flags)
+        )
+
+        raw_description = [
+            f"**Message ID** {message.id}",
+            f"**Author** {message.author}",
+            f"**Created** <t:{message.created_at.timestamp():.0f}>",
+            f"**Edited** <t:{message.edited_at.timestamp():.0f}>"
+            if message.edited_at
+            else None,
+            f"\n**Is System Message** {message.is_system()}",
+            f"**Message Type** `{message.type.name}`",
+            f"**Message Flags** {flags_str}" if flags_str else "",
+            f"\n**Pinned** {message.pinned}",
+            f"**Is Interaction Response** {bool(message.interaction)}",
+            f"**References A Message** {bool(message.reference)}",
+            f"\n[**Jump URL**]({message.jump_url})",
+        ]
+        embed = neo.Embed(
+            description="\n".join(filter(None, raw_description)),
+        )
+
+        if message.application:
+            app = message.application
+            embed.add_field(
+                name="Associated Application",
+                value="\n".join(
+                    [
+                        f"**Name** {app['name']}",
+                        f"**ID** {app['id']}",
+                        f"**Description** {shorten(app['description'], 30)}",
+                    ]
+                ),
+                inline=False,
+            )
+
+        embed.set_thumbnail(url=message.author.display_avatar)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot):
