@@ -1,8 +1,8 @@
 # Release v0.15.0 - TBD
 ## Additions
 * Added several context menu commands:
-    * For messages, a `View Star Info` context menu command. This will likely go away at some point.
-    * For users, shortcuts to view the user's `userinfo` output as well as their avatar. These will likely stick around.
+    * For messages, a `Show Message Info` context command
+    * For users, shortcuts to view the user's `userinfo` output as well as their `avatar`
 
 ## Improvements
 * The `highlight unblock` slash command now accepts the same form of arguments as `highlight block`
