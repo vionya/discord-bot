@@ -284,7 +284,7 @@ class Utility(neo.Addon):
         ).set_footer(text="This message will expire in 10 seconds")
         await ctx.send(embed=embed, delete_after=10)
 
-    @commands.hybrid_command(name="purge", with_command=False)
+    @commands.hybrid_command(name="clear", with_command=False)
     @discord.app_commands.guild_only()
     @discord.app_commands.describe(
         before="Delete only messages sent before this message ID or URL",
@@ -292,7 +292,7 @@ class Utility(neo.Addon):
         user="Delete only messages sent by this user",
         limit="The number of messages to delete",
     )
-    async def purge_app_command(
+    async def clear_app_command(
         self,
         ctx: NeoContext,
         before: Optional[str],

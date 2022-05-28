@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from typing import Optional
+
+import discord
 import neo
 from discord.ext import commands
 from neo.classes.context import NeoContext
@@ -92,13 +95,21 @@ class NeoHelpCommand(commands.HelpCommand):
 
         await self.context.send(embed=embed)
 
-    async def send_command_help(self, command):
-        embed = neo.Embed(
-            title=f"{self.context.clean_prefix}{command.qualified_name} {command.signature}",
-            description="{}\n".format(command.help or "No description"),
-        )
+    async def send_command_help(
+        self, command: commands.Command | discord.app_commands.Command
+    ):
+        if isinstance(command, discord.app_commands.Command):
+            embed = neo.Embed(
+                title=f"/{command.qualified_name}",
+                description="{}\n".format(command.description or "No description"),
+            )
+        else:
+            embed = neo.Embed(
+                title=f"{self.context.clean_prefix}{command.qualified_name} {command.signature}",
+                description="{}\n".format(command.help or "No description"),
+            )
 
-        if command.aliases:
+        if isinstance(command, commands.Command) and command.aliases:
             aliases = ", ".join(
                 f"**{alias}**" for alias in [command.name, *command.aliases]
             )
@@ -106,7 +117,7 @@ class NeoHelpCommand(commands.HelpCommand):
 
         if hasattr(command, "get_args_help"):
             args_help = ""
-            for dest, help in command.get_args_help():
+            for dest, help in command.get_args_help():  # type: ignore
                 args_help += f"\n\n**{dest}** {help}"
             embed.add_field(name="Flag Arguments", value=args_help, inline=False)
 
@@ -126,6 +137,9 @@ class NeoHelpCommand(commands.HelpCommand):
         if getattr(command, "with_app_command", False) is True:
             embed.set_footer(text="This command can be used as a slash command")
 
+        if isinstance(command, discord.app_commands.Command):
+            embed.set_footer(text="This command must be used as a slash command")
+
         await self.context.send(embed=embed)
 
     async def send_group_help(self, group):
@@ -133,3 +147,34 @@ class NeoHelpCommand(commands.HelpCommand):
 
     def get_destination(self) -> NeoContext:
         return self.context
+
+    async def command_callback(
+        self, ctx: NeoContext, /, *, command: Optional[str] = None
+    ) -> None:
+        if command is None or command in ctx.bot.all_commands:
+            return await super().command_callback(ctx, command=command)
+
+        elif command in [
+            cmd.qualified_name
+            for cmd in ctx.bot.tree.walk_commands(
+                type=discord.AppCommandType.chat_input
+            )
+        ]:
+            cmd = ctx.bot.tree.get_command(
+                command, type=discord.AppCommandType.chat_input
+            )
+
+            if cmd is None:
+                string = await discord.utils.maybe_coroutine(
+                    self.command_not_found, self.remove_mentions(command.split(" ")[0])
+                )
+                return await self.send_error_message(string)
+
+            if isinstance(cmd, discord.app_commands.Group):
+                return await self.send_group_help(cmd)
+            else:
+                return await self.send_command_help(cmd)
+
+        else:
+            msg = await discord.utils.maybe_coroutine(self.command_not_found, command)
+            return await self.send_error_message(msg)
