@@ -2,20 +2,40 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, ParamSpec, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, Union, cast
 
 import discord
 from discord.ext import commands
+from neo import Neo
 
 if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
     from discord.app_commands import Group
     from discord.app_commands.commands import CommandCallback
+    from neo.classes.context import NeoContext
 
 T = TypeVar("T")
 P = ParamSpec("P")
 
 GroupT = TypeVar("GroupT", bound=Union["Group", "commands.Cog"])
+
+
+def get_ephemeral(
+    interaction: discord.Interaction,
+    namespace: Optional[discord.app_commands.Namespace | dict[str, Any]] = None,
+) -> bool:
+    """Given an Interaction and a namespace, determines whether or not the output should be ephemeral"""
+    bot = cast(Neo, interaction.client)
+    user = interaction.user
+
+    default = True
+    if user.id in bot.profiles:
+        default = bot.profiles[user.id].default_ephemeral
+
+    passed_option = getattr(namespace, "ephemeral", None)
+    if isinstance(namespace, dict):
+        passed_option = namespace.pop("ephemeral", None)
+    ephemeral = default if passed_option is None else passed_option
+    return ephemeral
 
 
 class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
@@ -38,7 +58,7 @@ class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
             nsfw=nsfw,
         )
 
-        # Inject an `ephemeral` parameter to every hybrid commmand
+        # Inject an `ephemeral` parameter to every app commmand
         self._params["ephemeral"] = discord.app_commands.transformers.CommandParameter(
             name="ephemeral",
             description="Whether to send the command result ephemerally",
@@ -58,6 +78,8 @@ class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
             )
 
         transformed_values = await self._transform_arguments(interaction, namespace)
+        interaction.namespace.ephemeral = get_ephemeral(interaction, namespace)  # type: ignore
+
         transformed_values.pop("ephemeral", None)
         return await self._do_call(interaction, transformed_values)
 
@@ -97,6 +119,7 @@ class AutoEphemeralHybridCommand(commands.HybridCommand):
             kwargs = await self.app_command._transform_arguments(
                 interaction, interaction.namespace
             )
+            interaction.namespace.ephemeral = get_ephemeral(interaction, kwargs)  # type: ignore
             kwargs.pop("ephemeral", None)
             ctx.kwargs = kwargs
 
