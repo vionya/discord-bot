@@ -2,7 +2,9 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+
+from discord import app_commands
 from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
@@ -11,6 +13,7 @@ from .patcher import Patcher
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
     from neo.types.settings_mapping import SettingsMapping
+
 
 T = TypeVar("T")
 
@@ -75,3 +78,41 @@ def recursive_getattr(target: Any, attr: str, default: Any = None) -> Any:
     return (
         found if not hasattr(found, attr) else recursive_getattr(found, attr, default)
     )
+
+
+# Recursively search for a child node of a command tree or group
+def recursive_get_command(
+    container: app_commands.CommandTree | app_commands.Group, command: str
+) -> Optional[app_commands.Command | app_commands.Group]:
+    # Split the named command into its parts
+    command_path = command.split(" ")
+    # The first item will become the next target for search
+    new_container = container.get_command(command_path[0])
+    # Shift the path
+    command_path = command_path[1:]
+
+    # If there's no path left, then max depth has been reached
+    if len(command_path) == 0:
+        return new_container
+
+    # If there's another layer of tree/group, recurse
+    elif isinstance(new_container, app_commands.Group | app_commands.CommandTree):
+        return recursive_get_command(new_container, " ".join(command_path))
+
+    # If all else fails, return None
+    return None
+
+
+def instantiate(cls: type[T]) -> T:
+    """Instantiates a class, allowing it to be accessed as an instance in the class's type attributes
+
+    ```py
+    class Foo:
+        @instantiate
+        class Bar:
+            pass
+
+    # Foo.Bar is now an instantiated Bar
+    ```
+    """
+    return cls()

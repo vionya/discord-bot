@@ -8,7 +8,7 @@ from collections import Counter
 from functools import partial
 from operator import attrgetter
 from sys import version as py_version
-from typing import Any, Optional
+from typing import Optional
 
 import discord
 import neo
@@ -17,7 +17,7 @@ from googletrans import LANGUAGES, Translator
 from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import shorten
+from neo.tools import instantiate, shorten
 
 from .auxiliary.utility import (
     LANGUAGE_CODES,
@@ -623,5 +623,5 @@ class Utility(neo.Addon):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-async def setup(bot):
+async def setup(bot: neo.Neo):
     await bot.add_cog(Utility(bot))

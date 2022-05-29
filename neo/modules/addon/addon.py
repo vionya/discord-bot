@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine
+from itertools import chain
 from types import MethodType
-from typing import Any, Callable, Protocol, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeGuard, cast
 
 from discord.ext import commands
 from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from discord import app_commands
 
 ReceiverRet = Any | Coroutine[None, None, Any]
 
@@ -27,8 +31,8 @@ def is_receiver(val: Callable[..., ReceiverRet]) -> TypeGuard[Receiver]:
 class AddonMeta(commands.CogMeta):
     __receivers__: dict[str, Receiver]
 
-    def __new__(cls, *args, **kwargs):
-        _cls = cast(Self, super().__new__(cls, *args, **kwargs))
+    def __new__(cls, _name, bases, attrs, **kwargs) -> Self:
+        _cls = cast(Self, super().__new__(cls, _name, bases, attrs, **kwargs))
 
         receivers = {}
 
@@ -131,3 +135,16 @@ class Addon(commands.Cog, metaclass=AddonMeta):
             return receiver
 
         return inner
+
+    def get_commands(
+        self,
+    ) -> list[
+        commands.Command[Self, ..., Any]
+        | app_commands.Command[Self, ..., Any]
+        | app_commands.Group
+    ]:
+        return [
+            c
+            for c in chain(self.__cog_commands__, self.__cog_app_commands__)
+            if c.parent is None
+        ]
