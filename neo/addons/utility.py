@@ -301,10 +301,11 @@ class Utility(neo.Addon):
         limit: Optional[discord.app_commands.Range[int, 0, 2000]] = 5,
     ):
         """Clear messages from the current channel"""
-        assert isinstance(ctx.channel, discord.abc.GuildChannel)
+        if not hasattr(ctx.channel, "purge"):
+            raise RuntimeError("`clear` command called in invalid context")
 
         parse_ids = commands.PartialMessageConverter._get_id_matches
-        purged = await ctx.channel.purge(
+        purged = await ctx.channel.purge(  # type: ignore
             limit=limit,
             check=(lambda m: m.author == user if user else True),
             before=discord.Object(parse_ids(ctx, before)[1]) if before else None,
