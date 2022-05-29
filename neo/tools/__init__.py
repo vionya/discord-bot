@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
+import re
 
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
-from discord import app_commands
+from discord import app_commands, utils
 from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
@@ -116,3 +117,21 @@ def instantiate(cls: type[T]) -> T:
     ```
     """
     return cls()
+
+
+def parse_ids(argument: str) -> tuple[int, Optional[int]]:
+    id_regex = re.compile(
+        r"(?:(?P<channel_id>[0-9]{15,20})-)?(?P<message_id>[0-9]{15,20})$"
+    )
+    link_regex = re.compile(
+        r"https?://(?:(ptb|canary|www)\.)?discord(?:app)?\.com/channels/"
+        r"(?P<guild_id>[0-9]{15,20}|@me)"
+        r"/(?P<channel_id>[0-9]{15,20})/(?P<message_id>[0-9]{15,20})/?$"
+    )
+    match = id_regex.match(argument) or link_regex.match(argument)
+    if not match:
+        raise commands.MessageNotFound(argument)
+    data = match.groupdict()
+    channel_id = utils._get_as_snowflake(data, "channel_id")
+    message_id = int(data["message_id"])
+    return message_id, channel_id

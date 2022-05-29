@@ -76,7 +76,7 @@ class NeoHelpCommand(commands.HelpCommand):
         to read the explanation for the argument at the bottom of the command's
         help page.
         """
-        super().__init__(command_attrs={"help": description})
+        super().__init__(command_attrs={"help": description, "hidden": True})
 
     # Modified from discord.py source code to accomodate app commands
     async def filter_commands(
@@ -111,11 +111,11 @@ class NeoHelpCommand(commands.HelpCommand):
 
         # if we're here then we need to check every command if it can run
         async def predicate(cmd: AnyCommand) -> bool:
+            if self.context.interaction:
+                return True
             try:
                 if isinstance(cmd, commands.Command):
                     return await cmd.can_run(self.context)
-                elif isinstance(cmd, app_commands.Command) and self.context.interaction:
-                    return await cmd._check_can_run(self.context.interaction)
                 else:
                     return True
             except commands.CommandError | app_commands.AppCommandError:
@@ -239,7 +239,7 @@ class NeoHelpCommand(commands.HelpCommand):
         # If no command has been provided or the command exists as a text command,
         # invoke the standard help command callback
         # (text commands are given priority)
-        if command is None or command in ctx.bot.all_commands:
+        if command is None or ctx.bot.get_command(command):
             return await super().command_callback(ctx, command=command)
 
         # If this command exists in the app command tree, handle it accordingly

@@ -2,13 +2,64 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, ParamSpec, TypeVar, Union
 
 import discord
 from discord.ext import commands
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
+    from discord.app_commands import Group
+    from discord.app_commands.commands import CommandCallback
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
+GroupT = TypeVar("GroupT", bound=Union["Group", "commands.Cog"])
+
+
+class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
+    def __init__(
+        self,
+        *,
+        name: str,
+        description: str,
+        callback: CommandCallback[GroupT, P, T],
+        parent: Optional[Group] = None,
+        guild_ids: Optional[list[int]] = None,
+        nsfw: bool = False,
+    ):
+        super().__init__(
+            name=name,
+            description=description,
+            callback=callback,
+            parent=parent,
+            guild_ids=guild_ids,
+            nsfw=nsfw,
+        )
+
+        # Inject an `ephemeral` parameter to every hybrid commmand
+        self._params["ephemeral"] = discord.app_commands.transformers.CommandParameter(
+            name="ephemeral",
+            description="Whether to send the command result ephemerally",
+            required=False,
+            default=None,
+            type=discord.AppCommandOptionType.boolean,
+        )
+
+    async def _invoke_with_namespace(
+        self,
+        interaction: discord.Interaction,
+        namespace: discord.app_commands.Namespace,
+    ) -> T:
+        if not await self._check_can_run(interaction):
+            raise discord.app_commands.CheckFailure(
+                f"The check functions for command {self.name!r} failed."
+            )
+
+        transformed_values = await self._transform_arguments(interaction, namespace)
+        transformed_values.pop("ephemeral", None)
+        return await self._do_call(interaction, transformed_values)
 
 
 class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
@@ -46,13 +97,7 @@ class AutoEphemeralHybridCommand(commands.HybridCommand):
             kwargs = await self.app_command._transform_arguments(
                 interaction, interaction.namespace
             )
-
-            default = True
-            if ctx.author.id in ctx.bot.profiles:
-                default = ctx.bot.profiles[ctx.author.id].default_ephemeral
-
-            passed_option = kwargs.pop("ephemeral", None)
-            ctx.ephemeral = default if passed_option is None else passed_option
+            kwargs.pop("ephemeral", None)
             ctx.kwargs = kwargs
 
     async def invoke(self, ctx: NeoContext, /) -> None:

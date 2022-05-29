@@ -58,8 +58,6 @@ class PromptActions(discord.ui.View):
 
 
 class NeoContext(commands.Context["Neo"]):
-    ephemeral: bool
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -86,11 +84,7 @@ class NeoContext(commands.Context["Neo"]):
 
     async def send(self, *args, **kwargs) -> discord.Message:
         if self.interaction is not None:
-            await self.interaction.response.send_message(
-                *args,
-                ephemeral=kwargs.pop("ephemeral", getattr(self, "ephemeral", True)),
-                **kwargs,
-            )
+            await self.interaction.response.send_message(*args, **kwargs)
             return await self.interaction.original_message()
         else:
             return await super().send(*args, **kwargs)

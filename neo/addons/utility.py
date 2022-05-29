@@ -17,7 +17,7 @@ from googletrans import LANGUAGES, Translator
 from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import instantiate, shorten
+from neo.tools import instantiate, shorten, parse_ids
 
 from .auxiliary.utility import (
     LANGUAGE_CODES,
@@ -130,13 +130,16 @@ class Utility(neo.Addon):
     # Create a fake slash command which directly invokes the help command
     # Uses `app_command_name` to falsify the command without interfering with
     # the actual command instance
-    @commands.hybrid_command(app_command_name="help", with_command=False, hidden=True)
+    @discord.app_commands.command(name="help")
     @discord.app_commands.describe(command="The command to get help for")
-    async def help_slash(self, ctx, *, command: Optional[str] = None):
+    async def help_slash(
+        self, interaction: discord.Interaction, *, command: Optional[str] = None
+    ):
         """Displays help for the bot"""
         if self.bot.help_command is None:
             return
 
+        ctx = await NeoContext.from_interaction(interaction)
         self.bot.help_command.context = ctx
         await self.bot.help_command.command_callback(ctx, command=command)
 
@@ -284,7 +287,7 @@ class Utility(neo.Addon):
         ).set_footer(text="This message will expire in 10 seconds")
         await ctx.send(embed=embed, delete_after=10)
 
-    @commands.hybrid_command(name="clear", with_command=False)
+    @discord.app_commands.command(name="clear")
     @discord.app_commands.guild_only()
     @discord.app_commands.describe(
         before="Delete only messages sent before this message ID or URL",
@@ -294,22 +297,21 @@ class Utility(neo.Addon):
     )
     async def clear_app_command(
         self,
-        ctx: NeoContext,
+        interaction: discord.Interaction,
         before: Optional[str],
         after: Optional[str],
         user: Optional[discord.Member],
         limit: Optional[discord.app_commands.Range[int, 0, 2000]] = 5,
     ):
         """Clear messages from the current channel"""
-        if not hasattr(ctx.channel, "purge"):
+        if not hasattr(interaction.channel, "purge"):
             raise RuntimeError("`clear` command called in invalid context")
 
-        parse_ids = commands.PartialMessageConverter._get_id_matches
-        purged = await ctx.channel.purge(  # type: ignore
+        purged = await interaction.channel.purge(  # type: ignore
             limit=limit,
             check=(lambda m: m.author == user if user else True),
-            before=discord.Object(parse_ids(ctx, before)[1]) if before else None,
-            after=discord.Object(parse_ids(ctx, after)[1]) if after else None,
+            before=discord.Object(parse_ids(before)[0]) if before else None,
+            after=discord.Object(parse_ids(after)[0]) if after else None,
         )
 
         deleted = Counter([m.author for m in purged])
@@ -319,7 +321,7 @@ class Utility(neo.Addon):
                 f"**{m.name}** {times} messages" for m, times in deleted.items()
             ),
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     @commands.command(name="choose")
     async def choose_command(self, ctx, *, choices: str):
@@ -402,7 +404,7 @@ class Utility(neo.Addon):
         self, interaction: discord.Interaction, user: discord.Member | discord.User
     ):
         ctx = await NeoContext.from_interaction(interaction)
-        ctx.ephemeral = True
+        ctx.interaction.namespace.ephemeral = True  # type: ignore
         await self.avatar_command(ctx, user=user)
 
     @commands.hybrid_command(name="userinfo", aliases=["ui"])
@@ -476,7 +478,7 @@ class Utility(neo.Addon):
         self, interaction: discord.Interaction, user: discord.Member | discord.User
     ):
         ctx = await NeoContext.from_interaction(interaction)
-        ctx.ephemeral = True
+        ctx.interaction.namespace.ephemeral = True  # type: ignore
         await self.user_info_command(ctx, user)
 
     @commands.guild_only()

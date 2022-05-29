@@ -6,8 +6,13 @@ import logging
 import discord
 from discord.ext import commands
 
+from neo.classes.app_commands import (
+    AutoEphemeralAppCommand,
+    AutoEphemeralHybridAppCommand,
+    AutoEphemeralHybridCommand,
+)
 from neo.classes.formatters import format_exception
-from neo.classes.hybrid_command import AutoEphemeralHybridCommand
+from neo.classes.interaction import AutoEphemeralInteractionResponse
 from neo.modules.args.commands import ArgCommand, ArgGroup
 from neo.tools import Patcher
 
@@ -20,6 +25,9 @@ missing_required = Patcher(commands.MissingRequiredArgument)
 argument_error = Patcher(argparse.ArgumentError)
 view = Patcher(discord.ui.View)
 hybrid_command = Patcher(commands.hybrid)
+app_command = Patcher(discord.app_commands.commands)
+app_command_group = Patcher(discord.app_commands.Group)
+interaction_response = Patcher(discord.interactions)
 
 
 @guild.attribute()
@@ -99,6 +107,37 @@ async def on_error(self, interaction, error, item):
 
 
 hybrid_command.attribute(name="HybridCommand", value=AutoEphemeralHybridCommand)
+app_command.attribute(name="Command", value=AutoEphemeralAppCommand)
+
+
+@app_command_group.attribute()
+def add_command(self, command, /, *, override: bool = False):
+    if not isinstance(
+        command,
+        discord.app_commands.Command
+        | discord.app_commands.Group
+        | AutoEphemeralHybridAppCommand
+        | AutoEphemeralAppCommand,
+    ):
+        raise TypeError(f"expected Command or Group not {command.__class__!r}")
+
+    if isinstance(command, discord.app_commands.Group) and self.parent is not None:
+        raise ValueError(
+            f"{command.name!r} is too nested, groups can only be nested at most one level"
+        )
+
+    if not override and command.name in self._children:
+        raise discord.app_commands.CommandAlreadyRegistered(command.name, guild_id=None)
+
+    self._children[command.name] = command
+    command.parent = self
+    if len(self._children) > 25:
+        raise ValueError("maximum number of child commands exceeded")
+
+
+interaction_response.attribute(
+    name="InteractionResponse", value=AutoEphemeralInteractionResponse
+)
 
 
 def patch_all() -> None:
@@ -109,3 +148,6 @@ def patch_all() -> None:
     argument_error.patch()
     view.patch()
     hybrid_command.patch()
+    app_command.patch()
+    app_command_group.patch()
+    interaction_response.patch()

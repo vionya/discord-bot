@@ -110,7 +110,11 @@ class BaseMenu(discord.ui.View):
         self.stop()
         self.running = False
         try:
-            if manual is True and getattr(self.ctx, "ephemeral", False) is False:
+            ephemeral = False
+            if self.ctx and self.ctx.interaction:
+                ephemeral = getattr(self.ctx.interaction.namespace, "ephemeral", False)
+
+            if manual is True and ephemeral is False:
                 if self.ctx and self.ctx.interaction and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
