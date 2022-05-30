@@ -98,11 +98,6 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
             type=discord.AppCommandOptionType.boolean,
         )
 
-    async def _check_can_run(self, interaction: discord.Interaction) -> bool:
-        # Raises an AttributeError if we don't hack it in here
-        interaction._baton = await NeoContext.from_interaction(interaction)
-        return await super()._check_can_run(interaction)
-
 
 class AutoEphemeralHybridCommand(commands.HybridCommand):
     def __init__(self, func, /, **kwargs):
