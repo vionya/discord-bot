@@ -296,6 +296,8 @@ class Utility(neo.Addon):
         user="Delete only messages sent by this user",
         limit="The number of messages to delete",
     )
+    @discord.app_commands.checks.bot_has_permissions(manage_messages=True)
+    @discord.app_commands.checks.has_permissions(manage_messages=True)
     async def clear_app_command(
         self,
         interaction: discord.Interaction,

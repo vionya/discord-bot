@@ -70,6 +70,8 @@ class Neo(commands.Bot):
         )  # Register channel disabled check
         self.add_check(self.guild_disabled_check)  # Register command disabled check
 
+        self.tree.on_error = self.tree_on_error
+
         self._async_ready = asyncio.Event()
         asyncio.create_task(self.__ainit__())
 
@@ -199,6 +201,11 @@ class Neo(commands.Bot):
 
     async def on_error(self, *args, **kwargs):
         log.error("\n" + formatters.format_exception(sys.exc_info()))
+
+    # Tree errors will share the same behavior as ext commands
+    async def tree_on_error(self, interaction: discord.Interaction, error):
+        ctx = await context.NeoContext.from_interaction(interaction)
+        await self.on_command_error(ctx, error)
 
     async def on_command_error(self, ctx: context.NeoContext, error):
         original_error = recursive_getattr(error, "original", error)
