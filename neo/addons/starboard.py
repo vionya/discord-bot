@@ -278,12 +278,9 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         )
 
         channel = self.bot.get_channel(starboard_settings["channel"])
-        # The converter for the `channel` setting guarantees that this
-        # will be a text channel
-        assert isinstance(channel, discord.TextChannel)
 
         return Starboard(
-            channel=channel,
+            channel=channel,  # type: ignore
             stars=star_records,
             threshold=starboard_settings["threshold"],
             format=starboard_settings["format"],
