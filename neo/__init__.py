@@ -300,7 +300,11 @@ class Neo(commands.Bot):
         return True
 
     async def guild_disabled_check(self, ctx: context.NeoContext):
-        if not ctx.guild or not isinstance(ctx.author, discord.Member):
+        if (
+            not ctx.guild
+            or not isinstance(ctx.author, discord.Member)
+            or not ctx.command
+        ):
             return True
 
         predicates = [
@@ -314,7 +318,12 @@ class Neo(commands.Bot):
         if any(predicates):
             return True
 
-        if str(ctx.command) in self.configs[ctx.guild.id].disabled_commands:
+        disabled = self.configs[ctx.guild.id].disabled_commands
+        if str(ctx.command.qualified_name) in disabled or (
+            str(ctx.command.root_parent.name) in disabled
+            if ctx.command.root_parent
+            else False
+        ):
             raise commands.DisabledCommand("This command is disabled in this server.")
         return True
 

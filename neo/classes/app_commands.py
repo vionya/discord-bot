@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, Union, cast
 import discord
 from discord.ext import commands
 from neo import Neo
+from neo.classes.context import NeoContext
 
 if TYPE_CHECKING:
     from discord.app_commands import Group
     from discord.app_commands.commands import CommandCallback
-    from neo.classes.context import NeoContext
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -97,6 +97,11 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
             default=None,
             type=discord.AppCommandOptionType.boolean,
         )
+
+    async def _check_can_run(self, interaction: discord.Interaction) -> bool:
+        # Raises an AttributeError if we don't hack it in here
+        interaction._baton = await NeoContext.from_interaction(interaction)
+        return await super()._check_can_run(interaction)
 
 
 class AutoEphemeralHybridCommand(commands.HybridCommand):
