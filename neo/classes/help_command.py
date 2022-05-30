@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.ext import commands
 from neo.modules import DropdownMenu, EmbedPages
 from neo.tools import recursive_get_command
+from neo.types.commands import AnyCommand
 
 if TYPE_CHECKING:
     from neo import Addon
@@ -27,11 +28,6 @@ def format_command(command):
     return fmt.format(symbol, command)
 
 
-AnyCommand = (
-    commands.Command[Any, ..., Any]
-    | app_commands.Command[Any, ..., Any]
-    | app_commands.Group
-)
 HelpMapping = dict[Optional[commands.Cog], list[AnyCommand]]
 
 

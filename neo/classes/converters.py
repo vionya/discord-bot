@@ -7,6 +7,9 @@ import zoneinfo
 from types import MethodType
 from typing import TYPE_CHECKING, Callable, ParamSpec, TypeVar
 
+from discord import AppCommandType
+from neo.types.commands import AnyCommand
+
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
 
@@ -75,9 +78,11 @@ def max_days_converter(provided_max_days: str) -> int:
     return max_days
 
 
-class command_converter(Converter):
-    async def convert(self, ctx, command_name: str) -> Command:
-        command = ctx.bot.get_command(command_name)
+class command_converter(Converter[AnyCommand]):
+    async def convert(self, ctx: NeoContext, command_name: str) -> AnyCommand:
+        command = ctx.bot.get_command(command_name) or ctx.bot.tree.get_command(
+            command_name, type=AppCommandType.chat_input
+        )
         if not command:
             raise NameError(f"There is no command by the identifier `{command_name}`.")
         return command

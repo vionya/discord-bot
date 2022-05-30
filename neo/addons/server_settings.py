@@ -11,6 +11,7 @@ from discord.ext import commands
 from neo.classes.converters import command_converter
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, is_registered_guild
+from neo.types.commands import AnyCommand
 
 from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 
@@ -275,7 +276,12 @@ class ServerSettings(neo.Addon):
     @server_settings.command(name="disable")
     @is_registered_guild()
     async def server_settings_disable_command(
-        self, ctx: NeoContext, *, command: Optional[command_converter] = None
+        self,
+        ctx: NeoContext,
+        *,
+        command: Optional[AnyCommand] = commands.parameter(
+            converter=command_converter, default=None
+        ),
     ):
         """
         Disables a command in the server. Run without arguments to view
@@ -312,14 +318,17 @@ class ServerSettings(neo.Addon):
             commands := {
                 *config.disabled_commands,
             }
-        ).add(str(command))
+        ).add(command.qualified_name)
         config.disabled_commands = [*commands]
         await ctx.send_confirmation()
 
     @server_settings.command(name="reenable", aliases=["enable"])
     @is_registered_guild()
     async def server_settings_reenable_command(
-        self, ctx: NeoContext, *, command: command_converter
+        self,
+        ctx: NeoContext,
+        *,
+        command: AnyCommand = commands.parameter(converter=command_converter),
     ):
         """Re-enables a disabled command"""
         assert ctx.guild
@@ -329,7 +338,7 @@ class ServerSettings(neo.Addon):
             commands := {
                 *config.disabled_commands,
             }
-        ).discard(str(command))
+        ).discard(command.qualified_name)
 
         config.disabled_commands = [*commands]
         await ctx.send_confirmation()
