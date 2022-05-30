@@ -71,6 +71,7 @@ class Neo(commands.Bot):
         self.add_check(self.guild_disabled_check)  # Register command disabled check
 
         self.tree.on_error = self.tree_on_error
+        self.tree.interaction_check = self.tree_interaction_check
 
         self._async_ready = asyncio.Event()
         asyncio.create_task(self.__ainit__())
@@ -265,6 +266,28 @@ class Neo(commands.Bot):
     async def on_guild_remove(self, guild: discord.Guild):
         await self.delete_config(guild.id)
 
+    async def tree_interaction_check(self, interaction: discord.Interaction):
+        # Intercept app commands
+        if (
+            interaction.type == discord.InteractionType.application_command
+            and interaction.command
+        ):
+            ctx = await context.NeoContext.from_interaction(interaction)
+            # Get global checks
+            checks = [*self._checks, *self._check_once]
+
+            if len(checks) == 0:
+                return True
+
+            # Verify the app commands against the global checks
+            try:
+                return await discord.utils.async_all(f(ctx) for f in checks)  # type: ignore
+            except Exception as e:
+                # If it fails, then re-raise it wrapped in an invoke error
+                raise discord.app_commands.CommandInvokeError(interaction.command, e)
+
+        return True
+
     async def global_cooldown(self, ctx: context.NeoContext):
         if await self.is_owner(ctx.author):
             return True
@@ -320,8 +343,8 @@ class Neo(commands.Bot):
 
         disabled = self.configs[ctx.guild.id].disabled_commands
         if str(ctx.command.qualified_name) in disabled or (
-            str(ctx.command.root_parent.name) in disabled
-            if ctx.command.root_parent
+            str(ctx.command.root_parent.name) in disabled  # type: ignore
+            if getattr(ctx.command, "root_parent", None) is not None
             else False
         ):
             raise commands.DisabledCommand("This command is disabled in this server.")
