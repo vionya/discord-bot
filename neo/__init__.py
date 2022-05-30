@@ -200,8 +200,15 @@ class Neo(commands.Bot):
     async def on_error(self, *args, **kwargs):
         log.error("\n" + formatters.format_exception(sys.exc_info()))
 
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: context.NeoContext, error):
         original_error = recursive_getattr(error, "original", error)
+
+        if isinstance(original_error, AssertionError):
+            return await ctx.send(
+                "Something that shouldn't have gone wrong went wrong. Please report this!",
+                ephemeral=True,
+            )
+
         if original_error.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
             if not ctx.interaction:
                 return  # Ignore exceptions specified in config when not an app command

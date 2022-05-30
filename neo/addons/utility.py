@@ -97,7 +97,8 @@ class Utility(neo.Addon):
         await self.bot.wait_until_ready()
 
         # Since we wait for bot ready, this has to be true
-        assert self.bot.user
+        if not self.bot.user:
+            raise RuntimeError("`self.bot.user` did not exist when it should have")
 
         # These both take a ClientSession, so we wait until ready so we can use the bot's
         self.google = cse.Search(
