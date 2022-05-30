@@ -111,14 +111,16 @@ class NeoHelpCommand(commands.HelpCommand):
 
         # if we're here then we need to check every command if it can run
         async def predicate(cmd: AnyCommand) -> bool:
-            if self.context.interaction:
-                return True
             try:
-                if isinstance(cmd, commands.Command):
+                if self.context.interaction:
+                    if isinstance(cmd, commands.HybridCommand | commands.HybridCommand):
+                        return True
+
+                if not isinstance(cmd, app_commands.Command | app_commands.Group):
                     return await cmd.can_run(self.context)
                 else:
                     return True
-            except commands.CommandError | app_commands.AppCommandError:
+            except Exception:
                 return False
 
         ret = []
