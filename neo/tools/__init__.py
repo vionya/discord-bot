@@ -9,6 +9,7 @@ from discord import app_commands, utils
 from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
+from .decorators import instantiate, deprecate
 from .patcher import Patcher
 
 if TYPE_CHECKING:
@@ -102,21 +103,6 @@ def recursive_get_command(
 
     # If all else fails, return None
     return None
-
-
-def instantiate(cls: type[T]) -> T:
-    """Instantiates a class, allowing it to be accessed as an instance in the class's type attributes
-
-    ```py
-    class Foo:
-        @instantiate
-        class Bar:
-            pass
-
-    # Foo.Bar is now an instantiated Bar
-    ```
-    """
-    return cls()
 
 
 def parse_ids(argument: str) -> tuple[int, Optional[int]]:

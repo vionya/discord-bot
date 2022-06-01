@@ -17,7 +17,7 @@ from googletrans import LANGUAGES, Translator
 from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import instantiate, shorten, parse_ids
+from neo.tools import instantiate, shorten, parse_ids, deprecate
 
 from .auxiliary.utility import (
     LANGUAGE_CODES,
@@ -218,6 +218,7 @@ class Utility(neo.Addon):
         await menu.start(ctx)
 
     @commands.command(name="translate", aliases=["tr"], usage="[directive] <content>")
+    @deprecate(reason="Use the `/translate` slash command instead")
     async def translation_command(self, ctx, *, input):
         """
         Translate a string of text
@@ -301,6 +302,7 @@ class Utility(neo.Addon):
         " multiple times to select multiple)",
     )
     @args.command(name="purge", aliases=["c"])
+    @deprecate(reason="Use the `/clear` slash command instead")
     async def purge_command(self, ctx, *, input):
         """Purge messages from the current channel"""
         purged = await ctx.channel.purge(

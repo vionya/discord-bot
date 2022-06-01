@@ -12,7 +12,7 @@ import neo
 from discord.ext import commands
 from discord.utils import snowflake_time
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, shorten, try_or_none
+from neo.tools import deprecate, is_registered_profile, shorten, try_or_none
 from neo.tools.time_parse import TimedeltaWithYears, parse_absolute, parse_relative
 
 if TYPE_CHECKING:
@@ -191,6 +191,7 @@ class Reminders(neo.Addon):
     @discord.app_commands.describe(
         input="View the help command output for this command. It will be improved soon."
     )
+    @deprecate(reason="Use the `/remind set` interface instead")
     async def remind_relative(self, ctx: NeoContext, *, input: str):
         """
         Schedule a reminder for a relative offset
@@ -237,6 +238,7 @@ class Reminders(neo.Addon):
     @discord.app_commands.describe(
         input="View the help command output for this command. It will be improved soon."
     )
+    @deprecate(reason="Use the `/remind set` interface instead")
     async def remind_absolute(self, ctx: NeoContext, *, input: str):
         """
         Schedule a reminder for an absolute date/time

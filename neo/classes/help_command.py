@@ -220,6 +220,17 @@ class NeoHelpCommand(commands.HelpCommand):
             # If this is an app command, indicate that it MUST be used as a slash command
             embed.set_footer(text="This command must be used as a slash command")
 
+        if deprecation := getattr(command.callback, "_deprecated", None):  # type: ignore
+            embed.description = (
+                "**==DEPRECATION NOTICE==**\nThis command is deprecated and "
+                "will be removed in the future.{0}\n\n{1}".format(
+                    f"\nExtra Info: {deprecation}"
+                    if isinstance(deprecation, str)
+                    else "",
+                    embed.description,
+                )
+            )
+
         await self.context.send(embed=embed)
 
     async def send_group_help(self, group: commands.Group | app_commands.Group):
