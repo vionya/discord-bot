@@ -3,15 +3,27 @@
 * Added several context menu commands:
     * For messages, a `Show Message Info` context command
     * For users, shortcuts to view the user's `userinfo` output as well as their `avatar`
+* `clear` command
+    * Identical to the pre-existing `purge` command in functionality
+    * This command is **only** available as a slash command
+        * This allows advanced options to be more easily accessible to users who, ahem, don't read the docs
+        * Purge breakdowns can now be sent ephemerally, and therefore will no longer expire
 
 ## Improvements
 * The `highlight unblock` slash command now accepts the same form of arguments as `highlight block`
+* All application commands (i.e. context menu and slash) are now processed by the same global checks as classic commands. This means that:
+    * <span id="disable-fix" />Commands disabled by `serversettings disable` will not be usable
+    * Commands in channels ignored by `serversettings ignore` will no longer be evaluated (though an ephemeral error will be sent)
+    * Global cooldowns will now be applied to application commands
+* Highlights have been updated to support Discord's new Text Chat in Voice feature
 
 ## Fixes
 * The help documentation for `remind set` has been corrected
+* Related to [app commands global check processing](#disable-fix), commands are now properly blocked by server rules
 
 ## Other
 * The entire source has been (loosely) typed - not yet strictly typed
+* Code for patching the `ephemeral` parameter to all slash commands has been extended to support all variants of slash commands
 
 # Release v0.14.0 - May 21, 2022
 ## Initial Slash Commands
