@@ -9,7 +9,7 @@ from collections import defaultdict
 from enum import Enum
 from functools import cached_property
 from operator import attrgetter
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
@@ -88,53 +88,88 @@ class Highlight:
             "<{0.__class__.__name__} user_id={0.user_id!r} " "content={0.content!r}>"
         ).format(self)
 
-    async def predicate(self, message: discord.Message):
+    async def predicate(self, message: discord.Message) -> bool:
+        # Highlights cannot trigger outside of guilds
         if not message.guild:
-            return
+            return False
 
+        # The bot and the highlight user cannot trigger a highlight
         if any([message.author.id == self.user_id, message.author.bot]):
-            return
-        if self.bot.profiles[self.user_id].receive_highlights is False:
-            return  # Don't highlight users who have disabled highlight receipt
+            return False
 
+        # Don't highlight users who have disabled highlight receipt
+        if self.bot.profiles[self.user_id].receive_highlights is False:
+            return False
+
+        # If any of the following IDs:
+        # - message
+        # - guild
+        # - channel
+        # - author
+        # are in the user's ignored list, fail the check
         blacklist = self.bot.profiles[self.user_id].hl_blocks
         if any(
             attrgetter(attr)(message) in blacklist
             for attr in ("id", "guild.id", "channel.id", "author.id")
         ):
-            return
+            return False
 
+        # Don't highlight users with messages they are mentioned in
         if self.user_id in [m.id for m in message.mentions]:
-            return  # Don't highlight users with messages they are mentioned in
+            return False
 
-        try:  # This lets us update the channel members and make sure the user exists
+        # This lets us update the channel members and make sure the user exists
+        try:
             member = await message.guild.fetch_member(self.user_id, cache=True)  # type: ignore
         except discord.NotFound:
-            return
+            return False
 
-        message.channel = cast(
-            discord.TextChannel | discord.VoiceChannel, message.channel
-        )
         members: list[discord.Member] = []
-        if isinstance(message.channel, discord.Thread):
-            if message.channel.is_private():  # Need to fetch members explicitly
-                try:
-                    await message.channel.fetch_member(self.user_id)
-                    members = [member]  # If member is in thread, then they pass
-                except discord.NotFound:
-                    return  # Otherwise... they don't
+        channel = message.channel
 
-            elif isinstance(message.channel.parent, discord.ForumChannel):
-                if message.channel.parent.permissions_for(member).read_messages:
+        match channel:
+            # Threads with a forum channel parent
+            # Currently untested since they're inaccessible for testing
+            case discord.Thread(parent=discord.ForumChannel()):
+                if channel.parent.permissions_for(member).read_messages:  # type: ignore
                     members = [member]
 
-            elif message.channel.parent is not None:
-                members = message.channel.parent.members
-        else:
-            members = message.channel.members
+            # Threads with a text channel parent
+            case discord.Thread(parent=discord.TextChannel()):
+                # In private channel, see if we can fetch the member from the thread
+                # If yes, deliver highlight
+                if channel.is_private():
+                    try:
+                        await channel.fetch_member(self.user_id)
+                        members = [member]
+                    except discord.NotFound:
+                        # If the member isn't found, the members list remains empty
+                        # The check fails
+                        pass
+
+                # Otherwise it's a public thread so we can just pull from the
+                # parent channel's members
+                else:
+                    members = channel.parent.members  # type: ignore
+
+            # Same logic as above applies to text channels
+            case discord.TextChannel():
+                members = channel.members
+
+            # Since voice channel members aren't the same as text channel,
+            # we have to run a permissions check to see if the member
+            # can connect to the voice channel
+            case discord.VoiceChannel():
+                if channel.permissions_for(member).connect:
+                    members = [member]
+
+            # In any other case, do nothing
+            # This leaves the members list empty, so the check fails
+            case _:
+                pass
 
         if member not in members:  # Check channel membership
-            return
+            return False
 
         return True
 
