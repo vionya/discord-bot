@@ -8,6 +8,8 @@
     * This command is **only** available as a slash command
         * This allows advanced options to be more easily accessible to users who, ahem, don't read the docs
         * Purge breakdowns can now be sent ephemerally, and therefore will no longer expire
+* `translate` command
+    * Identical to the pre-existing `translate` command, but functions solely as a slash command
 
 ## Improvements
 * The `highlight unblock` slash command now accepts the same form of arguments as `highlight block`
@@ -24,6 +26,13 @@
 ## Other
 * The entire source has been (loosely) typed - not yet strictly typed
 * Code for patching the `ephemeral` parameter to all slash commands has been extended to support all variants of slash commands
+* Added a `deprecate` decorator to facilitate marking functions as deprecated
+    * The help command takes advantage of this to display deprecated commands as well
+* Old-style commands marked as deprecated:
+    * `remind at`
+    * `remind in`
+    * `translate`
+    * `purge`
 
 # Release v0.14.0 - May 21, 2022
 ## Initial Slash Commands
