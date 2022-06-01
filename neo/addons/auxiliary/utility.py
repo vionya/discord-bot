@@ -8,9 +8,13 @@ from __future__ import annotations
 import asyncio
 import re
 from functools import cache
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
+
+if TYPE_CHECKING:
+    from googletrans import Translator
 
 _language_codes = neo.formatters.Table()
 _language_codes.init_columns("Lang Code", "Lang")
@@ -69,9 +73,13 @@ def get_translation_kwargs(content: str) -> tuple[str, dict[str, str]]:
 
 
 @cache  # Prevent repeated requests when possible
-def do_translate(translator, content: str, *, dest: str, src: str):
+def do_translate(
+    translator: Translator, content: str, *, dest: Optional[str], src: Optional[str]
+):
     try:
-        translation = translator.translate(content, dest=dest, src=src)
+        translation = translator.translate(
+            content, dest=dest or "en", src=src or "auto"
+        )
     except ValueError as e:
         e.args = (f"An {e.args[0]} was provided",)
         raise

@@ -243,6 +243,37 @@ class Utility(neo.Addon):
         )
         await ctx.send(embed=embed)
 
+    @discord.app_commands.command(name="translate")
+    @discord.app_commands.describe(
+        source="The language to translate from. Default 'en'",
+        destination="The language to translate to. Default 'en'",
+        content="The content to translate",
+    )
+    @discord.app_commands.rename(source="from", destination="to")
+    async def translate_app_command(
+        self,
+        interaction: discord.Interaction,
+        content: str,
+        source: Optional[str] = "en",
+        destination: Optional[str] = "en",
+    ):
+        """
+        Translate some text
+        """
+        translated = await translate(
+            self.translator, content, dest=destination, src=source
+        )
+        embed = neo.Embed(
+            description=f"**Source Language** `{source}` "
+            f"[{LANGUAGES.get(translated.src, 'Auto-Detected').title()}]"
+            f"\n**Destination Language** {LANGUAGES.get(translated.dest, 'Unknown').title()}"
+        ).add_field(
+            name="Translated Content",
+            value=shorten(translated.text, 1024),
+            inline=False,
+        )
+        await interaction.response.send_message(embeds=[embed])
+
     @commands.guild_only()
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
@@ -324,7 +355,7 @@ class Utility(neo.Addon):
                 f"**{m.name}** {times} messages" for m, times in deleted.items()
             ),
         )
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embeds=[embed])
 
     @commands.command(name="choose")
     async def choose_command(self, ctx, *, choices: str):
