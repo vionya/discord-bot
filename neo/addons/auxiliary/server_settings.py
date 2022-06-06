@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ..server_settings import ServerSettings
 
 
-class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
+class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
         self,
         *,
@@ -80,7 +80,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
         await interaction.response.send_modal(modal)
 
 
-class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu]):
+class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
         self,
         *,

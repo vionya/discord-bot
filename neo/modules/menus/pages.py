@@ -2,7 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, SupportsIndex, cast
 
 from discord import Embed as BaseEmbed
 from neo.classes import Embed
@@ -13,10 +13,7 @@ if TYPE_CHECKING:
     from .menus import BaseMenu
 
 
-T = TypeVar("T", bound=str | list[Any])
-
-
-class Pages(Generic[T]):
+class Pages:
     """
     A base class for handling paginated objects.
 
@@ -63,7 +60,7 @@ class Pages(Generic[T]):
 
     def __init__(
         self,
-        items: T,
+        items: str | list,
         /,
         per_page: int = 1,
         *,
@@ -125,7 +122,7 @@ class Pages(Generic[T]):
             )
         return content
 
-    def append(self, new: T):
+    def append(self, new: Any):
         self._old_page_count = len(self.pages)
 
         if isinstance(self.items, str) and isinstance(new, str):
@@ -136,7 +133,7 @@ class Pages(Generic[T]):
         if self.menu and self.menu.running is True:
             self.menu.dispatch_update()
 
-    def prepend(self, new: T):
+    def prepend(self, new: Any):
         self._old_page_count = len(self.pages)
 
         if isinstance(self.items, str) and isinstance(new, str):
@@ -151,10 +148,12 @@ class Pages(Generic[T]):
         return len(self.pages)
 
 
-class EmbedPages(Pages[list[BaseEmbed]]):
+class EmbedPages(Pages):
     """
     A subclass of Pages that takes an iterable of Embeds as its input.
     """
+
+    items: list[BaseEmbed]
 
     def __init__(self, items: list[BaseEmbed]):
         super().__init__(items, 1)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypedDict, TypeVar, cast
 
 import discord
 from neo.tools import shorten
@@ -20,7 +20,10 @@ class SendKwargs(TypedDict):
     reference: Optional[discord.MessageReference]
 
 
-class BaseMenu(discord.ui.View):
+T = TypeVar("T", bound=Pages)
+
+
+class BaseMenu(Generic[T], discord.ui.View):
     __slots__ = (
         "pages",
         "message",
@@ -33,13 +36,13 @@ class BaseMenu(discord.ui.View):
         "author",
     )
 
-    def __init__(self, pages: Pages):
+    def __init__(self, pages: T):
         super().__init__()
         self.pages = pages
 
         self.message = None
         self.ctx: Optional[NeoContext] = None
-        self.current_page = 0
+        self.current_page: int = 0
         self.running = False
 
         self.update_lock = asyncio.Lock()
@@ -187,7 +190,7 @@ class BaseMenu(discord.ui.View):
             await self.close(interaction=self.ctx.interaction)
 
 
-class ButtonsMenu(BaseMenu):
+class ButtonsMenu(BaseMenu, Generic[T]):
     @discord.ui.button(label="≪", row=4)
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
@@ -224,7 +227,7 @@ class DropdownMenuItem(discord.ui.Select):
         await interaction.response.edit_message(**send_kwargs)
 
 
-class DropdownMenu(ButtonsMenu, BaseMenu):
+class DropdownMenu(ButtonsMenu, Generic[T]):
     @classmethod
     def from_pages(
         cls,

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ..starboard import StarboardAddon
 
 
-class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu]):
+class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
         self,
         *,
