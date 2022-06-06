@@ -1,4 +1,4 @@
-# Release v0.15.0 - TBD
+# Release v0.15.0 - June 6, 2022
 ## Additions
 * Added several context menu commands:
     * For messages, a `Show Message Info` context command
@@ -32,6 +32,7 @@
 * Code for patching the `ephemeral` parameter to all slash commands has been extended to support all variants of slash commands
 * Added a `deprecate` decorator to facilitate marking functions as deprecated
     * The help command takes advantage of this to display deprecated commands as well
+    * Deprecated commands will have a button in their output which alerts the user of the command's deprecation status
 * Old-style commands marked as deprecated:
     * `remind at`
     * `remind in`
