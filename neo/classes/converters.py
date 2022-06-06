@@ -21,12 +21,12 @@ EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
 T = TypeVar("T")
 
 
-def wrap_converter(func: Callable[[str], T]) -> type[Converter[T]]:
+def wrap_converter(func: Callable[[str], T]) -> Converter[T]:
     class WrapperConverter(Converter):
         async def convert(self: Converter[T], ctx: NeoContext, arg: str) -> T:
             return func(arg)
 
-    return WrapperConverter
+    return WrapperConverter()
 
 
 @wrap_converter
