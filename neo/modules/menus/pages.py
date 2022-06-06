@@ -2,22 +2,27 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Any, Generic, Optional, SupportsIndex, TypeVar, cast
 
+from discord import Embed as BaseEmbed
 from neo.classes import Embed
 
 if TYPE_CHECKING:
-    from discord.embeds import EmbedData
+    from discord.types.embed import Embed as EmbedData
+
     from .menus import BaseMenu
 
 
-class Pages:
+T = TypeVar("T", bound=str | list[Any])
+
+
+class Pages(Generic[T]):
     """
     A base class for handling paginated objects.
 
     Parameters
     ----------
-    items: Any[Iterable]
+    items: str | list[Any]
         The items to be partitioned and paginated, can be any iterable
     per_page: int
         The number of items to be included on each page
@@ -58,16 +63,19 @@ class Pages:
 
     def __init__(
         self,
-        items,
+        items: T,
         /,
         per_page: int = 1,
         *,
         use_embed: bool = False,
         joiner: str = "\n",
-        prefix: Optional[str] = None,
-        suffix: Optional[str] = None,
+        prefix: str = "",
+        suffix: str = "",
         template_embed: Optional[Embed] = None,
     ):
+        if not isinstance(items, str | list):
+            raise TypeError('"items" must be of type list or str')
+
         self.items = items
         self.joiner = joiner
         self.per_page = per_page
@@ -87,7 +95,7 @@ class Pages:
     def __repr__(self):
         return "<{0.__class__.__name__} pages={1}>".format(self, len(self.pages))
 
-    def link(self, menu):
+    def link(self, menu: BaseMenu):
         self.menu = menu
 
     def _split_pages(self):
@@ -95,10 +103,8 @@ class Pages:
         _pages = []
         while _items:
 
-            if self.suffix or self.prefix:
-                prefix = self.prefix if isinstance(_items, str) else [self.prefix]
-                suffix = self.suffix if isinstance(_items, str) else [self.suffix]
-                to_append = prefix + _items[: self.per_page] + suffix
+            if (self.suffix or self.prefix) and isinstance(_items, str):
+                to_append = self.prefix + _items[: self.per_page] + self.suffix
 
             else:
                 to_append = _items[: self.per_page]
@@ -111,7 +117,7 @@ class Pages:
     def pages(self):
         return self._split_pages()
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: SupportsIndex):
         content = self.joiner.join(self.pages[index])
         if self.use_embed:
             return Embed.from_dict(
@@ -119,21 +125,23 @@ class Pages:
             )
         return content
 
-    def append(self, new):
+    def append(self, new: T):
         self._old_page_count = len(self.pages)
-        if isinstance(self.items, str):
+
+        if isinstance(self.items, str) and isinstance(new, str):
             self.items += new
-        else:
+        elif isinstance(self.items, list):
             self.items.append(new)
 
         if self.menu and self.menu.running is True:
             self.menu.dispatch_update()
 
-    def prepend(self, new):
+    def prepend(self, new: T):
         self._old_page_count = len(self.pages)
-        if isinstance(self.items, str):
+
+        if isinstance(self.items, str) and isinstance(new, str):
             self.items = new + self.items
-        else:
+        elif isinstance(self.items, list):
             self.items.insert(0, new)
 
         if self.menu and self.menu.running is True:
@@ -143,17 +151,17 @@ class Pages:
         return len(self.pages)
 
 
-class EmbedPages(Pages):
+class EmbedPages(Pages[list[BaseEmbed]]):
     """
     A subclass of Pages that takes an iterable of Embeds as its input.
     """
 
-    def __init__(self, items):
+    def __init__(self, items: list[BaseEmbed]):
         super().__init__(items, 1)
 
     @property
     def pages(self):
         return self.items
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: SupportsIndex):
         return self.pages[index]

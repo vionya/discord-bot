@@ -122,7 +122,7 @@ class Devel(neo.Addon):
         It's not a great idea to unload everything
         """
         action = getattr(self.bot, f"{args.action}_extension")
-        failed = []
+        failed: list[str] = []
         if "~" in args.addons:
             args.addons = self.bot.extensions.keys()
         for addon in args.addons:
