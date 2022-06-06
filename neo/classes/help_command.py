@@ -151,7 +151,7 @@ class NeoHelpCommand(commands.HelpCommand):
         menu = DropdownMenu.from_pages(
             pages, embed_auto_label=True, embed_auto_desc=True
         )
-        await menu.start(self.context)
+        await menu.start(self.get_destination())
 
     async def send_cog_help(self, cog: Addon):
         cog_name = cog.qualified_name
@@ -161,7 +161,7 @@ class NeoHelpCommand(commands.HelpCommand):
             title=cog_name, description=getattr(cog, "description", "No description")
         ).add_field(name="Commands", value="\n".join(map(format_command, cog_commands)))
 
-        await self.context.send(embed=embed)
+        await self.get_destination().send(embed=embed)
 
     async def send_command_help(self, command: AnyCommand):
         if isinstance(command, app_commands.Command | app_commands.Group):
@@ -231,7 +231,7 @@ class NeoHelpCommand(commands.HelpCommand):
                 )
             )
 
-        await self.context.send(embed=embed)
+        await self.get_destination().send(embed=embed)
 
     async def send_group_help(self, group: commands.Group | app_commands.Group):
         # Group help is re-routed directly to command help, which unifies
@@ -245,36 +245,30 @@ class NeoHelpCommand(commands.HelpCommand):
     async def command_callback(
         self, ctx: NeoContext, /, *, command: Optional[str] = None
     ) -> None:
-        # If no command has been provided or the command exists as a text command,
+        # If no command has been provided,
         # invoke the standard help command callback
-        # (text commands are given priority)
-        if command is None or ctx.bot.get_command(command):
-            return await super().command_callback(ctx, command=command)
+        if command is None:
+            return await super().command_callback(ctx)
 
-        # If this command exists in the app command tree, handle it accordingly
-        elif command in [
-            cmd.qualified_name
-            for cmd in ctx.bot.tree.walk_commands(
-                type=discord.AppCommandType.chat_input
+        cmd: Optional[AnyCommand] = None
+        # If help is called as a slash command, prioritize slash commands
+        # This lets overloaded command names be accessed
+        if ctx.interaction:
+            cmd = recursive_get_command(ctx.bot.tree, command) or ctx.bot.get_command(
+                command
             )
-        ]:
-            # Recursively fetch the command based on its name
-            # If it's a qualified name, it tries to traverse until it fails
-            cmd = recursive_get_command(ctx.bot.tree, command)
-
-            if cmd is None:
-                string = await discord.utils.maybe_coroutine(
-                    self.command_not_found, self.remove_mentions(command.split(" ")[0])
-                )
-                return await self.send_error_message(string)
-
-            if isinstance(
-                cmd, app_commands.Group
-            ):  # Should this just always just defer to `send_command_help`?`
-                return await self.send_group_help(cmd)
-            else:
-                return await self.send_command_help(cmd)
-
+        # Otherwise, prioritize text commands before slash commands
         else:
-            msg = await discord.utils.maybe_coroutine(self.command_not_found, command)
-            return await self.send_error_message(msg)
+            cmd = ctx.bot.get_command(command) or recursive_get_command(
+                ctx.bot.tree, command
+            )
+
+        # If cmd is none, the command does not exist
+        # Error accordingly
+        if cmd is None:
+            string = await discord.utils.maybe_coroutine(
+                self.command_not_found, self.remove_mentions(command)
+            )
+            return await self.send_error_message(string)
+
+        return await self.send_command_help(cmd)
