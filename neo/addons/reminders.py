@@ -11,6 +11,7 @@ import discord
 import neo
 from discord.ext import commands
 from discord.utils import snowflake_time
+from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
 from neo.tools import deprecate, is_registered_profile, shorten, try_or_none
 from neo.tools.time_parse import TimedeltaWithYears, parse_absolute, parse_relative
@@ -30,7 +31,7 @@ class Reminder:
         "content",
         "end_time",
         "bot",
-        "wait_task",
+        "_done",
     )
 
     def __init__(
@@ -49,8 +50,7 @@ class Reminder:
         self.content = content
         self.end_time = end_time
         self.bot = bot
-
-        self.wait_task = bot.loop.create_task(self.wait())
+        self._done = False
 
     @property
     def channel(self) -> discord.TextChannel | discord.DMChannel:
@@ -63,9 +63,9 @@ class Reminder:
     def message(self) -> discord.PartialMessage:
         return self.channel.get_partial_message(self.message_id)
 
-    async def wait(self):
-        await discord.utils.sleep_until(self.end_time)
-        await self.deliver()
+    async def poll(self, poll_time: datetime):
+        if poll_time >= self.end_time:
+            await self.deliver()
 
     async def deliver(self):
         """Deliver a reminder, falling back to a primitive format if necessary"""
@@ -98,6 +98,7 @@ class Reminder:
 
     async def delete(self):
         """Remove this reminder from the database"""
+        self._done = True
         await self.bot.db.execute(
             """
             DELETE FROM
@@ -113,10 +114,7 @@ class Reminder:
             self.content,
             self.end_time,
         )
-        try:  # Need to cancel the task
-            self.wait_task.cancel()
-        finally:  # ...but need to ensure that dispatch is after cancel
-            self.bot.broadcast("reminder_removed", self.user_id)
+        self.bot.broadcast("reminder_removed", self.user_id)
 
 
 class Reminders(neo.Addon):
@@ -134,6 +132,8 @@ class Reminders(neo.Addon):
             reminder = Reminder(bot=self.bot, **record)
             self.reminders[record["user_id"]].append(reminder)
 
+        self.poll_reminders.start()
+
     @neo.Addon.recv("profile_delete")
     async def handle_deleted_profile(self, user_id: int):
         for reminder in self.reminders.pop(user_id, []):
@@ -142,16 +142,21 @@ class Reminders(neo.Addon):
     @neo.Addon.recv("reminder_removed")
     async def handle_removed_reminder(self, user_id: int):
         self.reminders[user_id] = [
-            *filter(lambda r: not r.wait_task.done(), self.reminders[user_id].copy())
+            *filter(lambda r: not r._done, self.reminders[user_id].copy())
         ]
+
+    @periodic(1)
+    async def poll_reminders(self):
+        now = datetime.now(timezone.utc)
+        for reminder_list in self.reminders.values():
+            for reminder in reminder_list:
+                await reminder.poll(now)
 
     async def cog_check(self, ctx: NeoContext):
         return await is_registered_profile().predicate(ctx)
 
     def cog_unload(self):
-        for reminders in self.reminders.values():
-            for reminder in reminders:
-                reminder.wait_task.cancel()
+        self.poll_reminders.shutdown()
 
     async def add_reminder(
         self,

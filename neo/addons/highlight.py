@@ -451,7 +451,9 @@ class Highlights(neo.Addon):
         if ctx.interaction:
             ids = [
                 *map(
-                    lambda obj: int(getattr(obj, "id", obj)),
+                    lambda obj: obj.id
+                    if isinstance(obj, discord.abc.Snowflake)
+                    else int(obj),
                     filter(None, [user, channel, id]),
                 )
             ]
@@ -521,7 +523,9 @@ class Highlights(neo.Addon):
         if ctx.interaction:
             ids = [
                 *map(
-                    lambda obj: int(getattr(obj, "id", obj)),
+                    lambda obj: obj.id
+                    if isinstance(obj, discord.abc.Snowflake)
+                    else int(obj),
                     filter(None, [user, channel, id]),
                 )
             ]
