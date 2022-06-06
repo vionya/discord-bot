@@ -20,10 +20,12 @@
     * Commands in channels ignored by `serversettings ignore` will no longer be evaluated (though an ephemeral error will be sent)
     * Global cooldowns will now be applied to application commands
 * Highlights have been updated to support Discord's new Text Chat in Voice feature
+* Improvements to slash command parameter naming and descriptions
 
 ## Fixes
 * The help documentation for `remind set` has been corrected
 * Related to [app commands global check processing](#disable-fix), commands are now properly blocked by server rules
+* Fixes wrapped converters failing to convert
 
 ## Other
 * The entire source has been (loosely) typed - not yet strictly typed
