@@ -33,6 +33,7 @@
     * `remind in`
     * `translate`
     * `purge`
+* Reminders are now checked via batch polling rather than async wait tasks for each individual reminder
 
 # Release v0.14.0 - May 21, 2022
 ## Initial Slash Commands
