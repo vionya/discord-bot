@@ -57,6 +57,22 @@ class PromptActions(discord.ui.View):
         return all(predicates)
 
 
+class DeprecationAlertButton(discord.ui.Button):
+    def __init__(self, reason: str | bool):
+        self.reason = reason if isinstance(reason, str) else None
+        super().__init__(
+            style=discord.ButtonStyle.red, label="!", row=4
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        embed = neo.Embed(
+            title="This command has been deprecated, and will be removed in the future",
+            description="Please become familiar with any alternatives that may exist."
+            + (f"\n\nExtra Info: {self.reason}" if self.reason else ""),
+        )
+        await interaction.response.send_message(embeds=[embed], ephemeral=True)
+
+
 class NeoContext(commands.Context["Neo"]):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,6 +103,15 @@ class NeoContext(commands.Context["Neo"]):
             await self.interaction.response.send_message(*args, **kwargs)
             return await self.interaction.original_message()
         else:
+            if self.command and (
+                deprecation := getattr(self.command.callback, "_deprecated", None)
+            ):
+                if "view" in kwargs:
+                    kwargs["view"].add_item(DeprecationAlertButton(reason=deprecation))
+                else:
+                    kwargs["view"] = discord.ui.View()
+                    kwargs["view"].add_item(DeprecationAlertButton(reason=deprecation))
+
             return await super().send(*args, **kwargs)
 
     async def send_confirmation(self):
