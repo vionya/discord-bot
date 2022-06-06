@@ -13,12 +13,8 @@
 from __future__ import annotations
 
 from sys import argv
-from typing import TYPE_CHECKING
 
 import toml
-
-if TYPE_CHECKING:
-    from neo.types.config import NeoConfig
 
 INPUT_FILE = next(iter(argv[1:]), "config.toml")
 OUTPUT_FILE = next(iter(argv[2:]), "config.example.toml")
