@@ -389,6 +389,7 @@ class Reminders(neo.Addon):
         await menu.start(ctx)
 
     @remind.command(name="view", aliases=["show"])
+    @discord.app_commands.describe(index="A reminder index to view")
     async def remind_view(self, ctx: NeoContext, index: int):
         """View the full content of a reminder, accessed by index"""
         try:
@@ -425,6 +426,9 @@ class Reminders(neo.Addon):
         ]
 
     @remind.command(name="cancel", aliases=["remove", "rm"])
+    @discord.app_commands.describe(
+        index='A reminder index to remove, or "~" to clear all'
+    )
     async def remind_cancel(self, ctx: NeoContext, index: str):
         """
         Cancel 1 or more reminder by index

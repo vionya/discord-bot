@@ -310,6 +310,7 @@ class Highlights(neo.Addon):
         await ctx.send(embeds=[embed])
 
     @highlight.command(name="add")
+    @discord.app_commands.describe(content="The word or phrase to be highlighted by")
     async def highlight_add(self, ctx: NeoContext, *, content: str):
         """
         Add a new highlight

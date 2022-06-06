@@ -142,6 +142,7 @@ class ServerSettings(neo.Addon):
         new_value="The new value to assign to this setting. More information"
         " can be found in the settings list",
     )
+    @discord.app_commands.rename(new_value="new-value")
     @is_registered_guild()
     async def server_settings_set(
         self, ctx: NeoContext, setting: str, *, new_value: str
@@ -219,6 +220,7 @@ class ServerSettings(neo.Addon):
         await self.bot.delete_config(ctx.guild.id)
 
     @server_settings.command(name="ignore")
+    @discord.app_commands.describe(channel="The channel to ignore")
     @is_registered_guild()
     async def server_settings_ignore_channel(
         self, ctx: NeoContext, channel: Optional[discord.TextChannel] = None
@@ -274,6 +276,7 @@ class ServerSettings(neo.Addon):
         await ctx.send_confirmation()
 
     @server_settings.command(name="disable")
+    @discord.app_commands.describe(command="The command to disable")
     @is_registered_guild()
     async def server_settings_disable_command(
         self,
@@ -323,6 +326,7 @@ class ServerSettings(neo.Addon):
         await ctx.send_confirmation()
 
     @server_settings.command(name="reenable", aliases=["enable"])
+    @discord.app_commands.describe(command="The command to re-enable")
     @is_registered_guild()
     async def server_settings_reenable_command(
         self,

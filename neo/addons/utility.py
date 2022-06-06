@@ -406,6 +406,9 @@ class Utility(neo.Addon):
     # Information commands below
 
     @commands.hybrid_command(name="avatar", aliases=["av", "avy", "pfp"])
+    @discord.app_commands.describe(
+        user="The user to get the avatar of. Yourself if empty"
+    )
     async def avatar_command(
         self, ctx: NeoContext, *, user: Optional[discord.User | discord.Member] = None
     ):
@@ -457,7 +460,7 @@ class Utility(neo.Addon):
 
     @commands.hybrid_command(name="userinfo", aliases=["ui"])
     @discord.app_commands.describe(
-        user="The user to get info about. If empty, gets your own info."
+        user="The user to get info about. Yourself if empty"
     )
     async def user_info_command(
         self, ctx: NeoContext, user: Optional[discord.Member | discord.User] = None
@@ -566,7 +569,7 @@ class Utility(neo.Addon):
 
     @commands.guild_only()
     @commands.hybrid_command(name="roleinfo", aliases=["ri"])
-    @discord.app_commands.describe(role="The role to get info about.")
+    @discord.app_commands.describe(role="The role to get info about")
     async def role_info_command(self, ctx: NeoContext, *, role: discord.Role):
         """
         Retrives information about the given role

@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 from collections import defaultdict
 from operator import attrgetter
+from typing import TYPE_CHECKING
 
 import discord
 import neo
@@ -10,6 +13,9 @@ from discord.ext import commands
 from discord.utils import escape_markdown
 from neo.modules import ButtonsMenu
 from neo.tools import is_registered_profile, shorten
+
+if TYPE_CHECKING:
+    from neo.classes.context import NeoContext
 
 MAX_TODOS = 100
 
@@ -69,15 +75,15 @@ class Todos(neo.Addon):
     async def handle_deleted_profile(self, user_id: int):
         self.todos.pop(user_id, None)
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: NeoContext):
         return await is_registered_profile().predicate(ctx)
 
     @commands.hybrid_group()
-    async def todo(self, ctx):
+    async def todo(self, ctx: NeoContext):
         """Group command for managing todos"""
 
     @todo.command(name="list")
-    async def todo_list(self, ctx):
+    async def todo_list(self, ctx: NeoContext):
         """List your todos"""
         formatted_todos = []
 
@@ -99,7 +105,8 @@ class Todos(neo.Addon):
         await menu.start(ctx)
 
     @todo.command(name="add")
-    async def todo_add(self, ctx, *, content: str):
+    @discord.app_commands.describe(content="The content of the new todo")
+    async def todo_add(self, ctx: NeoContext, *, content: str):
         """Add a new todo"""
         if len(self.todos[ctx.author.id]) >= MAX_TODOS:
             raise ValueError("You've used up all your todo slots!")
@@ -133,7 +140,8 @@ class Todos(neo.Addon):
         await ctx.send_confirmation()
 
     @todo.command(name="remove", aliases=["rm"])
-    async def todo_remove(self, ctx, index: str):
+    @discord.app_commands.describe(index='A todo index to remove, or "~" to clear all')
+    async def todo_remove(self, ctx: NeoContext, index: str):
         """
         Remove a todo by index
 
@@ -190,7 +198,8 @@ class Todos(neo.Addon):
         ]
 
     @todo.command(name="view", aliases=["show"])
-    async def todo_view(self, ctx, index: int):
+    @discord.app_commands.describe(index="A todo index to view")
+    async def todo_view(self, ctx: NeoContext, index: int):
         """View a todo by its listed index"""
         try:
             todo = self.todos[ctx.author.id][index - 1]
@@ -212,6 +221,11 @@ class Todos(neo.Addon):
         await ctx.send(embed=embed)
 
     @todo.command(name="edit")
+    @discord.app_commands.describe(
+        index="A todo index to edit",
+        new_content="The new content to update the todo with"
+    )
+    @discord.app_commands.rename(new_content="new-content")
     async def todo_edit(self, ctx, index: int, *, new_content: str):
         """Edit the content of a todo"""
         try:

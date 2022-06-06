@@ -488,6 +488,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         new_value="The new value to assign to this setting. More information"
         " can be found in the settings list",
     )
+    @discord.app_commands.rename(new_value="new-value")
     async def starboard_set(self, ctx: NeoContext, setting: str, *, new_value: str):
         """
         Updates the value of a starboard setting
@@ -641,8 +642,8 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         starboard = self.starboards[ctx.guild.id]
         target_id = int(id) if id.isdigit() else None
 
-        for snowflake in filter(None, [target_id, channel, message_obj]):
-            object_id = getattr(snowflake, "id", snowflake)
+        for obj in filter(None, [target_id, channel, message_obj]):
+            object_id = obj.id if isinstance(obj, discord.abc.Snowflake) else obj
 
             starboard.ignored.discard(object_id)
             await self.bot.db.execute(

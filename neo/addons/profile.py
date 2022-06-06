@@ -132,6 +132,7 @@ class Profile(neo.Addon):
         new_value="The new value to assign to this setting. More information"
         " can be found in the settings list",
     )
+    @discord.app_commands.rename(new_value="new-value")
     @is_registered_profile()
     async def profile_settings_set(
         self, ctx: NeoContext, setting: str, *, new_value: str
