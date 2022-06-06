@@ -46,3 +46,12 @@ def deprecate(
         return func
 
     return inner
+
+
+def with_docstring(docstring: str) -> Callable[[Callable[..., Any]], Any]:
+    """Dynamically set a function's doc string"""
+    def inner(func: Callable[..., Any]) -> Callable[..., Any]:
+        func.__doc__ = docstring
+        return func
+
+    return inner

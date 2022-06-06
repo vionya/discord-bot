@@ -17,10 +17,9 @@ from googletrans import LANGUAGES, Translator
 from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import instantiate, shorten, parse_ids, deprecate
+from neo.tools import shorten, parse_ids, deprecate
 
 from .auxiliary.utility import (
-    LANGUAGE_CODES,
     InfoButtons,
     SwappableEmbedButton,
     definitions_to_embed,
@@ -187,21 +186,12 @@ class Utility(neo.Addon):
         await menu.start(ctx)
 
     @args.add_arg("word", nargs="+", help="The word to search a dictionary for")
-    @args.add_arg(
-        "-lc",
-        "--lang_code",
-        default="en_US",
-        help="The language code of the dictionary to search\n```\n"
-        + LANGUAGE_CODES
-        + "\n```",
-    )
     @args.command(name="define")
+    @deprecate(reason="Use the `/define` slash command instead")
     async def dictionary_command(self, ctx, *, query):
         """Search the dictionary for a word's definition"""
         try:
-            resp = await self.dictionary.define(
-                " ".join(query.word), lang_code=query.lang_code
-            )
+            resp = await self.dictionary.define(" ".join(query.word))
         except dictionary.DefinitionError:
             raise RuntimeError("No definition found")
 
@@ -215,6 +205,28 @@ class Utility(neo.Addon):
         menu = DropdownMenu.from_pages(
             pages, embed_auto_label=True, embed_auto_desc=True
         )
+        await menu.start(ctx)
+
+    @discord.app_commands.command(name="define")
+    @discord.app_commands.describe(term="The term to search the dictionary for")
+    async def dictionary_app_command(self, interaction: discord.Interaction, term: str):
+        """Search for a term's dictionary definition"""
+        try:
+            resp = await self.dictionary.define(term)
+        except dictionary.DefinitionError:
+            raise RuntimeError("No definition found")
+
+        embeds = []
+        for word in resp.words:
+            embeds.extend(definitions_to_embed(word))
+        if not embeds:
+            raise RuntimeError("No definition found")
+
+        pages = EmbedPages(embeds[:25])
+        menu = DropdownMenu.from_pages(
+            pages, embed_auto_label=True, embed_auto_desc=True
+        )
+        ctx = await NeoContext.from_interaction(interaction)
         await menu.start(ctx)
 
     @commands.command(name="translate", aliases=["tr"], usage="[directive] <content>")

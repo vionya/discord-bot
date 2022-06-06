@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
-import re
 
+import re
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from discord import app_commands, utils
 from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
-from .decorators import instantiate, deprecate
+from .decorators import deprecate, instantiate, with_docstring
 from .patcher import Patcher
 
 if TYPE_CHECKING:

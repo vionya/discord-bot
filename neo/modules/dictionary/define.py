@@ -17,8 +17,8 @@ class Define:
     def __init__(self, session: Optional[ClientSession] = None):
         self.session = session or ClientSession()
 
-    async def _do_definition(self, query, *, lang_code="en"):
-        url = BASE / lang_code / query
+    async def _do_definition(self, query):
+        url = BASE / "en" / query
 
         async with self.session.get(url) as resp:
 
@@ -28,5 +28,5 @@ class Define:
 
         return DictionaryResponse(_data)
 
-    def define(self, query, *, lang_code="en"):
-        return self._do_definition(query, lang_code=lang_code)
+    def define(self, query):
+        return self._do_definition(query)

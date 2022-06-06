@@ -10,6 +10,8 @@
         * Purge breakdowns can now be sent ephemerally, and therefore will no longer expire
 * `translate` command
     * Identical to the pre-existing `translate` command, but functions solely as a slash command
+* `define` command
+    * Identical to the pre-existing `define` command, but functions solely as a slash command
 
 ## Improvements
 * The `highlight unblock` slash command now accepts the same form of arguments as `highlight block`
@@ -33,6 +35,7 @@
     * `remind in`
     * `translate`
     * `purge`
+    * `define`
 * Reminders are now checked via batch polling rather than async wait tasks for each individual reminder
 
 # Release v0.14.0 - May 21, 2022
