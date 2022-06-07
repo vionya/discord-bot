@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypedDict, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Optional,
+    TypedDict,
+    TypeVar,
+    cast,
+    final,
+)
 
 import discord
 from neo.tools import shorten
@@ -58,6 +67,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         _pages = EmbedPages(iterable)
         return cls(_pages, **kwargs)
 
+    @final
     async def start(self, _ctx: NeoContext, *, as_reply=False):
         self.ctx = _ctx
 
@@ -79,6 +89,7 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         self.running = True
 
+    @final
     def _get_msg_kwargs(self, item) -> dict[str, Any]:
         kwargs = {}
 
@@ -93,6 +104,7 @@ class BaseMenu(Generic[T], discord.ui.View):
             kwargs["content"] = item
         return kwargs
 
+    @final
     def get_current_page(self, index):
         # Logic for when menu is at the first/last page, allows
         # pages to "wrap around"
@@ -103,6 +115,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         self.current_page = index
         return self.pages[index]
 
+    @final
     async def refresh_page(self):
         # Edits the current page with the contents of the
         # stored pages object
@@ -117,6 +130,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         elif self.message:
             await self.message.edit(**kwargs)
 
+    @final
     async def close(
         self, *, interaction: Optional[discord.Interaction] = None, manual=False
     ):
@@ -156,6 +170,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         except discord.NotFound:
             return
 
+    @final
     def dispatch_update(self):
         # Dispatches updates to refresh the page without causing race conditions
         async def inner():
@@ -178,6 +193,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         )
         return all(predicates)
 
+    @final
     async def on_timeout(self):
         if not self.ctx:
             self.stop()

@@ -2,7 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, SupportsIndex, cast
+from typing import TYPE_CHECKING, Any, Optional, SupportsIndex, cast, final
 
 from discord import Embed as BaseEmbed
 from neo.classes import Embed
@@ -92,9 +92,11 @@ class Pages:
     def __repr__(self):
         return "<{0.__class__.__name__} pages={1}>".format(self, len(self.pages))
 
+    @final
     def link(self, menu: BaseMenu):
         self.menu = menu
 
+    @final
     def _split_pages(self):
         _items = self.items
         _pages = []
@@ -122,6 +124,7 @@ class Pages:
             )
         return content
 
+    @final
     def append(self, new: Any):
         self._old_page_count = len(self.pages)
 
@@ -133,6 +136,7 @@ class Pages:
         if self.menu and self.menu.running is True:
             self.menu.dispatch_update()
 
+    @final
     def prepend(self, new: Any):
         self._old_page_count = len(self.pages)
 
