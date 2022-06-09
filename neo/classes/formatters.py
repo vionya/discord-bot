@@ -3,9 +3,12 @@
 import traceback
 from enum import Enum
 from logging import Formatter, LogRecord
+from types import TracebackType
 
 
-def format_exception(exc: BaseException | tuple) -> str:
+def format_exception(
+    exc: BaseException | tuple[type[BaseException], BaseException, TracebackType | None]
+) -> str:
     if isinstance(exc, tuple) and all(exc):
         exc_info = exc
     elif isinstance(exc, BaseException):

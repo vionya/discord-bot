@@ -2,7 +2,16 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, SupportsIndex, cast, final
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Optional,
+    SupportsIndex,
+    TypeVar,
+    cast,
+    final,
+)
 
 from discord import Embed as BaseEmbed
 from neo.classes import Embed
@@ -152,14 +161,17 @@ class Pages:
         return len(self.pages)
 
 
-class EmbedPages(Pages):
+T = TypeVar("T", bound=BaseEmbed)
+
+
+class EmbedPages(Pages, Generic[T]):
     """
     A subclass of Pages that takes an iterable of Embeds as its input.
     """
 
-    items: list[BaseEmbed]
+    items: list[T]
 
-    def __init__(self, items: list[BaseEmbed]):
+    def __init__(self, items: list[T]):
         super().__init__(items, 1)
 
     @property

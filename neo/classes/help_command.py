@@ -166,10 +166,21 @@ class NeoHelpCommand(commands.HelpCommand):
     async def send_command_help(self, command: AnyCommand):
         if isinstance(command, app_commands.Command | app_commands.Group):
             # If this is an app command, provide no specific signature
+            description = (
+                max(
+                    command.description,
+                    getattr(command.callback, "__doc__", "") or ""  # type: ignore
+                    if hasattr(command, "callback")
+                    else "",
+                    key=len,
+                )
+                or "No description"
+            )
+
             # TODO: Generate signatures?
             embed = neo.Embed(
                 title=f"/{command.qualified_name}",
-                description="{}\n".format(command.description or "No description"),
+                description="{}\n".format(description),
             )
         else:
             # If this is a text command, provide its actual signature
