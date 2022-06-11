@@ -19,17 +19,15 @@ class AutoEphemeralInteractionResponse(discord.InteractionResponse):
 
     async def send_message(self, *args, **kwargs) -> None:
 
-        if (
-            self._parent.type == discord.InteractionType.application_command
-            and "ephemeral"
-            not in kwargs  # kwargs take priority, so skip if it exists there
-        ):
+        if self._parent.type == discord.InteractionType.application_command:
             if not self.is_done():
                 await self.defer()
 
             await self._parent.followup.send(
                 *args,
-                ephemeral=getattr(self._parent.namespace, "ephemeral", True),
+                ephemeral=kwargs["ephemeral"]
+                if "ephemeral" in kwargs
+                else getattr(self._parent.namespace, "ephemeral", True),
                 **kwargs
             )
             return
