@@ -1,3 +1,7 @@
+# Release v0.15.3 - June 10, 2022
+## Fixes
+* Hotfixes certain slash commands to implement `Interaction.response.defer` to allow for long-running actions to be processed without an error being shown
+
 # Release v0.15.2 - June 10, 2022
 ## Fixes
 * Implemented some changes in hopes of addressing issues with slash commands failing to respond

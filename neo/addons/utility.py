@@ -211,6 +211,8 @@ class Utility(neo.Addon):
     @discord.app_commands.describe(term="The term to search the dictionary for")
     async def dictionary_app_command(self, interaction: discord.Interaction, term: str):
         """Search for a term's dictionary definition"""
+        await interaction.response.defer(thinking=True)
+
         try:
             resp = await self.dictionary.define(term)
         except dictionary.DefinitionError:
@@ -272,6 +274,8 @@ class Utility(neo.Addon):
         """
         Translate some text
         """
+        await interaction.response.defer(thinking=True)
+
         translated = await translate(
             self.translator, content, dest=destination, src=source
         )
@@ -353,6 +357,8 @@ class Utility(neo.Addon):
         """Clear messages from the current channel"""
         if not hasattr(interaction.channel, "purge"):
             raise RuntimeError("`clear` command called in invalid context")
+
+        await interaction.response.defer(thinking=True)
 
         purged = await interaction.channel.purge(  # type: ignore
             limit=limit,
@@ -458,9 +464,7 @@ class Utility(neo.Addon):
         await self.avatar_command(ctx, user=user)
 
     @commands.hybrid_command(name="userinfo", aliases=["ui"])
-    @discord.app_commands.describe(
-        user="The user to get info about. Yourself if empty"
-    )
+    @discord.app_commands.describe(user="The user to get info about. Yourself if empty")
     async def user_info_command(
         self, ctx: NeoContext, user: Optional[discord.Member | discord.User] = None
     ):
