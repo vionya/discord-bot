@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from .types.config import NeoConfig
 
 
-__version__ = "0.15.2"
+__version__ = "1.0.0a"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
