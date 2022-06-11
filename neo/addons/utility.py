@@ -175,9 +175,6 @@ class Utility(neo.Addon):
     async def google_command_callback(
         self, ctx: NeoContext, query: str, image: bool = False
     ):
-        if ctx.interaction:
-            await ctx.interaction.response.defer(thinking=True)
-
         resp = await self.google.search(query, image=image)
 
         embeds = [*map(result_to_embed, resp)]
@@ -216,8 +213,6 @@ class Utility(neo.Addon):
     @discord.app_commands.describe(term="The term to search the dictionary for")
     async def dictionary_app_command(self, interaction: discord.Interaction, term: str):
         """Search for a term's dictionary definition"""
-        await interaction.response.defer(thinking=True)
-
         try:
             resp = await self.dictionary.define(term)
         except dictionary.DefinitionError:
@@ -279,8 +274,6 @@ class Utility(neo.Addon):
         """
         Translate some text
         """
-        await interaction.response.defer(thinking=True)
-
         translated = await translate(
             self.translator, content, dest=destination, src=source
         )
@@ -362,8 +355,6 @@ class Utility(neo.Addon):
         """Clear messages from the current channel"""
         if not hasattr(interaction.channel, "purge"):
             raise RuntimeError("`clear` command called in invalid context")
-
-        await interaction.response.defer(thinking=True)
 
         purged = await interaction.channel.purge(  # type: ignore
             limit=limit,

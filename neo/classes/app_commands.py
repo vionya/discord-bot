@@ -10,7 +10,7 @@ from neo.classes.context import NeoContext
 
 if TYPE_CHECKING:
     from neo import Neo
-    from discord.app_commands import Group
+    from discord.app_commands import Group, Namespace
     from discord.app_commands.commands import CommandCallback
 
 T = TypeVar("T")
@@ -76,6 +76,8 @@ class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
         interaction: discord.Interaction,
         namespace: discord.app_commands.Namespace,
     ) -> T:
+        await interaction.response.defer()
+
         if not await self._check_can_run(interaction):
             raise discord.app_commands.CheckFailure(
                 f"The check functions for command {self.name!r} failed."
@@ -101,6 +103,12 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
             default=None,
             type=discord.AppCommandOptionType.boolean,
         )
+
+    async def _invoke_with_namespace(
+        self, interaction: discord.Interaction, namespace: Namespace
+    ) -> Any:
+        await interaction.response.defer()
+        return await super()._invoke_with_namespace(interaction, namespace)
 
 
 class AutoEphemeralHybridCommand(commands.HybridCommand):
