@@ -225,7 +225,7 @@ class Neo(commands.Bot):
                 "Something that shouldn't have gone wrong went wrong. Please report this!"
             )
 
-        if origin.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
+        if exception.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
             if not isinstance(origin, discord.Interaction):
                 return
 
