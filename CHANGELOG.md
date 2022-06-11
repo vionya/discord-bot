@@ -1,3 +1,7 @@
+# Release v0.15.2 - June 10, 2022
+## Fixes
+* Implemented some changes in hopes of addressing issues with slash commands failing to respond
+
 # Release v0.15.1 - June 7, 2022
 ## Fixes
 * Group slash commands are once again properly supported in the help command
