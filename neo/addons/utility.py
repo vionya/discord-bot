@@ -172,7 +172,12 @@ class Utility(neo.Addon):
         """Search Google Images for a query"""
         await self.google_command_callback(ctx, query, True)
 
-    async def google_command_callback(self, ctx, query: str, image: bool = False):
+    async def google_command_callback(
+        self, ctx: NeoContext, query: str, image: bool = False
+    ):
+        if ctx.interaction:
+            await ctx.interaction.response.defer(thinking=True)
+
         resp = await self.google.search(query, image=image)
 
         embeds = [*map(result_to_embed, resp)]
