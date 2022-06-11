@@ -12,15 +12,17 @@ from typing import (
     TypeVar,
     cast,
     final,
+    overload,
 )
 
 import discord
+from neo.classes.context import NeoContext
 from neo.tools import shorten
 
 from .pages import EmbedPages, Pages
 
 if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
+    from neo import Neo
 
 
 class SendKwargs(TypedDict):
@@ -33,9 +35,12 @@ T = TypeVar("T", bound=Pages)
 
 
 class BaseMenu(Generic[T], discord.ui.View):
+    bot: Neo
+
     __slots__ = (
         "pages",
         "message",
+        "interaction",
         "ctx",
         "current_page",
         "running",
@@ -50,7 +55,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         self.pages = pages
 
         self.message = None
-        self.ctx: Optional[NeoContext] = None
+        self.origin: Optional[NeoContext | discord.Interaction] = None
         self.current_page: int = 0
         self.running = False
 
@@ -67,25 +72,35 @@ class BaseMenu(Generic[T], discord.ui.View):
         _pages = EmbedPages(iterable)
         return cls(_pages, **kwargs)
 
+    @overload
+    async def start(self, origin: discord.Interaction):
+        ...
+
+    @overload
+    async def start(self, origin: NeoContext, *, as_reply=False):
+        ...
+
     @final
-    async def start(self, _ctx: NeoContext, *, as_reply=False):
-        self.ctx = _ctx
+    async def start(self, origin: NeoContext | discord.Interaction, *, as_reply=False):
+        self.origin = origin
 
         send_kwargs = self._get_msg_kwargs(self.pages[0])
 
-        if self.ctx.interaction is None:
+        if isinstance(self.origin, NeoContext):
             # In text commands, menus may optionally be sent as replies
             if as_reply:
                 send_kwargs["reference"] = discord.MessageReference(
-                    message_id=self.ctx.message.id,
-                    channel_id=self.ctx.channel.id,
+                    message_id=self.origin.message.id,
+                    channel_id=self.origin.channel.id,
                 )
-            self.message = await self.ctx.send(view=self, **send_kwargs)
-        else:
-            await self.ctx.send(view=self, **send_kwargs)
+            self.message = await self.origin.send(view=self, **send_kwargs)
+            self.bot = self.origin.bot
+            self.author = self.origin.author
 
-        self.bot = self.ctx.bot
-        self.author = self.ctx.author
+        else:
+            await self.origin.response.send_message(view=self, **send_kwargs)
+            self.bot = self.origin.client  # type: ignore
+            self.author = self.origin.user
 
         self.running = True
 
@@ -122,10 +137,10 @@ class BaseMenu(Generic[T], discord.ui.View):
         kwargs = self._get_msg_kwargs(self.pages[self.current_page])
 
         # Interactions need to be handled separately
-        if self.ctx and self.ctx.interaction:
-            if not self.ctx.interaction.response.is_done():
-                await self.ctx.interaction.response.defer()
-            await self.ctx.interaction.edit_original_message(**kwargs)
+        if isinstance(self.origin, discord.Interaction):
+            if not self.origin.response.is_done():
+                await self.origin.response.defer()
+            await self.origin.edit_original_message(**kwargs)
 
         elif self.message:
             await self.message.edit(**kwargs)
@@ -139,13 +154,13 @@ class BaseMenu(Generic[T], discord.ui.View):
         try:
             ephemeral = False
             # Determine whether the menu is being closed in an ephemeral context
-            if self.ctx and self.ctx.interaction:
-                ephemeral = getattr(self.ctx.interaction.namespace, "ephemeral", False)
+            if isinstance(self.origin, discord.Interaction):
+                ephemeral = getattr(self.origin.namespace, "ephemeral", False)
 
             # If closed manually and the message is either a text command or a
             # non-ephemeral slash command, the message can be deleted
             if manual is True and ephemeral is False:
-                if self.ctx and self.ctx.interaction and interaction:
+                if isinstance(self.origin, discord.Interaction) and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
                     await interaction.delete_original_message()
@@ -160,7 +175,7 @@ class BaseMenu(Generic[T], discord.ui.View):
                     if isinstance(item, discord.ui.Button | discord.ui.Select):
                         item.disabled = True
 
-                if self.ctx and self.ctx.interaction and interaction:
+                if isinstance(self.origin, discord.Interaction) and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
                     await interaction.edit_original_message(view=self)
@@ -195,15 +210,15 @@ class BaseMenu(Generic[T], discord.ui.View):
 
     @final
     async def on_timeout(self):
-        if not self.ctx:
+        if not self.origin:
             self.stop()
             self.running = False
             return
 
-        if not self.ctx.interaction:
+        if not isinstance(self.origin, discord.Interaction):
             await self.close()
         else:
-            await self.close(interaction=self.ctx.interaction)
+            await self.close(interaction=self.origin)
 
 
 class ButtonsMenu(BaseMenu, Generic[T]):

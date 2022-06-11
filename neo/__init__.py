@@ -70,8 +70,10 @@ class Neo(commands.Bot):
         )  # Register channel disabled check
         self.add_check(self.guild_disabled_check)  # Register command disabled check
 
-        self.tree.on_error = self.tree_on_error
+        self.tree.on_error = self.general_error_handler  # type: ignore
         self.tree.interaction_check = self.tree_interaction_check
+
+        self.on_command_error = self.general_error_handler  # type: ignore
 
         self._async_ready = asyncio.Event()
         asyncio.create_task(self.__ainit__())
@@ -203,35 +205,37 @@ class Neo(commands.Bot):
     async def on_error(self, *args, **kwargs):
         log.error("\n" + formatters.format_exception(sys.exc_info()))
 
-    # Tree errors will share the same behavior as ext commands
-    async def tree_on_error(self, interaction: discord.Interaction, error):
-        ctx = await context.NeoContext.from_interaction(interaction)
-        await self.on_command_error(ctx, error)
+    async def general_error_handler(
+        self,
+        origin: context.NeoContext | discord.Interaction,
+        exception: discord.DiscordException,
+    ):
+        async def send(content: str):
+            if isinstance(origin, context.NeoContext):
+                await origin.send(content, ephemeral=True)
+            elif isinstance(origin, discord.Interaction):
+                await origin.response.send_message(content, ephemeral=True)
 
-    async def on_command_error(self, ctx: context.NeoContext, error):
-        original_error = recursive_getattr(error, "original", error)
+        original_error: BaseException = recursive_getattr(
+            exception, "original", exception
+        )
 
         if isinstance(original_error, AssertionError):
-            return await ctx.send(
-                "Something that shouldn't have gone wrong went wrong. Please report this!",
-                ephemeral=True,
+            return await send(
+                "Something that shouldn't have gone wrong went wrong. Please report this!"
             )
 
-        if original_error.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
-            if not ctx.interaction:
-                return  # Ignore exceptions specified in config when not an app command
+        if origin.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
+            if not isinstance(origin, discord.Interaction):
+                return
 
         try:
-            if not ctx.interaction:
-                await ctx.send(original_error)
-            else:
-                await ctx.interaction.response.send_message(
-                    original_error, ephemeral=True
-                )
+            await send(str(original_error))
         except discord.Forbidden:
-            pass  # Maybe we can't send messages in the channel
+            pass
+
         log.error(
-            f"In command invocation: {ctx.message.content}\n"
+            f"In command: {getattr(origin.command, 'qualified_name', '[unknown command]')}\n"  # type: ignore
             + formatters.format_exception(original_error)
         )
 

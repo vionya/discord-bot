@@ -226,8 +226,7 @@ class Utility(neo.Addon):
         menu = DropdownMenu.from_pages(
             pages, embed_auto_label=True, embed_auto_desc=True
         )
-        ctx = await NeoContext.from_interaction(interaction)
-        await menu.start(ctx)
+        await menu.start(interaction)
 
     @commands.command(name="translate", aliases=["tr"], usage="[directive] <content>")
     @deprecate(reason="Use the `/translate` slash command instead")
