@@ -1,4 +1,9 @@
-# Release v0.15.4 - TBD
+# Release v0.15.4 - June 11, 2022
+## Important
+* **All** text commands\* have been deprecated, and will generate an alert button whenever they are used
+
+\* Text commands that do not currently have a slash command counterpart will not generate alert buttons, because that would not make sense
+
 ## Improvements
 * Both a fix and an improvement: all application command responses are now automatically deferred before their callback is invoked, which allows long-running computations to be handled without an unhelpful user-facing error showing up
 * When used in ephemeral messages, menus will no longer have a `close` button, as the message can simply be dismissed
