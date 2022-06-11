@@ -3,10 +3,14 @@
 import traceback
 from enum import Enum
 from logging import Formatter, LogRecord
-from sys import _OptExcInfo
+from types import TracebackType
+
+# Taken from typeshed
+ExcInfo = tuple[type[BaseException], BaseException, TracebackType]
+OptExcInfo = ExcInfo | tuple[None, None, None]
 
 
-def format_exception(exc: BaseException | _OptExcInfo) -> str:
+def format_exception(exc: BaseException | OptExcInfo) -> str:
     if isinstance(exc, tuple) and all(exc):
         exc_info = exc
     elif isinstance(exc, BaseException):
