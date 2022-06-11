@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, Union, cast
 
 import discord
 from discord.ext import commands
-from neo import Neo
 from neo.classes.context import NeoContext
 
 if TYPE_CHECKING:
+    from neo import Neo
     from discord.app_commands import Group
     from discord.app_commands.commands import CommandCallback
 
@@ -24,7 +24,11 @@ def get_ephemeral(
     namespace: Optional[discord.app_commands.Namespace | dict[str, Any]] = None,
 ) -> bool:
     """Given an Interaction and a namespace, determines whether or not the output should be ephemeral"""
-    bot = cast(Neo, interaction.client)
+    if TYPE_CHECKING:
+        bot = cast(Neo, interaction.client)
+    else:
+        bot = interaction.client
+
     user = interaction.user
 
     default = True

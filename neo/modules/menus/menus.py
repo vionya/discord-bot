@@ -16,6 +16,7 @@ from typing import (
 )
 
 import discord
+from neo.classes.app_commands import get_ephemeral
 from neo.classes.context import NeoContext
 from neo.tools import shorten
 
@@ -80,7 +81,6 @@ class BaseMenu(Generic[T], discord.ui.View):
     async def start(self, origin: NeoContext, *, as_reply=False):
         ...
 
-    @final
     async def start(self, origin: NeoContext | discord.Interaction, *, as_reply=False):
         self.origin = origin
 
@@ -222,6 +222,23 @@ class BaseMenu(Generic[T], discord.ui.View):
 
 
 class ButtonsMenu(BaseMenu, Generic[T]):
+    async def start(self, origin: NeoContext | discord.Interaction, *, as_reply=False):
+        interaction = (
+            origin
+            if isinstance(origin, discord.Interaction)
+            else getattr(origin, "interaction", None)
+        )
+
+        # If the menu was initiated by an interaction and the interaction is
+        # intended to be ephemeral, remove the close button since it's useless
+        # (and because it doesn't work in ephemeral contexts)
+        if interaction and get_ephemeral(interaction, interaction.namespace) is True:
+            self.remove_item(self.close_button)
+            await super().start(origin)
+            return
+
+        await super().start(origin, as_reply=as_reply)  # type: ignore
+
     @discord.ui.button(label="≪", row=4)
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
