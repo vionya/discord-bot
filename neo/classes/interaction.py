@@ -25,9 +25,8 @@ class AutoEphemeralInteractionResponse(discord.InteractionResponse):
 
             await self._parent.followup.send(
                 *args,
-                ephemeral=kwargs["ephemeral"]
-                if "ephemeral" in kwargs
-                else getattr(self._parent.namespace, "ephemeral", True),
+                ephemeral=kwargs.pop("ephemeral", None)
+                or getattr(self._parent.namespace, "ephemeral", True),
                 **kwargs
             )
             return
