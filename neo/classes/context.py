@@ -8,6 +8,8 @@ import discord
 import neo
 from discord.ext import commands
 
+from neo.tools import recursive_get_command
+
 if TYPE_CHECKING:
     from neo import Neo
 
@@ -60,9 +62,7 @@ class PromptActions(discord.ui.View):
 class DeprecationAlertButton(discord.ui.Button):
     def __init__(self, reason: str | bool):
         self.reason = reason if isinstance(reason, str) else None
-        super().__init__(
-            style=discord.ButtonStyle.red, label="!", row=4
-        )
+        super().__init__(style=discord.ButtonStyle.red, label="!", row=4)
 
     async def callback(self, interaction: discord.Interaction):
         embed = neo.Embed(
@@ -104,7 +104,15 @@ class NeoContext(commands.Context["Neo"]):
             return await self.interaction.original_message()
         else:
             if self.command and (
-                deprecation := getattr(self.command.callback, "_deprecated", None)
+                (
+                    not self.interaction
+                    and recursive_get_command(
+                        self.bot.tree, self.command.qualified_name
+                    )
+                    is not None
+                    and (deprecation := "Use the slash command variant")
+                )
+                or (deprecation := getattr(self.command.callback, "_deprecated", None))
             ):
                 if "view" in kwargs:
                     kwargs["view"].add_item(DeprecationAlertButton(reason=deprecation))

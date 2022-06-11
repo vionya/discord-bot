@@ -37,11 +37,9 @@ class AddonMeta(commands.CogMeta):
         receivers = {}
 
         for attr in vars(_cls).values():
-            if not is_receiver(attr):
-                continue
-
-            recv_func = attr
-            receivers[recv_func.__event_name__] = recv_func
+            if is_receiver(attr):
+                recv_func = attr
+                receivers[recv_func.__event_name__] = recv_func
 
         _cls.__receivers__ = receivers
         return _cls
@@ -82,7 +80,7 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
         return self.bot.get_command(command.name)
 
-    def add_listener(self, listener, name=None):
+    def add_listener(self, listener: Callable[..., None], name=None):
         """
         Registers a listener to a loaded Addon
         """
@@ -90,7 +88,7 @@ class Addon(commands.Cog, metaclass=AddonMeta):
             self,
             listener.__name__,
             MethodType(
-                listener.__func__ if isinstance(listener, MethodType) else listener,
+                listener.__func__ if isinstance(listener, MethodType) else listener,  # type: ignore
                 self,
             ),
         )  # Bind the listener to the object as a method

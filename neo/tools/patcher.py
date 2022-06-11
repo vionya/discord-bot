@@ -54,11 +54,11 @@ class Patcher:
         internally. The patch() method applies the patch itself.
         """
         if value is not None:
-            self._patches[name or getattr(value, "__name__", name)] = value
+            self._patches[name or getattr(value, "__name__", name)] = value  # type: ignore
             return
 
         def inner(attr: Callable[..., Any]):
-            self._patches[name or getattr(attr, "__name__", name)] = attr
+            self._patches[name or getattr(attr, "__name__", name)] = attr  # type: ignore
 
         return inner
 
