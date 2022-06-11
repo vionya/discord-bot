@@ -1,3 +1,8 @@
+# Release v0.15.4 - TBD
+## Improvements
+* Both a fix and an improvement: all application command responses are now automatically deferred before their callback is invoked, which allows long-running computations to be handled without an unhelpful user-facing error showing up
+* When used in ephemeral messages, menus will no longer have a `close` button, as the message can simply be dismissed
+
 # Release v0.15.3 - June 10, 2022
 ## Fixes
 * Hotfixes certain slash commands to implement `Interaction.response.defer` to allow for long-running actions to be processed without an error being shown
