@@ -1,3 +1,7 @@
+# Major Release 1.0.0 - TBD
+## Breaking Changes
+* With the release of major version 1.0.0, text command support has been dropped
+
 # Release v0.15.4 - June 11, 2022
 ## Important
 * **All** text commands\* have been deprecated, and will generate an alert button whenever they are used
