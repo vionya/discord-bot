@@ -8,8 +8,10 @@ import discord
 import neo
 
 
-async def send_confirmation(interaction: discord.Interaction):
-    await interaction.response.send_message("\U00002611")
+async def send_confirmation(interaction: discord.Interaction, *, ephemeral=None):
+    await interaction.response.send_message(
+        "\U00002611", **{"ephemeral": True} if ephemeral is not None else {}
+    )
 
 
 class PromptButton(discord.ui.Button):

@@ -50,8 +50,15 @@ def deprecate(
 
 def with_docstring(docstring: str) -> Callable[[Callable[..., Any]], Any]:
     """Dynamically set a function's doc string"""
+
     def inner(func: Callable[..., Any]) -> Callable[..., Any]:
         func.__doc__ = docstring
         return func
 
     return inner
+
+
+def no_defer(callback: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorates a callback, preventing the app command from being automatically deferred"""
+    setattr(callback, "no_defer", True)
+    return callback

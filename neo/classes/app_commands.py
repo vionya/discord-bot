@@ -76,7 +76,8 @@ class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
         interaction: discord.Interaction,
         namespace: discord.app_commands.Namespace,
     ) -> T:
-        await interaction.response.defer()
+        if not getattr(self.callback, "no_defer", False):
+            await interaction.response.defer()
 
         if not await self._check_can_run(interaction):
             raise discord.app_commands.CheckFailure(

@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+from datetime import datetime, timezone
 from operator import attrgetter
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 import discord
-from discord import app_commands
 import neo
+from discord import app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
+from neo.addons.auxiliary.todos import TodoEditModal
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, shorten, send_confirmation
+from neo.tools import is_registered_profile, send_confirmation, shorten
+from neo.tools.decorators import no_defer
 
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
@@ -22,39 +26,29 @@ MAX_TODOS = 100
 
 
 class TodoItem:
-    __slots__ = ("user_id", "content", "guild_id", "channel_id", "message_id", "edited")
+    __slots__ = ("user_id", "content", "todo_id", "created_at", "edited")
 
     def __init__(
         self,
         *,
         user_id: int,
         content: str,
-        guild_id: str,
-        channel_id: int,
-        message_id: int,
+        todo_id: str,
+        created_at: datetime,
         edited: bool,
     ):
         self.user_id = user_id
         self.content = content
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.message_id = message_id
+        self.todo_id = todo_id
+        self.created_at = created_at
         self.edited = edited
 
     def __repr__(self):
-        return "<{0.__class__.__name__} user_id={0.user_id} message_id={0.message_id}>".format(
-            self
+        return (
+            "<{0.__class__.__name__} user_id={0.user_id} todo_id={0.todo_id}>".format(
+                self
+            )
         )
-
-    @property
-    def jump_url(self):
-        return "https://discord.com/channels/{0.guild_id}/{0.channel_id}/{0.message_id}".format(
-            self
-        )
-
-    @property
-    def created_at(self):
-        return discord.utils.snowflake_time(self.message_id)
 
 
 class Todos(neo.Addon, app_group=True, group_name="todo"):
@@ -109,12 +103,14 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
             raise ValueError("You've used up all your todo slots!")
 
+        if len(content) > 1500:
+            raise ValueError("Todo content may be no more than 1500 characters long")
+
         data = {
             "user_id": interaction.user.id,
             "content": content,
-            "guild_id": str(getattr(interaction.guild, "id", "@me")),
-            "channel_id": interaction.channel_id,
-            "message_id": interaction.message.id if interaction.message else None,
+            "todo_id": uuid4(),
+            "created_at": datetime.now(timezone.utc),
             "edited": False,
         }
 
@@ -123,12 +119,11 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             INSERT INTO todos (
                 user_id,
                 content,
-                guild_id,
-                channel_id,
-                message_id,
+                todo_id,
+                created_at,
                 edited
             ) VALUES (
-                $1, $2, $3, $4, $5, $6
+                $1, $2, $3, $4, $5
             )
             """,
             *data.values(),
@@ -171,10 +166,10 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await self.bot.db.execute(
             """
             DELETE FROM todos WHERE
-                message_id=ANY($1::BIGINT[]) AND
+                todo_id=ANY($1::TEXT[]) AND
                 user_id=$2
             """,
-            [*map(attrgetter("message_id"), todos)],
+            [*map(attrgetter("todo_id"), todos)],
             interaction.user.id,
         )
         await send_confirmation(interaction)
@@ -208,46 +203,30 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             neo.Embed(description=todo.content)
             .add_field(
                 name=f"Created on <t:{int(todo.created_at.timestamp())}>",
-                value=f"[Jump to origin]({todo.jump_url})",
+                value="This todo has{}been edited".format(
+                    " not " if not todo.edited else " "
+                ),
             )
             .set_author(
-                name="Viewing a todo {}".format("[edited]" if todo.edited else ""),
+                name="Viewing a todo",
                 icon_url=interaction.user.display_avatar,
             )
         )
 
         await interaction.response.send_message(embed=embed)
 
-    @todo.command(name="edit")
-    @discord.app_commands.describe(
-        index="A todo index to edit",
-        new_content="The new content to update the todo with",
-    )
-    @discord.app_commands.rename(new_content="new-content")
-    async def todo_edit(self, ctx, index: int, *, new_content: str):
+    @app_commands.command(name="edit")
+    @app_commands.describe(index="A todo index to edit")
+    @no_defer
+    async def todo_edit(self, interaction: discord.Interaction, index: int):
         """Edit the content of a todo"""
         try:
-            todo: TodoItem = self.todos[ctx.author.id][index - 1]
+            todo: TodoItem = self.todos[interaction.user.id][index - 1]
         except IndexError:
             raise IndexError("Couldn't find that todo.")
 
-        todo.content = new_content
-        todo.edited = True
-        await self.bot.db.execute(
-            """
-            UPDATE todos
-            SET
-                content=$1,
-                edited=TRUE
-            WHERE
-                message_id=$2 AND
-                user_id=$3
-            """,
-            new_content,
-            todo.message_id,
-            todo.user_id,
-        )
-        await ctx.send_confirmation()
+        modal = TodoEditModal(self, title="Editing a Todo", todo=todo)
+        await interaction.response.send_modal(modal)
 
     @todo_view.autocomplete("index")
     @todo_edit.autocomplete("index")
