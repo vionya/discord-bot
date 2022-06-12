@@ -15,6 +15,7 @@ from .patcher import Patcher
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
     from neo.types.settings_mapping import SettingsMapping
+    from discord import Interaction
 
 
 T = TypeVar("T")
@@ -34,7 +35,7 @@ def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
 
 
 async def convert_setting(
-    ctx: NeoContext, mapping: SettingsMapping, setting: str, new_value: str
+    interaction: Interaction, mapping: SettingsMapping, setting: str, new_value: str
 ):
     # Use try/except here because, if the __getitem__ succeeds,
     # it's roughly 30% faster than using dict.get. Because of the
@@ -51,12 +52,16 @@ async def convert_setting(
 
     value = None
 
-    converter = valid_setting["converter"]
-    if isinstance(converter, commands.Converter):
-        if (converted := await converter.convert(ctx, new_value)) is not None:
+    transformer = valid_setting["transformer"]
+    if isinstance(transformer, app_commands.Transformer):
+        if (
+            converted := await utils.maybe_coroutine(
+                transformer.transform, interaction, new_value
+            )
+        ) is not None:
             value = converted
 
-    elif (converted := try_or_none(converter, new_value)) is not None:
+    elif (converted := try_or_none(transformer, new_value)) is not None:
         value = converted
 
     else:

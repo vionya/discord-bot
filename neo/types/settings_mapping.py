@@ -3,11 +3,11 @@
 from typing import TYPE_CHECKING, Any, Callable, NewType, Optional, TypedDict
 
 if TYPE_CHECKING:
-    from discord.ext.commands import Converter
+    from discord.app_commands import Transformer
 
 
 class SettingData(TypedDict):
-    converter: Converter[Any] | Callable[[str], Any]
+    transformer: Transformer | Callable[[str], Any]
     description: Optional[str]
 
 

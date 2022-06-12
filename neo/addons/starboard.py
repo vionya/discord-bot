@@ -8,12 +8,15 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 import neo
+from discord import app_commands
 from discord.ext import commands
 from neo.classes.containers import TimedCache
 from neo.classes.context import NeoContext
-from neo.classes.converters import max_days_converter
+from neo.classes.transformers import max_days_converter, text_channel_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, shorten
+from neo.tools.checks import valid_starboard_env
+from neo.tools.decorators import instantiate
 
 from .auxiliary.starboard import ChangeSettingButton
 
@@ -21,11 +24,11 @@ if TYPE_CHECKING:
     from neo.types.settings_mapping import SettingsMapping
 
 SETTINGS_MAPPING: SettingsMapping = {
-    "channel": {"converter": commands.TextChannelConverter(), "description": None},
-    "threshold": {"converter": int, "description": None},
-    "format": {"converter": str, "description": None},
-    "max_days": {"converter": max_days_converter, "description": None},
-    "emoji": {"converter": discord.PartialEmoji.from_str, "description": None},
+    "channel": {"transformer": text_channel_transformer, "description": None},
+    "threshold": {"transformer": int, "description": None},
+    "format": {"transformer": str, "description": None},
+    "max_days": {"transformer": max_days_converter, "description": None},
+    "emoji": {"transformer": discord.PartialEmoji.from_str, "description": None},
 }
 
 
@@ -222,7 +225,14 @@ class Starboard:
         return star
 
 
-class StarboardAddon(neo.Addon, name="Starboard"):
+@app_commands.guild_only()
+class StarboardAddon(
+    neo.Addon,
+    name="Starboard",
+    app_group=True,
+    group_name="starboard",
+    group_description="Starboard management commands",
+):
     """
     Manages your server's starboard
 
@@ -432,88 +442,86 @@ class StarboardAddon(neo.Addon, name="Starboard"):
     # /Sect: Event Handling
     # Sect: Commands
 
-    async def cog_check(self, ctx):
-        if not ctx.guild:
-            raise commands.NoPrivateMessage()
+    @instantiate
+    class StarboardSettings(app_commands.Group, name="settings"):
+        """Commands for managing your starboard"""
 
-        config = self.bot.configs.get(ctx.guild.id)
-        if not getattr(config, "starboard", False):
-            raise commands.CommandInvokeError(
-                AttributeError("Starboard is not enabled for this server!")
+        addon: StarboardAddon
+
+        @app_commands.command(name="list")
+        @app_commands.checks.has_permissions(manage_channels=True)
+        @valid_starboard_env()
+        async def starboard_list(self, interaction: discord.Interaction):
+            """Lists starboard settings"""
+            # Guaranteed by the global check
+            assert interaction.guild
+
+            starboard = self.addon.starboards[interaction.guild.id]
+            embeds = []
+
+            for setting, setting_info in SETTINGS_MAPPING.items():
+                description = (setting_info["description"] or "").format(
+                    getattr(starboard, setting)
+                )
+                embed = neo.Embed(
+                    title=f"Starboard settings for {interaction.guild}",
+                    description=f"**Setting: `{setting}`**\n\n" + description,
+                ).set_thumbnail(url=interaction.guild.icon)
+                embeds.append(embed)
+
+            menu = ButtonsMenu.from_embeds(embeds)
+            menu.add_item(
+                ChangeSettingButton(
+                    addon=self.addon,
+                    settings=SETTINGS_MAPPING,
+                    label="Change this setting",
+                    style=discord.ButtonStyle.primary,
+                    row=0,
+                )
             )
-        return True
 
-    @commands.hybrid_group()
-    async def starboard(self, ctx: NeoContext):
-        """Group command for managing starboards"""
+            await menu.start(interaction)
 
-    @starboard.command(name="list")
-    @commands.has_permissions(manage_channels=True)
-    async def starboard_list(self, ctx: NeoContext):
-        """Lists starboard settings"""
-        # Guaranteed by the global check
-        assert ctx.guild
-
-        starboard = self.starboards[ctx.guild.id]
-        embeds = []
-
-        for setting, setting_info in SETTINGS_MAPPING.items():
-            description = (setting_info["description"] or "").format(
-                getattr(starboard, setting)
-            )
-            embed = neo.Embed(
-                title=f"Starboard settings for {ctx.guild}",
-                description=f"**Setting: `{setting}`**\n\n" + description,
-            ).set_thumbnail(url=ctx.guild.icon)
-            embeds.append(embed)
-
-        menu = ButtonsMenu.from_embeds(embeds)
-        menu.add_item(
-            ChangeSettingButton(
-                ctx=ctx,
-                addon=self,
-                settings=SETTINGS_MAPPING,
-                label="Change this setting",
-                style=discord.ButtonStyle.primary,
-                row=0,
-            )
+        @app_commands.command(name="set")
+        @app_commands.checks.has_permissions(manage_channels=True)
+        @app_commands.describe(
+            setting="The setting to set. More information can be found in the settings list",
+            new_value="The new value to assign to this setting. More information"
+            " can be found in the settings list",
         )
+        @app_commands.rename(new_value="new-value")
+        @valid_starboard_env()
+        async def starboard_set(
+            self, interaction: discord.Interaction, setting: str, new_value: str
+        ):
+            """
+            Updates the value of a starboard setting
 
-        await menu.start(ctx)
-
-    @starboard.command(name="set")
-    @commands.has_permissions(manage_channels=True)
-    @discord.app_commands.describe(
-        setting="The setting to set. More information can be found in the settings list",
-        new_value="The new value to assign to this setting. More information"
-        " can be found in the settings list",
-    )
-    @discord.app_commands.rename(new_value="new-value")
-    async def starboard_set(self, ctx: NeoContext, setting: str, *, new_value: str):
-        """
-        Updates the value of a starboard setting
-
-        More information on the available settings and their functions is in the `starboard` command
-        """
-        await self.set_option(ctx, setting, new_value)
-        await ctx.send(f"Setting `{setting}` has been changed!")
-
-    @starboard_set.autocomplete("setting")
-    async def starboard_set_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ):
-        return [
-            *map(
-                lambda k: discord.app_commands.Choice(name=k, value=k),
-                filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
+            More information on the available settings and their functions is in the `starboard` command
+            """
+            await self.addon.set_option(interaction, setting, new_value)
+            await interaction.response.send_message(
+                f"Setting `{setting}` has been changed!"
             )
-        ]
 
-    async def set_option(self, ctx: NeoContext, setting: str, new_value: Any):
-        assert ctx.guild
+        @starboard_set.autocomplete("setting")
+        async def starboard_set_autocomplete(
+            self, interaction: discord.Interaction, current: str
+        ):
+            return [
+                *map(
+                    lambda k: discord.app_commands.Choice(name=k, value=k),
+                    filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
+                )
+            ]
 
-        value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
-        starboard = self.starboards[ctx.guild.id]
+    async def set_option(
+        self, interaction: discord.Interaction, setting: str, new_value: Any
+    ):
+        assert interaction.guild
+
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
+        starboard = self.starboards[interaction.guild.id]
         setattr(starboard, setting, value)
 
         if setting == "emoji":
@@ -527,25 +535,26 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                 guild_id=$2
             """,
             getattr(value, "id", value),
-            ctx.guild.id,
+            interaction.guild.id,
         )
         # ^ Using string formatting in SQL is safe here because
         # the setting is thoroughly validated
         if setting in ["channel", "emoji"]:
             await self.bot.db.execute(
-                "DELETE FROM stars WHERE guild_id=$1", ctx.guild.id
+                "DELETE FROM stars WHERE guild_id=$1", interaction.guild.id
             )
             starboard.cached_stars.clear()
 
-    @starboard.command(name="ignore")
-    @commands.has_permissions(manage_messages=True)
-    @discord.app_commands.describe(
+    @app_commands.command(name="ignore")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.describe(
         channel="The channel to ignore, can be a channel mention or ID",
-        message="The message to ignore, can be a message URL or ID",
+        message="The message to ignore, must be a message ID",
     )
+    @valid_starboard_env()
     async def starboard_ignore(
         self,
-        ctx: NeoContext,
+        interaction: discord.Interaction,
         channel: Optional[discord.TextChannel] = None,
         message: Optional[str] = None,
     ):
@@ -558,16 +567,15 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         Note: If an already starred message is ignored, the
         star will be deleted, *and* the message will be ignored
         """
-        assert ctx.guild
+        assert interaction.guild and isinstance(
+            interaction.channel, discord.abc.Messageable
+        )
 
         message_obj = None
-        if message:
-            try:
-                message_obj = await commands.PartialMessageConverter().convert(
-                    ctx, message
-                )
-            except commands.CommandError | commands.BadArgument:
-                ...
+        if message and message.isdigit():
+            message_obj = interaction.channel.get_partial_message(int(message))
+        elif message and not message.isdigit():
+            raise TypeError("`message` must be a message ID")
 
         if not any(
             [
@@ -577,7 +585,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         ):
             raise TypeError("You must provide at least one valid argument to ignore.")
 
-        starboard = self.starboards[ctx.guild.id]
+        starboard = self.starboards[interaction.guild.id]
 
         for snowflake in filter(None, [channel, message_obj]):
             id = snowflake.id
@@ -592,7 +600,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                     guild_id=$2
                 """,
                 id,
-                ctx.guild.id,
+                interaction.guild.id,
             )
 
             if (
@@ -601,33 +609,35 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             ):
                 await starboard.delete_star(id)
 
-        await ctx.send("Successfully ignored the provided entity!")
+        await interaction.response.send_message(
+            "Successfully ignored the provided entity!"
+        )
 
-    @starboard.command(name="unignore")
-    @commands.has_permissions(manage_messages=True)
-    @discord.app_commands.describe(
+    @app_commands.command(name="unignore")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.describe(
         id="A generic ID to unignore",
         channel="The channel to unignore, can be a channel mention or ID",
-        message="The message to unignore, can be a message URL or ID",
+        message="The message to unignore, must be a message ID",
     )
+    @valid_starboard_env()
     async def starboard_unignore(
         self,
-        ctx: NeoContext,
+        interaction: discord.Interaction,
         id: Optional[str] = None,
         channel: Optional[discord.TextChannel] = None,
         message: Optional[str] = None,
     ):
         """Unignores a channel or message"""
-        assert ctx.guild
+        assert interaction.guild and isinstance(
+            interaction.channel, discord.abc.Messageable
+        )
 
         message_obj = None
-        if message:
-            try:
-                message_obj = await commands.PartialMessageConverter().convert(
-                    ctx, message
-                )
-            except commands.CommandError | commands.BadArgument:
-                ...
+        if message and message.isdigit():
+            message_obj = interaction.channel.get_partial_message(int(message))
+        elif message and not message.isdigit():
+            raise TypeError("`message` must be a message ID")
 
         id = id or ""
         if not any(
@@ -639,7 +649,7 @@ class StarboardAddon(neo.Addon, name="Starboard"):
         ):
             raise TypeError("You must provide at least one valid argument to unignore.")
 
-        starboard = self.starboards[ctx.guild.id]
+        starboard = self.starboards[interaction.guild.id]
         target_id = int(id) if id.isdigit() else None
 
         for obj in filter(None, [target_id, channel, message_obj]):
@@ -655,18 +665,21 @@ class StarboardAddon(neo.Addon, name="Starboard"):
                     guild_id=$2
                 """,
                 object_id,
-                ctx.guild.id,
+                interaction.guild.id,
             )
 
-        await ctx.send("Successfully unignored the provided entity!")
+        await interaction.response.send_message(
+            "Successfully unignored the provided entity!"
+        )
 
-    @starboard.command(name="ignored")
-    @commands.has_permissions(manage_messages=True)
-    async def starboard_ignored(self, ctx: NeoContext):
+    @app_commands.command(name="ignored")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @valid_starboard_env()
+    async def starboard_ignored(self, interaction: discord.Interaction):
         """Displays a list of all ignored items"""
-        assert ctx.guild
+        assert interaction.guild
 
-        starboard = self.starboards[ctx.guild.id]
+        starboard = self.starboards[interaction.guild.id]
 
         formatted: list[str] = []
         for id in starboard.ignored:
@@ -682,10 +695,11 @@ class StarboardAddon(neo.Addon, name="Starboard"):
             per_page=10,
             use_embed=True,
             template_embed=neo.Embed().set_author(
-                name=f"Ignored from starboard for {ctx.guild}", icon_url=ctx.guild.icon
+                name=f"Ignored from starboard for {interaction.guild}",
+                icon_url=interaction.guild.icon,
             ),
         )
-        await menu.start(ctx)
+        await menu.start(interaction)
 
 
 async def setup(bot: neo.Neo):

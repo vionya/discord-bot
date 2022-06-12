@@ -13,10 +13,13 @@ from neo.types.commands import AnyCommand
 if TYPE_CHECKING:
     from neo.classes.context import NeoContext
 
-from discord.ext.commands import Command, Converter
+from discord.ext.commands import Converter
 
 CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
+EXTRACT_CHANNEL_REGEX = re.compile(r"^<#(\d{15,20})>$")
+
+
 class WrapperTransformer(Transformer):
     wrapped: Callable[[str], Any]
 
@@ -97,10 +100,43 @@ def max_days_converter(provided_max_days: str) -> int:
     return max_days
 
 
+class text_channel_transformer(Transformer):
+    @classmethod
+    def transform(
+        cls, interaction: discord.Interaction, value: str
+    ) -> discord.TextChannel:
+        if not interaction.guild:
+            raise AttributeError("This must be used in a guild.")
+
+        match = EXTRACT_CHANNEL_REGEX.match(value)
+
+        if match:
+            channel_id = int(match.group(1))
+
+            if isinstance(
+                channel := interaction.guild.get_channel(channel_id),
+                discord.TextChannel,
+            ):
+                return channel
+            else:
+                raise TypeError("A valid text channel must be provided")
+
+        else:
+            try:
+                return next(
+                    filter(
+                        lambda ch: ch and ch.name == value,
+                        interaction.guild.text_channels,
+                    )
+                )
+            except StopIteration:
+                raise TypeError("A valid text channel must be provided")
+
+
 class command_converter(Converter[AnyCommand]):
     async def convert(self, ctx: NeoContext, command_name: str) -> AnyCommand:
         command = ctx.bot.get_command(command_name) or ctx.bot.tree.get_command(
-            command_name, type=AppCommandType.chat_input
+            command_name, type=discord.AppCommandType.chat_input
         )
         if not command:
             raise NameError(f"There is no command by the identifier `{command_name}`.")

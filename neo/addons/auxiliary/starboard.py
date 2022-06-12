@@ -15,15 +15,7 @@ if TYPE_CHECKING:
 
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
-    def __init__(
-        self,
-        *,
-        settings: dict[str, Any],
-        addon: StarboardAddon,
-        ctx: neo.context.NeoContext,
-        **kwargs,
-    ):
-        self.ctx = ctx
+    def __init__(self, *, settings: dict[str, Any], addon: StarboardAddon, **kwargs):
         self.addon = addon
         self.settings = settings
 
@@ -47,12 +39,12 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             )
 
             async def on_submit(self, interaction):
-                if not outer_self.ctx.guild or not outer_self.view:
+                if not interaction.guild or not outer_self.view:
                     return
 
                 try:
                     await outer_self.addon.set_option(
-                        outer_self.ctx, current_setting, self.new_value.value
+                        interaction, current_setting, self.new_value.value
                     )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
@@ -65,7 +57,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                         "description"
                     ].format(
                         getattr(
-                            outer_self.addon.starboards[outer_self.ctx.guild.id],
+                            outer_self.addon.starboards[interaction.guild.id],
                             current_setting,
                         )
                     )
