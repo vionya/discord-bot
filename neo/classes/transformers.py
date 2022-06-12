@@ -5,9 +5,10 @@ from __future__ import annotations
 import re
 import zoneinfo
 from types import MethodType
-from typing import TYPE_CHECKING, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Callable, Any, TypeVar
 
-from discord import AppCommandType
+from discord import AppCommandType, Interaction
+from discord.app_commands import Transformer, Transform
 from neo.types.commands import AnyCommand
 
 if TYPE_CHECKING:
@@ -21,15 +22,28 @@ EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
 T = TypeVar("T")
 
 
-def wrap_converter(func: Callable[[str], T]) -> Converter[T]:
-    class WrapperConverter(Converter):
-        async def convert(self: Converter[T], ctx: NeoContext, arg: str) -> T:
-            return func(arg)
+def wrap_transformer(func: Callable[[str], Any]) -> Transformer:
+    class WrapperTransformer(Transformer):
+        @classmethod
+        def transform(
+            cls: Transform[Any, Transformer], interaction: Interaction, value: str
+        ) -> Any:
+            return func(value)
 
-    return WrapperConverter()
+    return WrapperTransformer()
 
 
-@wrap_converter
+@wrap_transformer
+def bool_converter(maybe_bool: str) -> bool:
+    normalized = maybe_bool.casefold()
+    if normalized in ("yes", "y", "true", "t", "1", "enable", "on"):
+        return True
+    elif normalized in ("no", "n", "false", "f", "0", "disable", "off"):
+        return False
+    raise ValueError("Value must be interpretable as a boolean")
+
+
+@wrap_transformer
 def codeblock_converter(codeblock: str) -> str:
     new = None
     if all([codeblock.startswith("`"), codeblock.endswith("`")]):
@@ -38,7 +52,7 @@ def codeblock_converter(codeblock: str) -> str:
     return codeblock
 
 
-@wrap_converter
+@wrap_transformer
 def timezone_converter(timezone: str) -> str:
     try:
         zone = zoneinfo.ZoneInfo(timezone)
@@ -47,7 +61,7 @@ def timezone_converter(timezone: str) -> str:
     return str(zone)
 
 
-@wrap_converter
+@wrap_transformer
 def mention_converter(mention: str) -> int:
     match = EXTRACT_MENTION_REGEX.match(mention)
     if not match:
@@ -56,7 +70,7 @@ def mention_converter(mention: str) -> int:
     return int(match[1])
 
 
-@wrap_converter
+@wrap_transformer
 def timeout_converter(provided_timeout: str) -> int:
     if not provided_timeout.isdigit():
         raise ValueError("`timeout` must be a number.")
@@ -67,7 +81,7 @@ def timeout_converter(provided_timeout: str) -> int:
     return timeout
 
 
-@wrap_converter
+@wrap_transformer
 def max_days_converter(provided_max_days: str) -> int:
     if not provided_max_days.isdigit():
         raise ValueError("`max_days` must be a number.")

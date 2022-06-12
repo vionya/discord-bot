@@ -10,8 +10,11 @@ import discord
 import neo
 from discord import app_commands
 from discord.ext import commands
-from neo.classes.context import NeoContext
-from neo.classes.transformers import timeout_converter, timezone_converter
+from neo.classes.transformers import (
+    bool_converter,
+    timeout_converter,
+    timezone_converter,
+)
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, instantiate, is_registered_profile
 from neo.tools.checks import is_registered_profile_predicate
@@ -25,13 +28,13 @@ if TYPE_CHECKING:
 
 SETTINGS_MAPPING: SettingsMapping = {
     "receive_highlights": {
-        "converter": commands.converter._convert_to_bool,
+        "transformer": bool_converter,
         "description": None,
     },
-    "timezone": {"converter": timezone_converter, "description": None},
-    "hl_timeout": {"converter": timeout_converter, "description": None},
+    "timezone": {"transformer": timezone_converter, "description": None},
+    "hl_timeout": {"transformer": timeout_converter, "description": None},
     "default_ephemeral": {
-        "converter": commands.converter._convert_to_bool,
+        "transformer": bool_converter,
         "description": None,
     },
 }
@@ -60,20 +63,22 @@ class Profile(neo.Addon, app_group=True):
 
             SETTINGS_MAPPING[col_name]["description"] = col_desc
 
-    async def set_option(self, ctx: NeoContext, setting: str, new_value: str):
-        value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
-        profile = self.bot.profiles[ctx.author.id]
+    async def set_option(
+        self, interaction: discord.Interaction, setting: str, new_value: str
+    ):
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
+        profile = self.bot.profiles[interaction.user.id]
         setattr(profile, setting, value)
-        self.bot.broadcast("user_settings_update", ctx.author, profile)
+        self.bot.broadcast("user_settings_update", interaction.user, profile)
 
-    async def reset_option(self, ctx: NeoContext, setting: str):
+    async def reset_option(self, interaction: discord.Interaction, setting: str):
         if not SETTINGS_MAPPING.get(setting):
             raise commands.BadArgument(
                 "That's not a valid setting! " "Try `settings` for a list of settings!"
             )
-        profile = self.bot.profiles[ctx.author.id]
+        profile = self.bot.profiles[interaction.user.id]
         await profile.reset_attribute(setting)
-        self.bot.broadcast("user_settings_update", ctx.author, profile)
+        self.bot.broadcast("user_settings_update", interaction.user, profile)
 
     @instantiate
     class ProfileSettings(app_commands.Group, name="settings"):
@@ -82,6 +87,7 @@ class Profile(neo.Addon, app_group=True):
         addon: Profile
 
         @app_commands.command(name="list")
+        @is_registered_profile()
         async def profile_settings_list(self, interaction: discord.Interaction):
             """Lists profile settings"""
             profile = self.addon.bot.profiles[interaction.user.id]
@@ -99,10 +105,8 @@ class Profile(neo.Addon, app_group=True):
 
             menu = ButtonsMenu.from_embeds(embeds)
 
-            fake_ctx = await NeoContext.from_interaction(interaction)
             menu.add_item(
                 ChangeSettingButton(
-                    ctx=fake_ctx,
                     addon=self.addon,
                     settings=SETTINGS_MAPPING,
                     label="Change this setting",
@@ -112,7 +116,6 @@ class Profile(neo.Addon, app_group=True):
             )
             menu.add_item(
                 ResetSettingButton(
-                    ctx=fake_ctx,
                     addon=self.addon,
                     settings=SETTINGS_MAPPING,
                     label="Reset this setting",
@@ -139,8 +142,7 @@ class Profile(neo.Addon, app_group=True):
 
             More information on the available settings and their functions is in the `settings` command
             """
-            fake_ctx = await NeoContext.from_interaction(interaction)
-            await self.addon.set_option(fake_ctx, setting, new_value)
+            await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
                 f"Setting `{setting}` has been changed!"
             )
@@ -156,8 +158,7 @@ class Profile(neo.Addon, app_group=True):
 
             Defaults can be found in the `settings` command
             """
-            fake_ctx = await NeoContext.from_interaction(interaction)
-            await self.addon.reset_option(fake_ctx, setting)
+            await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
                 f"Setting `{setting}` has been reset!"
             )
