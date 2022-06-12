@@ -7,7 +7,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from operator import attrgetter
 from typing import TYPE_CHECKING
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import discord
 import neo
@@ -33,7 +33,7 @@ class TodoItem:
         *,
         user_id: int,
         content: str,
-        todo_id: str,
+        todo_id: UUID,
         created_at: datetime,
         edited: bool,
     ):
