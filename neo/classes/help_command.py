@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 import neo
@@ -12,13 +12,13 @@ from discord.ext import commands
 from neo.classes.app_commands import AutoEphemeralAppCommand
 from neo.modules import DropdownMenu, EmbedPages
 from neo.tools import recursive_get_command
-from neo.tools.decorators import with_docstring
 from neo.types.commands import AnyCommand
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
     from neo import Addon, Neo
     from neo.classes.context import NeoContext
-    from typing_extensions import Self
 
     HelpMapping = dict[Optional[Addon], list[AnyCommand]]
 else:

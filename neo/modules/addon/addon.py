@@ -2,16 +2,16 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from collections.abc import Coroutine
+from collections.abc import Awaitable, Callable
 from itertools import chain
 from types import MethodType
-from typing import Any, Callable, Protocol, TypeGuard, cast
+from typing import Any, Protocol, TypeGuard, cast
 
+from discord import app_commands
 from discord.ext import commands
 from typing_extensions import Self
-from discord import app_commands
 
-ReceiverRet = Any | Coroutine[None, None, Any]
+ReceiverRet = Any | Awaitable[Any]
 
 
 class Receiver(Protocol):

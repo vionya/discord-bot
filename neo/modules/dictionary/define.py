@@ -17,7 +17,7 @@ class Define:
     def __init__(self, session: Optional[ClientSession] = None):
         self.session = session or ClientSession()
 
-    async def _do_definition(self, query):
+    async def _do_definition(self, query: str):
         url = BASE / "en" / query
 
         async with self.session.get(url) as resp:

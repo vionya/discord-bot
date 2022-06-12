@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
 from discord import app_commands
 from discord.ext import commands
 from neo.classes.containers import TimedCache
-from neo.classes.context import NeoContext
 from neo.classes.transformers import max_days_converter, text_channel_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, instantiate, shorten

@@ -6,21 +6,16 @@ import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
 from operator import attrgetter
-from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
 from discord.utils import escape_markdown
 from neo.addons.auxiliary.todos import TodoEditModal
 from neo.modules import ButtonsMenu
 from neo.tools import is_registered_profile, send_confirmation, shorten
 from neo.tools.decorators import no_defer
-
-if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
 
 MAX_TODOS = 100
 

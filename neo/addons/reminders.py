@@ -5,21 +5,16 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID, uuid4
 
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
-from discord.utils import snowflake_time
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
 from neo.tools import is_registered_profile, send_confirmation, shorten, try_or_none
 from neo.tools.time_parse import TimedeltaWithYears, parse_absolute, parse_relative
-
-if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
 
 MAX_REMINDERS = 15
 MAX_REMINDER_LEN = 1000

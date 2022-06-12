@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
 from neo.classes.containers import TimedSet
 from neo.classes.partials import PartialUser
 from neo.classes.timer import periodic
@@ -22,7 +21,6 @@ from neo.tools import is_registered_profile, send_confirmation
 
 if TYPE_CHECKING:
     from neo.classes.containers import NeoUser
-    from neo.classes.context import NeoContext
 
 
 class DefaultAvatars(Enum):
@@ -237,7 +235,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
             del self.flat_highlights
         self.flat_highlights
 
-    @commands.Cog.listener("on_message")
+    @neo.Addon.listener("on_message")
     async def listen_for_highlights(self, message: discord.Message):
         if not self.bot.is_ready():
             return  # Return if bot is not ready, so flat_highlights is computed correctly
@@ -285,10 +283,8 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 
-    async def cog_check(self, ctx: NeoContext):
-        return await is_registered_profile().predicate(ctx)
-
     @app_commands.command(name="list")
+    @is_registered_profile()
     async def highlight_list(self, interaction: discord.Interaction):
         """List your highlights"""
         description = ""
@@ -310,6 +306,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The word or phrase to be highlighted by")
+    @is_registered_profile()
     async def highlight_add(self, interaction: discord.Interaction, content: str):
         """
         Add a new highlight
@@ -355,6 +352,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     @app_commands.describe(
         index='A highlight index to remove, or "~" to clear all highlights'
     )
+    @is_registered_profile()
     async def highlight_remove(self, interaction: discord.Interaction, index: str):
         """
         Remove a highlight by index
@@ -437,6 +435,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         user="A user to block",
         channel="A channel to block",
     )
+    @is_registered_profile()
     async def highlight_block(
         self,
         interaction: discord.Interaction,
@@ -446,7 +445,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     ):
         """Block a target from highlighting you"""
         if not (id or "").isnumeric() and not any([user, channel]):
-            raise commands.BadArgument("Please input a valid ID.")
+            raise TypeError("Please input a valid ID.")
 
         profile = self.bot.profiles[interaction.user.id]
 
@@ -463,6 +462,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         await send_confirmation(interaction)
 
     @app_commands.command(name="blocklist")
+    @is_registered_profile()
     async def highlight_block_list(self, interaction: discord.Interaction):
         """
         Manage a blocklist for highlights.
@@ -494,6 +494,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         user="A user to unblock",
         channel="A channel to unblock",
     )
+    @is_registered_profile()
     async def highlight_unblock(
         self,
         interaction: discord.Interaction,
@@ -509,7 +510,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         One *or more* IDs can be provided to this command
         """
         if not (id or "").isnumeric() and not any([user, channel]):
-            raise commands.BadArgument("Please input a valid ID.")
+            raise TypeError("Please input a valid ID.")
 
         profile = self.bot.profiles[interaction.user.id]
 

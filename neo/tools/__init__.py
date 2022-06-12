@@ -6,7 +6,6 @@ import re
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from discord import app_commands, utils
-from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, instantiate, with_docstring
@@ -15,7 +14,6 @@ from .patcher import Patcher
 
 if TYPE_CHECKING:
     from discord import Interaction
-    from neo.classes.context import NeoContext
     from neo.types.settings_mapping import SettingsMapping
 
 
@@ -47,7 +45,7 @@ async def convert_setting(
     try:
         valid_setting = mapping[setting]
     except KeyError:
-        raise commands.BadArgument(
+        raise NameError(
             "That's not a valid setting! " "Try `settings` for a list of settings!"
         )
 
@@ -66,9 +64,7 @@ async def convert_setting(
         value = converted
 
     else:
-        raise commands.BadArgument(
-            "Bad value provided for setting `{}`".format(setting)
-        )
+        raise ValueError("Bad value provided for setting `{}`".format(setting))
 
     return value
 
@@ -121,8 +117,10 @@ def parse_ids(argument: str) -> tuple[int, Optional[int]]:
         r"/(?P<channel_id>[0-9]{15,20})/(?P<message_id>[0-9]{15,20})/?$"
     )
     match = id_regex.match(argument) or link_regex.match(argument)
+
     if not match:
-        raise commands.MessageNotFound(argument)
+        raise ValueError(f"Message {argument} not found")
+
     data = match.groupdict()
     channel_id = utils._get_as_snowflake(data, "channel_id")
     message_id = int(data["message_id"])

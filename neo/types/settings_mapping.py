@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
-from typing import TYPE_CHECKING, Any, Callable, NewType, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from discord.app_commands import Transformer
 
 

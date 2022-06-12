@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import re
 import zoneinfo
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.app_commands import Transform, Transformer
 from neo.types.commands import AnyCommand
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from neo import Neo
 
 

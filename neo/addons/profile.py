@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
 from neo.classes.transformers import (
     bool_converter,
     timeout_converter,
@@ -72,7 +71,7 @@ class Profile(neo.Addon, app_group=True):
 
     async def reset_option(self, interaction: discord.Interaction, setting: str):
         if not SETTINGS_MAPPING.get(setting):
-            raise commands.BadArgument(
+            raise NameError(
                 "That's not a valid setting! " "Try `settings` for a list of settings!"
             )
         profile = self.bot.profiles[interaction.user.id]

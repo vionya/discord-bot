@@ -2,7 +2,10 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 T = TypeVar("T")
 

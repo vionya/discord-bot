@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
 from neo.classes.transformers import bool_converter, command_converter
 from neo.modules import ButtonsMenu
 from neo.tools import (
@@ -24,7 +23,6 @@ from neo.types.commands import AnyCommand
 from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 
 if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
     from neo.types.settings_mapping import SettingsMapping
 
 SETTINGS_MAPPING: SettingsMapping = {
@@ -83,7 +81,7 @@ class ServerConfig(
         assert interaction.guild
 
         if not SETTINGS_MAPPING.get(setting):
-            raise commands.BadArgument(
+            raise NameError(
                 "That's not a valid setting! " "Try `server` for a list of settings!"
             )
         config = self.bot.configs[interaction.guild.id]

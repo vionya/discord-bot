@@ -7,7 +7,7 @@ import inspect
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientSession
@@ -20,7 +20,7 @@ from .tools import *  # noqa: F403
 from .tools import recursive_getattr
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine, Mapping
+    from collections.abc import Awaitable, Mapping
 
     from asyncpg import Pool
 
@@ -360,7 +360,7 @@ class Neo(commands.Bot):
     # This serves as a similar implementation that will not change in the future.
 
     def broadcast(self, event: str, *args, **kwargs):
-        coros: list[Coroutine[None, None, Any]] = []
+        coros: list[Awaitable[None]] = []
         for addon in self.cogs.values():
             if event in addon.__receivers__:
                 receiver = addon.__receivers__[event]

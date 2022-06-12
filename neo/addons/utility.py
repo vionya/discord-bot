@@ -6,26 +6,21 @@ import asyncio
 import random
 from collections import Counter
 from functools import partial
-from operator import attrgetter
 from sys import version as py_version
 from typing import Optional
 
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
 from googletrans import LANGUAGES, Translator
-from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
-from neo.classes.help_command import AppHelpCommand
-from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import deprecate, parse_ids, shorten
+from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
+from neo.tools import parse_ids, shorten
 
 from .auxiliary.utility import (
     InfoButtons,
     SwappableEmbedButton,
     definitions_to_embed,
-    get_translation_kwargs,
     result_to_embed,
     translate,
 )
