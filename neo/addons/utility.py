@@ -17,6 +17,7 @@ from discord.ext import commands
 from googletrans import LANGUAGES, Translator
 from neo.classes.context import NeoContext
 from neo.classes.formatters import Table
+from neo.classes.help_command import AppHelpCommand
 from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
 from neo.tools import deprecate, parse_ids, shorten
 
@@ -26,7 +27,7 @@ from .auxiliary.utility import (
     definitions_to_embed,
     get_translation_kwargs,
     result_to_embed,
-    translate
+    translate,
 )
 
 BADGE_MAPPING = {
@@ -127,39 +128,6 @@ class Utility(neo.Addon):
             application_id=self.bot.user.id,
         )
         self.bot.add_view(self.info_buttons())
-
-    # Create a fake slash command which directly invokes the help command
-    # Uses `app_command_name` to falsify the command without interfering with
-    # the actual command instance
-    @app_commands.command(name="help")
-    @app_commands.describe(command="The command to get help for")
-    async def help_slash(
-        self, interaction: discord.Interaction, *, command: Optional[str] = None
-    ):
-        """Displays help for the bot"""
-        if self.bot.help_command is None:
-            return
-
-        ctx = await NeoContext.from_interaction(interaction)
-        self.bot.help_command.context = ctx
-        await self.bot.help_command.command_callback(ctx, command=command)
-
-    @help_slash.autocomplete("command")
-    async def help_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> list[discord.app_commands.Choice]:
-        all_commands = set(
-            [
-                *map(attrgetter("qualified_name"), self.bot.walk_commands()),
-                *map(attrgetter("qualified_name"), self.bot.tree.walk_commands()),
-            ]
-        )
-        return [
-            *map(
-                lambda k: discord.app_commands.Choice(name=k, value=k),
-                filter(lambda k: current in k, all_commands),
-            )
-        ][:25]
 
     @app_commands.command(name="google")
     @app_commands.describe(query="The query to search for")

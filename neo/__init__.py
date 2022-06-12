@@ -75,6 +75,8 @@ class Neo(commands.Bot):
 
         self.on_command_error = self.general_error_handler  # type: ignore
 
+        self.tree.add_command(help_command.AppHelpCommand(self))
+
         self._async_ready = asyncio.Event()
         asyncio.create_task(self.__ainit__())
 

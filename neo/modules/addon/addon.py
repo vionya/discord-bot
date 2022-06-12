@@ -55,8 +55,10 @@ class Addon(commands.Cog, metaclass=AddonMeta):
         instance = super().__new__(cls, *args, **kwargs)
 
         for cmd in instance.__cog_app_commands__:
-            if isinstance(cmd, app_commands.Group):
-                setattr(cmd, "addon", instance)
+            setattr(cmd, "addon", instance)
+
+        if grp := instance.__cog_app_commands_group__:
+            setattr(grp, "addon", instance)
 
         return instance
 
@@ -155,6 +157,9 @@ class Addon(commands.Cog, metaclass=AddonMeta):
     ]:
         return [
             c
-            for c in chain(self.__cog_commands__, self.__cog_app_commands__)
-            if c.parent is None
+            for c in chain(
+                self.__cog_commands__,
+                self.__cog_app_commands__,
+            )
+            if c.parent in (None, self.__cog_app_commands_group__, self)
         ]
