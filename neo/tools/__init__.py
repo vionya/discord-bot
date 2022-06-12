@@ -10,12 +10,13 @@ from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, instantiate, with_docstring
+from .message_helpers import prompt_user, send_confirmation
 from .patcher import Patcher
 
 if TYPE_CHECKING:
+    from discord import Interaction
     from neo.classes.context import NeoContext
     from neo.types.settings_mapping import SettingsMapping
-    from discord import Interaction
 
 
 T = TypeVar("T")

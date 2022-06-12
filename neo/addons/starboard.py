@@ -14,9 +14,8 @@ from neo.classes.containers import TimedCache
 from neo.classes.context import NeoContext
 from neo.classes.transformers import max_days_converter, text_channel_transformer
 from neo.modules import ButtonsMenu
-from neo.tools import convert_setting, shorten
+from neo.tools import convert_setting, instantiate, shorten
 from neo.tools.checks import valid_starboard_env
-from neo.tools.decorators import instantiate
 
 from .auxiliary.starboard import ChangeSettingButton
 

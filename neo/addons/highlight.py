@@ -18,8 +18,7 @@ from neo.classes.containers import TimedSet
 from neo.classes.partials import PartialUser
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile
-from neo.tools.message_helpers import send_confirmation
+from neo.tools import is_registered_profile, send_confirmation
 
 if TYPE_CHECKING:
     from neo.classes.containers import NeoUser

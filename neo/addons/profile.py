@@ -16,9 +16,8 @@ from neo.classes.transformers import (
     timezone_converter,
 )
 from neo.modules import ButtonsMenu
-from neo.tools import convert_setting, instantiate, is_registered_profile
+from neo.tools import convert_setting, instantiate, is_registered_profile, prompt_user
 from neo.tools.checks import is_registered_profile_predicate
-from neo.tools.message_helpers import prompt_user
 
 from .auxiliary.profile import ChangeSettingButton, ResetSettingButton
 
