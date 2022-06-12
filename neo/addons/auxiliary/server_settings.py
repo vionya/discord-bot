@@ -11,7 +11,7 @@ import discord
 import neo
 
 if TYPE_CHECKING:
-    from ..server_settings import ServerSettings
+    from ..server_settings import ServerConfig
 
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
@@ -19,11 +19,9 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
         self,
         *,
         settings: dict[str, Any],
-        addon: ServerSettings,
-        ctx: neo.context.NeoContext,
+        addon: ServerConfig,
         **kwargs,
     ):
-        self.ctx = ctx
         self.addon = addon
         self.settings = settings
 
@@ -47,13 +45,13 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             )
 
             async def on_submit(self, interaction):
-                if not outer_self.ctx.guild or not outer_self.view:
+                if not interaction.guild or not outer_self.view:
                     return
 
                 try:
                     if self.new_value.value:
                         await outer_self.addon.set_option(
-                            outer_self.ctx, current_setting, self.new_value.value
+                            interaction, current_setting, self.new_value.value
                         )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
@@ -66,7 +64,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                         "description"
                     ].format(
                         getattr(
-                            outer_self.addon.bot.configs[outer_self.ctx.guild.id],
+                            outer_self.addon.bot.configs[interaction.guild.id],
                             current_setting,
                         )
                     )
@@ -85,31 +83,29 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
         self,
         *,
         settings: dict[str, Any],
-        addon: ServerSettings,
-        ctx: neo.context.NeoContext,
+        addon: ServerConfig,
         **kwargs,
     ):
-        self.ctx = ctx
         self.addon = addon
         self.settings = settings
 
         super().__init__(**kwargs)
 
     async def callback(self, interaction):
-        if not self.ctx.guild or not self.view:
+        if not interaction.guild or not self.view:
             return
 
         index = self.view.current_page
         current_setting = [*self.settings.keys()][index]
 
-        await self.addon.reset_option(self.ctx, current_setting)
+        await self.addon.reset_option(interaction, current_setting)
 
         await interaction.response.send_message(
             f"Setting `{current_setting}` has been reset!", ephemeral=True
         )
 
         description = self.settings[current_setting]["description"].format(
-            getattr(self.addon.bot.configs[self.ctx.guild.id], current_setting)
+            getattr(self.addon.bot.configs[interaction.guild.id], current_setting)
         )
         self.view.pages.items[index].description = (
             f"**Setting: `{current_setting}`**\n\n" + description

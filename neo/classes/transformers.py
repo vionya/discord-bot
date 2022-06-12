@@ -11,9 +11,8 @@ from discord.app_commands import Transform, Transformer
 from neo.types.commands import AnyCommand
 
 if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
+    from neo import Neo
 
-from discord.ext.commands import Converter
 
 CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
@@ -133,9 +132,14 @@ class text_channel_transformer(Transformer):
                 raise TypeError("A valid text channel must be provided")
 
 
-class command_converter(Converter[AnyCommand]):
-    async def convert(self, ctx: NeoContext, command_name: str) -> AnyCommand:
-        command = ctx.bot.get_command(command_name) or ctx.bot.tree.get_command(
+class command_converter(Transformer):
+    @classmethod
+    def transform(
+        cls, interaction: discord.Interaction, command_name: str
+    ) -> AnyCommand:
+        bot: Neo = interaction.client  # type: ignore
+
+        command = bot.get_command(command_name) or bot.tree.get_command(
             command_name, type=discord.AppCommandType.chat_input
         )
         if not command:
