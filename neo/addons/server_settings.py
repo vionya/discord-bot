@@ -37,7 +37,6 @@ SETTINGS_MAPPING: SettingsMapping = {
 
 
 @app_commands.guild_only()
-@is_owner_or_administrator()
 class ServerConfig(
     neo.Addon,
     app_group=True,
@@ -98,6 +97,7 @@ class ServerConfig(
         addon: ServerConfig
 
         @app_commands.command(name="list")
+        @is_owner_or_administrator()
         async def server_settings_list(self, interaction: discord.Interaction):
             """Lists server settings"""
             # Guaranteed by cog check
@@ -146,6 +146,7 @@ class ServerConfig(
             " can be found in the settings list",
         )
         @app_commands.rename(new_value="new-value")
+        @is_owner_or_administrator()
         @is_registered_guild()
         async def server_settings_set(
             self, interaction: discord.Interaction, setting: str, *, new_value: str
@@ -163,6 +164,7 @@ class ServerConfig(
 
         @app_commands.command(name="reset")
         @app_commands.describe(setting="The setting to reset")
+        @is_owner_or_administrator()
         @is_registered_guild()
         async def server_settings_reset(
             self, interaction: discord.Interaction, setting: str
@@ -190,6 +192,7 @@ class ServerConfig(
             ]
 
     @app_commands.command(name="create")
+    @is_owner_or_administrator()
     async def server_settings_create(self, interaction: discord.Interaction):
         """
         Creates a config entry for the server
@@ -210,6 +213,7 @@ class ServerConfig(
         )
 
     @app_commands.command(name="delete")
+    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_settings_delete(self, interaction: discord.Interaction):
         """Permanently deletes this server's config"""
@@ -233,6 +237,7 @@ class ServerConfig(
 
     @app_commands.command(name="ignore")
     @app_commands.describe(channel="The channel to ignore")
+    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_settings_ignore_channel(
         self,
@@ -273,6 +278,7 @@ class ServerConfig(
         await send_confirmation(interaction)
 
     @app_commands.command(name="unignore")
+    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_settings_unignore_channel(
         self, interaction: discord.Interaction, channel: discord.TextChannel
@@ -292,6 +298,7 @@ class ServerConfig(
 
     @app_commands.command(name="disable")
     @app_commands.describe(command="The command to disable")
+    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_settings_disable_command(
         self,
@@ -341,6 +348,7 @@ class ServerConfig(
 
     @app_commands.command(name="enable")
     @app_commands.describe(command="The command to re-enable")
+    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_settings_reenable_command(
         self,

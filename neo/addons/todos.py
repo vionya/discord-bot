@@ -70,10 +70,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     async def handle_deleted_profile(self, user_id: int):
         self.todos.pop(user_id, None)
 
-    async def cog_check(self, ctx: NeoContext):
-        return await is_registered_profile().predicate(ctx)
-
     @app_commands.command(name="list")
+    @is_registered_profile()
     async def todo_list(self, interaction: discord.Interaction):
         """List your todos"""
         formatted_todos = []
@@ -98,6 +96,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The content of the new todo")
+    @is_registered_profile()
     async def todo_add(self, interaction: discord.Interaction, content: str):
         """Add a new todo"""
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
@@ -134,6 +133,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="remove")
     @app_commands.describe(index='A todo index to remove, or "~" to clear all')
+    @is_registered_profile()
     async def todo_remove(self, interaction: discord.Interaction, index: str):
         """
         Remove a todo by index
@@ -192,6 +192,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="view")
     @app_commands.describe(index="A todo index to view")
+    @is_registered_profile()
     async def todo_view(self, interaction: discord.Interaction, index: int):
         """View a todo by its listed index"""
         try:
@@ -217,6 +218,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="edit")
     @app_commands.describe(index="A todo index to edit")
+    @is_registered_profile()
     @no_defer
     async def todo_edit(self, interaction: discord.Interaction, index: int):
         """Edit the content of a todo"""

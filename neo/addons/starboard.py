@@ -515,7 +515,7 @@ class StarboardAddon(
             ]
 
     async def set_option(
-        self, interaction: discord.Interaction, setting: str, new_value: Any
+        self, interaction: discord.Interaction, setting: str, new_value: str
     ):
         assert interaction.guild
 
