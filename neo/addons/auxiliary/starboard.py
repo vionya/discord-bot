@@ -43,9 +43,10 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                     return
 
                 try:
-                    await outer_self.addon.set_option(
-                        interaction, current_setting, self.new_value.value
-                    )
+                    if self.new_value.value:
+                        await outer_self.addon.set_option(
+                            interaction, current_setting, self.new_value.value
+                        )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
