@@ -242,17 +242,24 @@ class Utility(neo.Addon):
         await interaction.response.send_message(embeds=[embed])
 
     @app_commands.command(name="choose")
-    @app_commands.describe(choices="A comma-separated list of options")
-    async def choose_command(self, interaction: discord.Interaction, choices: str):
-        """
-        Make a random choice from a set of options
-
-        To separate each option, use a comma (`,`)
-        Ex: `choose option a, option b, option c`
-        """
-        options = [opt.strip() for opt in choices.split(",")]
-        if len(options) < 2:
-            raise ValueError("At least 2 options must be provided")
+    @app_commands.rename(
+        opt_0="option-1",
+        opt_1="option-2",
+        opt_2="option-3",
+        opt_3="option-4",
+        opt_4="option-5",
+    )
+    async def choose_command(
+        self,
+        interaction: discord.Interaction,
+        opt_0: str,
+        opt_1: str,
+        opt_2: Optional[str] = None,
+        opt_3: Optional[str] = None,
+        opt_4: Optional[str] = None,
+    ):
+        """Make a (pseudo-)random choice from up to 5 different options"""
+        options = [opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt]
 
         data = Counter(random.choice(options) for _ in range(1000))
 
