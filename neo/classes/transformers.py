@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import re
 import zoneinfo
-from types import MethodType
-from typing import TYPE_CHECKING, Callable, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Callable
 
-from discord import AppCommandType, Interaction
-from discord.app_commands import Transformer, Transform
+import discord
+from discord.app_commands import Transform, Transformer
 from neo.types.commands import AnyCommand
 
 if TYPE_CHECKING:
@@ -18,19 +17,25 @@ from discord.ext.commands import Command, Converter
 
 CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
+class WrapperTransformer(Transformer):
+    wrapped: Callable[[str], Any]
 
-T = TypeVar("T")
 
+def wrap_transformer(func: Callable[[str], Any]) -> WrapperTransformer:
+    class Wrapper(WrapperTransformer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.wrapped = func
 
-def wrap_transformer(func: Callable[[str], Any]) -> Transformer:
-    class WrapperTransformer(Transformer):
         @classmethod
         def transform(
-            cls: Transform[Any, Transformer], interaction: Interaction, value: str
+            cls: Transform[Any, Transformer],
+            interaction: discord.Interaction,
+            value: str,
         ) -> Any:
             return func(value)
 
-    return WrapperTransformer()
+    return Wrapper()
 
 
 @wrap_transformer

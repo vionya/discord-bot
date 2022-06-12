@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import discord
 import neo
 from discord.ext import commands
-from neo.classes.converters import codeblock_converter
+from neo.classes.transformers import codeblock_converter
 from neo.classes.formatters import Table, format_exception
 from neo.modules import ButtonsMenu, Pages, args
 from neo.modules.exec import ExecWrapper, env_from_context
@@ -57,7 +57,7 @@ class Devel(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        code: str = commands.parameter(converter=codeblock_converter),
+        code: str = commands.parameter(converter=codeblock_converter.wrapped)
     ):
         """Executes some code, retaining the result"""
         (globals_ := env_from_context(ctx)).update(**(self._exec_scope | globals()))
@@ -88,7 +88,7 @@ class Devel(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        query: str = commands.parameter(converter=codeblock_converter),
+        query: str = commands.parameter(converter=codeblock_converter.wrapped)
     ):
         """Perform an SQL query"""
         data = await self.bot.db.fetch(query)
