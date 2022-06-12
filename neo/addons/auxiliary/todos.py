@@ -28,7 +28,7 @@ class TodoEditModal(discord.ui.Modal):
             max_length=1500,
         )
 
-        super().__init__(title=title)
+        super().__init__(title=title, timeout=300)
 
         self.add_item(self.content)
 
