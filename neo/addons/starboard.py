@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from discord.ext import commands
 from neo.classes.containers import TimedCache
 from neo.classes.transformers import max_days_converter, text_channel_transformer
 from neo.modules import ButtonsMenu
@@ -19,6 +18,7 @@ from neo.tools.checks import valid_starboard_env
 from .auxiliary.starboard import ChangeSettingButton
 
 if TYPE_CHECKING:
+    from asyncpg import Pool
     from neo.types.settings_mapping import SettingsMapping
 
 SETTINGS_MAPPING: SettingsMapping = {
@@ -74,7 +74,7 @@ class Starboard:
         max_days: int,
         emoji: discord.PartialEmoji,
         ignored: set[int],
-        pool,
+        pool: Pool,
     ):
         self.channel = channel
         self.threshold = threshold
@@ -322,8 +322,8 @@ class StarboardAddon(
             emoji = discord.PartialEmoji.from_str(emoji)
         return emoji == starboard.emoji
 
-    @commands.Cog.listener("on_raw_reaction_add")
-    @commands.Cog.listener("on_raw_reaction_remove")
+    @neo.Addon.listener("on_raw_reaction_add")
+    @neo.Addon.listener("on_raw_reaction_remove")
     async def handle_individual_reaction(self, payload: discord.RawReactionActionEvent):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
@@ -381,9 +381,9 @@ class StarboardAddon(
             else:
                 await starboard.edit_star(star.message_id, star.stars)
 
-    @commands.Cog.listener("on_raw_reaction_clear")
-    @commands.Cog.listener("on_raw_reaction_clear_emoji")
-    @commands.Cog.listener("on_raw_message_delete")
+    @neo.Addon.listener("on_raw_reaction_clear")
+    @neo.Addon.listener("on_raw_reaction_clear_emoji")
+    @neo.Addon.listener("on_raw_message_delete")
     async def handle_terminations(self, payload):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
@@ -399,7 +399,7 @@ class StarboardAddon(
         if payload.message_id in starboard.star_ids:
             await starboard.delete_star(payload.message_id)
 
-    @commands.Cog.listener("on_guild_channel_delete")
+    @neo.Addon.listener("on_guild_channel_delete")
     async def handle_starboard_channel_delete(self, channel: discord.abc.GuildChannel):
         if channel.guild.id not in self.starboards:
             return
