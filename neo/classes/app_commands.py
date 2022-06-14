@@ -35,9 +35,9 @@ def get_ephemeral(
     if user.id in bot.profiles:
         default = bot.profiles[user.id].default_ephemeral
 
-    passed_option = getattr(namespace, "ephemeral", None)
+    passed_option = getattr(namespace, "private", None)
     if isinstance(namespace, dict):
-        passed_option = namespace.pop("ephemeral", None)
+        passed_option = namespace.pop("private", None)
     ephemeral = default if passed_option is None else passed_option
     return ephemeral
 
@@ -63,9 +63,9 @@ class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
         )
 
         # Inject an `ephemeral` parameter to every app commmand
-        self._params["ephemeral"] = discord.app_commands.transformers.CommandParameter(
-            name="ephemeral",
-            description="Whether to send the command result ephemerally",
+        self._params["private"] = discord.app_commands.transformers.CommandParameter(
+            name="private",
+            description="Whether or not to send the command result privately",
             required=False,
             default=None,
             type=discord.AppCommandOptionType.boolean,
@@ -87,7 +87,7 @@ class AutoEphemeralAppCommand(discord.app_commands.Command[GroupT, P, T]):
         transformed_values = await self._transform_arguments(interaction, namespace)
         interaction.namespace.ephemeral = get_ephemeral(interaction, namespace)  # type: ignore
 
-        transformed_values.pop("ephemeral", None)
+        transformed_values.pop("private", None)
         return await self._do_call(interaction, transformed_values)
 
 
@@ -97,9 +97,9 @@ class AutoEphemeralHybridAppCommand(commands.hybrid.HybridAppCommand):
         self.name = app_command_name or self.name
 
         # Inject an `ephemeral` parameter to every hybrid commmand
-        self._params["ephemeral"] = discord.app_commands.transformers.CommandParameter(
-            name="ephemeral",
-            description="Whether to send the command result ephemerally",
+        self._params["private"] = discord.app_commands.transformers.CommandParameter(
+            name="private",
+            description="Whether to send the command result privately",
             required=False,
             default=None,
             type=discord.AppCommandOptionType.boolean,
@@ -133,7 +133,7 @@ class AutoEphemeralHybridCommand(commands.HybridCommand):
                 interaction, interaction.namespace
             )
             interaction.namespace.ephemeral = get_ephemeral(interaction, kwargs)  # type: ignore
-            kwargs.pop("ephemeral", None)
+            kwargs.pop("private", None)
             ctx.kwargs = kwargs
 
     async def invoke(self, ctx: NeoContext, /) -> None:

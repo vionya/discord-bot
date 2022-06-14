@@ -52,20 +52,20 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
     __**Using Slash Commands**__
     neo phoenix uses a custom system for slash commands which lets you customize
-    your experience. Each command automatically includes a special "`ephemeral`"
+    your experience. Each command automatically includes a special "`private`"
     option. This option controls whether the response to your command will be sent
     as an *ephemeral message*.
 
     *Ephemeral messages* are unique because you are the **only** person who can
     see them - nobody else will even know you ran a command. You can take
-    advantage of the `ephemeral` option to decide whether or not you want other
+    advantage of the `private` option to decide whether or not you want other
     people to see what you're doing.
 
     With a configured profile, you can even change whether responses are ephemeral
     by default! By changing the `default_ephemeral` option, you can choose to
     have responses be public or private without you having to do anything.
 
-    Of course, the `ephemeral` parameter will override the default setting if you
+    Of course, the `private` parameter will override the default setting if you
     ever want to do something different.
     """
 

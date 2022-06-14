@@ -2,6 +2,9 @@
 ## Breaking Changes
 * With the release of major version 1.0.0, text command support has been dropped
 
+## Improvements
+* The `ephemeral` param for all slash commands has been renamed to `private` to make usage more intuitive
+
 # Release v0.15.4 - June 11, 2022
 ## Important
 * **All** text commands\* have been deprecated, and will generate an alert button whenever they are used
