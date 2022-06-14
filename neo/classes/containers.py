@@ -167,14 +167,12 @@ class NeoUser(RecordContainer):
 
 class NeoGuildConfig(RecordContainer):
     guild_id: int
-    prefix: str
     starboard: bool
     disabled_channels: list[int]
     disabled_commands: list[str]
 
     __slots__ = (
         "guild_id",
-        "prefix",
         "starboard",
         "disabled_channels",
         "disabled_commands",

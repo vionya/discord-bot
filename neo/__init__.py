@@ -47,7 +47,7 @@ class Neo(commands.Bot):
         self.profiles: dict[int, containers.NeoUser] = {}
         self.configs: dict[int, containers.NeoGuildConfig] = {}
 
-        kwargs["command_prefix"] = self.get_prefix
+        kwargs["command_prefix"] = self.cfg["bot"]["prefix"]
         kwargs["activity"] = discord.Activity(
             name=config["bot"]["activity_name"],
             type=discord.ActivityType[config["bot"]["activity_type"]],
@@ -191,18 +191,6 @@ class Neo(commands.Bot):
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if after.content != before.content:
             await self.process_commands(after)
-
-    async def get_prefix(self, message: discord.Message) -> list[str]:
-        if message.guild:
-            return commands.when_mentioned_or(
-                getattr(
-                    self.configs.get(message.guild.id),
-                    "prefix",
-                    self.cfg["bot"]["prefix"],
-                )
-            )(self, message)
-
-        return commands.when_mentioned_or(self.cfg["bot"]["prefix"])(self, message)
 
     async def on_error(self, *args, **kwargs):
         log.error("\n" + formatters.format_exception(sys.exc_info()))

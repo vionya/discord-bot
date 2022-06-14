@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from neo.types.settings_mapping import SettingsMapping
 
 SETTINGS_MAPPING: SettingsMapping = {
-    "prefix": {"transformer": str, "description": None},
     "starboard": {
         "transformer": bool_converter,
         "description": None,
@@ -41,11 +40,7 @@ class ServerConfig(
     group_name="server",
     group_description="Server configuration commands",
 ):
-    """
-    neo phoenix's server config management module
-
-    Create a server config to use features such as starboards and custom prefixes!
-    """
+    """neo phoenix's server config management module"""
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot

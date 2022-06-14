@@ -12,7 +12,6 @@ CREATE TABLE profiles (
 
 CREATE TABLE guild_configs (
     guild_id          BIGINT PRIMARY KEY,
-    prefix            TEXT DEFAULT 'n!',
     starboard         BOOLEAN DEFAULT FALSE,
     disabled_channels BIGINT[] DEFAULT ARRAY[]::BIGINT[],
     disabled_commands TEXT[] DEFAULT ARRAY[]::TEXT[]
