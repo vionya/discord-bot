@@ -55,7 +55,7 @@ class Neo(commands.Bot):
         )
         kwargs["status"] = discord.Status[config["bot"]["status"]]
         kwargs["allowed_mentions"] = discord.AllowedMentions.none()
-        kwargs["help_command"] = help_command.NeoHelpCommand()
+        kwargs["help_command"] = None
         kwargs["intents"] = intents
         kwargs["case_insensitive"] = True
 
