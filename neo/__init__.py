@@ -106,8 +106,10 @@ class Neo(commands.Bot):
         await self.wait_until_ready()
 
         for guild_id in self.configs.copy():
-            if not self.get_guild(guild_id):
-                await self.delete_config(guild_id)
+            pass
+            # if not self.get_guild(guild_id):
+            #     await self.delete_config(guild_id)
+        # TODO: Un-comment after migration period
 
     async def add_profile(self, user_id, *, record=None):
         if not record:
@@ -268,7 +270,9 @@ class Neo(commands.Bot):
         return user
 
     async def on_guild_remove(self, guild: discord.Guild):
-        await self.delete_config(guild.id)
+        pass
+        # await self.delete_config(guild.id)
+        # TODO: Un-comment after migration period
 
     async def tree_interaction_check(self, interaction: discord.Interaction):
         # Intercept app commands
