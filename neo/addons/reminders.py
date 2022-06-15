@@ -13,7 +13,15 @@ import neo
 from discord import app_commands
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, send_confirmation, shorten, try_or_none
+from neo.tools import (
+    generate_autocomplete_list,
+    is_clear_all,
+    is_registered_profile,
+    is_valid_index,
+    send_confirmation,
+    shorten,
+    try_or_none,
+)
 from neo.tools.time_parse import TimedeltaWithYears, parse_absolute, parse_relative
 
 MAX_REMINDERS = 15
@@ -282,41 +290,25 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts = [*range(1, len(self.reminders[interaction.user.id]) + 1)][:24]
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
-                map(str, opts),
-            )
-        ]
+        reminders = [rem.content for rem in self.reminders[interaction.user.id]]
+        return generate_autocomplete_list(reminders, current)
 
     @app_commands.command(name="cancel")
-    @app_commands.describe(index='A reminder index to remove, or "~" to clear all')
+    @app_commands.describe(index="A reminder index to remove")
     @is_registered_profile()
     async def remind_cancel(self, interaction: discord.Interaction, index: str):
-        """
-        Cancel 1 or more reminder by index
-
-        Passing `~` will cancel all reminders at once
-        """
-        if index.isnumeric():
-            indices = [int(index)]
-        elif index == "~":
-            indices = ["~"]
-        else:
-            raise ValueError("Invalid input for index.")
-
-        if "~" in indices:
+        """Cancel a reminder by index"""
+        if is_clear_all(index):
             reminders = self.reminders[interaction.user.id].copy()
-        else:
-            (indices := [*map(str, indices)]).sort(reverse=True)
+
+        elif is_valid_index(index):
             try:
-                reminders = [
-                    self.reminders[interaction.user.id].pop(index - 1)
-                    for index in map(int, filter(str.isdigit, indices))
-                ]
+                reminders = [self.reminders[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
+
+        else:
+            raise TypeError("Invalid input provided.")
 
         for reminder in reminders:
             await reminder.delete()
@@ -329,14 +321,8 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts: list[str | int] = ["~"]
-        opts.extend([*range(1, len(self.reminders[interaction.user.id]) + 1)][:24])
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-                map(str, opts),
-            )
-        ]
+        reminders = [rem.content for rem in self.reminders[interaction.user.id]]
+        return generate_autocomplete_list(reminders, current, insert_wildcard=True)
 
 
 async def setup(bot: neo.Neo):

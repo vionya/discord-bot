@@ -17,7 +17,13 @@ from neo.classes.containers import TimedSet
 from neo.classes.partials import PartialUser
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, send_confirmation
+from neo.tools import (
+    generate_autocomplete_list,
+    is_clear_all,
+    is_registered_profile,
+    is_valid_index,
+    send_confirmation
+)
 
 if TYPE_CHECKING:
     from neo.classes.containers import NeoUser
@@ -349,38 +355,22 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         await send_confirmation(interaction)
 
     @app_commands.command(name="remove")
-    @app_commands.describe(
-        index='A highlight index to remove, or "~" to clear all highlights'
-    )
+    @app_commands.describe(index="A highlight index to remove")
     @is_registered_profile()
     async def highlight_remove(self, interaction: discord.Interaction, index: str):
-        """
-        Remove a highlight by index
-
-        Passing `~` will remove all highlights at once
-        """
-        if index.isnumeric():
-            indices = [int(index)]
-        elif index == "~":
-            indices = ["~"]
-        else:
-            raise ValueError("Invalid input for index.")
-
-        if "~" in indices:
+        """Remove a highlight by index"""
+        if is_clear_all(index):
             highlights = self.highlights.get(interaction.user.id, []).copy()
             self.highlights.pop(interaction.user.id, None)
 
-        else:
-            (indices := [*map(str, indices)]).sort(
-                reverse=True
-            )  # Pop in an way that preserves the list's original order
+        elif is_valid_index(index):
             try:
-                highlights = [
-                    self.highlights[interaction.user.id].pop(index - 1)
-                    for index in map(int, filter(str.isdigit, indices))
-                ]
+                highlights = [self.highlights[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
+
+        else:
+            raise TypeError("Invalid input provided.")
 
         await self.bot.db.execute(
             """
@@ -403,14 +393,10 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts: list[str | int] = ["~"]
-        opts.extend([*range(1, len(self.highlights[interaction.user.id]) + 1)][:24])
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-                map(str, opts),
-            )
+        highlights = [
+            highlight.content for highlight in self.highlights[interaction.user.id]
         ]
+        return generate_autocomplete_list(highlights, current, insert_wildcard=True)
 
     def perform_blocklist_action(
         self, *, profile: NeoUser, ids: list[int], action="block"

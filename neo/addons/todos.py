@@ -14,7 +14,14 @@ from discord import app_commands
 from discord.utils import escape_markdown
 from neo.addons.auxiliary.todos import TodoEditModal
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, send_confirmation, shorten
+from neo.tools import (
+    generate_autocomplete_list,
+    is_clear_all,
+    is_registered_profile,
+    is_valid_index,
+    send_confirmation,
+    shorten
+)
 from neo.tools.decorators import no_defer
 
 MAX_TODOS = 100
@@ -127,41 +134,32 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await send_confirmation(interaction)
 
     @app_commands.command(name="remove")
-    @app_commands.describe(index='A todo index to remove, or "~" to clear all')
+    @app_commands.describe(index="A todo index to remove")
+    @app_commands.rename(index="index")
     @is_registered_profile()
-    async def todo_remove(self, interaction: discord.Interaction, index: str):
-        """
-        Remove a todo by index
-
-        Passing `~` will remove all todos at once
-        """
-        if index.isnumeric():
-            indices = [int(index)]
-        elif index == "~":
-            indices = ["~"]
-        else:
-            raise ValueError("Invalid input for index.")
-
-        if "~" in indices:
+    async def todo_remove(
+        self,
+        interaction: discord.Interaction,
+        index: str,
+    ):
+        """Remove a todo by index"""
+        if is_clear_all(index):
             todos = self.todos[interaction.user.id].copy()
             self.todos[interaction.user.id].clear()
 
-        else:
-            (indices := [*map(str, indices)]).sort(
-                reverse=True
-            )  # Pop in an way that preserves the list's original order
+        elif is_valid_index(index):
             try:
-                todos = [
-                    self.todos[interaction.user.id].pop(index - 1)
-                    for index in map(int, filter(str.isdigit, indices))
-                ]
+                todos = [self.todos[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
+
+        else:
+            raise TypeError("Invalid input provided.")
 
         await self.bot.db.execute(
             """
             DELETE FROM todos WHERE
-                todo_id=ANY($1::TEXT[]) AND
+                todo_id=ANY($1::UUID[]) AND
                 user_id=$2
             """,
             [*map(attrgetter("todo_id"), todos)],
@@ -176,14 +174,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts: list[str | int] = ["~"]
-        opts.extend([*range(1, len(self.todos[interaction.user.id]) + 1)][:24])
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-                map(str, opts),
-            )
-        ]
+        todos = [todo.content for todo in self.todos[interaction.user.id]]
+        return generate_autocomplete_list(todos, current, insert_wildcard=True)
 
     @app_commands.command(name="view")
     @app_commands.describe(index="A todo index to view")
@@ -233,13 +225,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts = [*range(1, len(self.todos[interaction.user.id]) + 1)][:24]
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
-                map(str, opts),
-            )
-        ]
+        todos = [todo.content for todo in self.todos[interaction.user.id]]
+        return generate_autocomplete_list(todos, current)
 
 
 async def setup(bot):
