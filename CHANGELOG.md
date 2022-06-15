@@ -2,8 +2,25 @@
 ## Breaking Changes
 * With the release of major version 1.0.0, text command support has been dropped
 
+## Additions
+* Overhauled the `todo edit` command
+    * When invoking the command, the previous content of the todo is now prefilled in a modal, which can now be used to edit the content without overwriting it entirely
+* Updated the `choose` command
+    * Now allows up to 5 different options
+    * 2 options are required at minimum
+* Changes to `starboard`, `server`, and `profile` settings systems
+    * The settings based commands now all live under a `settings` sub-group. This means that in order to access, for example, the list of profile settings, the command will look like `/profile settings list`. This syntax holds true for all three groups
+
 ## Improvements
 * The `ephemeral` param for all slash commands has been renamed to `private` to make usage more intuitive
+* Invite scopes explicitly cover `bot` and `applications.commands` now
+* Autocomplete for all commands which require an index has been overhauled to now provide a preview of the content of the item, as well as to center the indices "around" the current provided value so that more information is readily available
+
+## Removals
+* All old-style text commands have been removed (and are replaced by slash command versions)
+* The `remind in` and `remind at` commands are removed completely, with no individual slash command replacement
+    * The functionality of both is combined in `/remind set`
+* Removed server setting: `prefix`
 
 # Release v0.15.4 - June 11, 2022
 ## Important
