@@ -1,4 +1,4 @@
-# **Release v1.0.0** (TBD)
+# **Release v1.0.0** (June 20, 2022)
 
 ## Breaking Changes
 
