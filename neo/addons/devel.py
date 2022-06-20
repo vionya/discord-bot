@@ -9,11 +9,11 @@ import neo
 from discord.ext import commands
 from neo.classes.formatters import Table, format_exception
 from neo.classes.transformers import codeblock_transformer
-from neo.modules import ButtonsMenu, Pages, args
+from neo.modules import ButtonsMenu, Pages
 from neo.modules.exec import ExecWrapper, env_from_context
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Awaitable
+    from collections.abc import Awaitable, Callable
 
     from neo.classes.context import NeoContext
 
@@ -120,7 +120,9 @@ class Devel(neo.Addon):
 
         It's not a great idea to unload everything
         """
-        action_method: Callable[[str], Awaitable[None]] = getattr(self.bot, f"{action}_extension")
+        action_method: Callable[[str], Awaitable[None]] = getattr(
+            self.bot, f"{action}_extension"
+        )
         failed: list[str] = []
         if "~" in addons:
             addons = (*self.bot.extensions.keys(),)
