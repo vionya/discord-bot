@@ -84,11 +84,22 @@ def recursive_getattr(*args):
             f"recursive_getattr expected at most 3 arguments, got {len(args)}"
         )
 
-    target, attr, default = args
+    if len(args) == 3:
+        target, attr, default = args
 
-    # If the attribute isn't found on the target, return the default
-    if not hasattr(target, attr):
-        return default
+        # If a default was provided and the attribute doesn't exist on the
+        # target, return the default
+        if not hasattr(target, attr):
+            return default
+    else:
+        target, attr = args
+
+        # If a default was not provided and the attribute doesn't exist on
+        # the target, raise an AttributeError
+        if not hasattr(target, attr):
+            raise AttributeError(
+                f"'{target.__name__}' object has no attribute '{attr}'"
+            )
 
     # Get the named attribute from the target object
     found = getattr(target, attr)
