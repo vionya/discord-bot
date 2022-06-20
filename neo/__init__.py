@@ -61,10 +61,6 @@ class Neo(commands.Bot):
 
         super().__init__(**kwargs)
 
-        self.cooldown = commands.CooldownMapping.from_cooldown(
-            2, 4, commands.BucketType.user
-        )
-        self.add_check(self.global_cooldown, call_once=True)  # Register global cooldown
         self.add_check(
             self.channel_check, call_once=True
         )  # Register channel disabled check
@@ -234,23 +230,6 @@ class Neo(commands.Bot):
     ):
         return await super().get_context(message, cls=cls)
 
-    # TODO: Remove this if/when it's properly supported by discord.py
-    def add_command(self, command, /):
-        if isinstance(command, commands.HybridCommand | commands.HybridGroup):
-            if command.app_command is not None and all(
-                [
-                    command.with_app_command,
-                    command.cog is None
-                    or not command.cog.__cog_is_app_commands_group__,
-                ]
-            ):
-                self.tree.add_command(command.app_command)
-            if getattr(command, "with_command", True):
-                commands.GroupMixin.add_command(self, command)
-            return
-        else:
-            super().add_command(command)
-
     def get_user(self, id, *, as_partial=False):
         user = self._connection.get_user(id)
         if as_partial or not user:
@@ -280,21 +259,6 @@ class Neo(commands.Bot):
                 # If it fails, then re-raise it wrapped in an invoke error
                 raise discord.app_commands.CommandInvokeError(interaction.command, e)
 
-        return True
-
-    async def global_cooldown(self, ctx: context.NeoContext):
-        if await self.is_owner(ctx.author):
-            return True
-
-        retry_after = self.cooldown.update_rate_limit(ctx.message)
-        actual_cooldown = self.cooldown._cooldown
-        if not actual_cooldown:
-            return True
-
-        if retry_after:
-            raise commands.CommandOnCooldown(
-                actual_cooldown, retry_after, commands.BucketType.user
-            )
         return True
 
     async def channel_check(self, ctx: context.NeoContext):
