@@ -49,13 +49,13 @@ def bool_transformer(maybe_bool: str) -> bool:
         return True
     elif normalized in ("no", "n", "false", "f", "0", "disable", "off"):
         return False
-    raise ValueError("Value must be interpretable as a boolean")
+    raise ValueError("Value must be interpretable as a boolean.")
 
 
 @wrap_transformer
 def codeblock_transformer(codeblock: str) -> str:
     new = None
-    if all([codeblock.startswith("`"), codeblock.endswith("`")]):
+    if codeblock.startswith("`") and codeblock.endswith("`"):
         new = codeblock.strip("`")
         return re.sub(CODEBLOCK_REGEX, "", new)
     return codeblock
@@ -81,22 +81,22 @@ def mention_transformer(mention: str) -> int:
 
 @wrap_transformer
 def timeout_transformer(provided_timeout: str) -> int:
-    if not provided_timeout.isdigit():
+    if not provided_timeout.isnumeric():
         raise ValueError("`timeout` must be a number.")
 
     timeout = int(provided_timeout)
-    if not (timeout >= 1 and timeout <= 5):
-        raise ValueError("`timeout` must be between 1 and 5 (inclusive).")
+    if not 1 <= timeout <= 5:
+        raise ValueError("`timeout` must be between 1 and 5.")
     return timeout
 
 
 @wrap_transformer
 def max_days_transformer(provided_max_days: str) -> int:
-    if not provided_max_days.isdigit():
+    if not provided_max_days.isnumeric():
         raise ValueError("`max_days` must be a number.")
 
     max_days = int(provided_max_days)
-    if not max_days > 1:
+    if max_days < 1:
         raise ValueError("`max_days` may not be less than 1.")
     return max_days
 
@@ -109,9 +109,7 @@ class text_channel_transformer(Transformer):
         if not interaction.guild:
             raise AttributeError("This must be used in a guild.")
 
-        match = EXTRACT_CHANNEL_REGEX.match(value)
-
-        if match:
+        if match := EXTRACT_CHANNEL_REGEX.match(value):
             channel_id = int(match.group(1))
 
             if isinstance(
@@ -120,7 +118,7 @@ class text_channel_transformer(Transformer):
             ):
                 return channel
             else:
-                raise TypeError("A valid text channel must be provided")
+                raise TypeError("A valid text channel must be provided.")
 
         else:
             try:
@@ -131,7 +129,7 @@ class text_channel_transformer(Transformer):
                     )
                 )
             except StopIteration:
-                raise TypeError("A valid text channel must be provided")
+                raise TypeError("A valid text channel must be provided.")
 
 
 class command_transformer(Transformer):
