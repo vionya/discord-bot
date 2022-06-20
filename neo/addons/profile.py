@@ -10,9 +10,9 @@ import discord
 import neo
 from discord import app_commands
 from neo.classes.transformers import (
-    bool_converter,
-    timeout_converter,
-    timezone_converter,
+    bool_transformer,
+    timeout_transformer,
+    timezone_transformer,
 )
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, instantiate, is_registered_profile, prompt_user
@@ -26,13 +26,13 @@ if TYPE_CHECKING:
 
 SETTINGS_MAPPING: SettingsMapping = {
     "receive_highlights": {
-        "transformer": bool_converter,
+        "transformer": bool_transformer,
         "description": None,
     },
-    "timezone": {"transformer": timezone_converter, "description": None},
-    "hl_timeout": {"transformer": timeout_converter, "description": None},
+    "timezone": {"transformer": timezone_transformer, "description": None},
+    "hl_timeout": {"transformer": timeout_transformer, "description": None},
     "default_ephemeral": {
-        "transformer": bool_converter,
+        "transformer": bool_transformer,
         "description": None,
     },
 }

@@ -10,7 +10,7 @@ import discord
 import neo
 from discord import app_commands
 from neo.classes.containers import TimedCache
-from neo.classes.transformers import max_days_converter, text_channel_transformer
+from neo.classes.transformers import max_days_transformer, text_channel_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import convert_setting, instantiate, shorten
 from neo.tools.checks import valid_starboard_env
@@ -25,7 +25,7 @@ SETTINGS_MAPPING: SettingsMapping = {
     "channel": {"transformer": text_channel_transformer, "description": None},
     "threshold": {"transformer": int, "description": None},
     "format": {"transformer": str, "description": None},
-    "max_days": {"transformer": max_days_converter, "description": None},
+    "max_days": {"transformer": max_days_transformer, "description": None},
     "emoji": {"transformer": discord.PartialEmoji.from_str, "description": None},
 }
 

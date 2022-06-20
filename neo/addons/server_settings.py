@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from neo.classes.transformers import bool_converter, command_converter
+from neo.classes.transformers import bool_transformer, command_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import (
     convert_setting,
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 SETTINGS_MAPPING: SettingsMapping = {
     "starboard": {
-        "transformer": bool_converter,
+        "transformer": bool_transformer,
         "description": None,
     },
 }
@@ -297,7 +297,7 @@ class ServerConfig(
         self,
         interaction: discord.Interaction,
         *,
-        command: Optional[app_commands.Transform[AnyCommand, command_converter]],
+        command: Optional[app_commands.Transform[AnyCommand, command_transformer]],
     ):
         """
         Disables a command in the server. Run without arguments to view
@@ -347,7 +347,7 @@ class ServerConfig(
         self,
         interaction: discord.Interaction,
         *,
-        command: app_commands.Transform[AnyCommand, command_converter],
+        command: app_commands.Transform[AnyCommand, command_transformer],
     ):
         """Re-enables a disabled command"""
         assert interaction.guild

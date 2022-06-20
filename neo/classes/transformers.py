@@ -25,7 +25,7 @@ class WrapperTransformer(Transformer):
     wrapped: Callable[[str], Any]
 
 
-def wrap_transformer(func: Callable[[str], Any]) -> WrapperTransformer:
+def wrap_transformer(func: Callable[[str], Any]) -> type[WrapperTransformer]:
     class Wrapper(WrapperTransformer):
         def __init__(self) -> None:
             super().__init__()
@@ -39,11 +39,11 @@ def wrap_transformer(func: Callable[[str], Any]) -> WrapperTransformer:
         ) -> Any:
             return func(value)
 
-    return Wrapper()
+    return Wrapper
 
 
 @wrap_transformer
-def bool_converter(maybe_bool: str) -> bool:
+def bool_transformer(maybe_bool: str) -> bool:
     normalized = maybe_bool.casefold()
     if normalized in ("yes", "y", "true", "t", "1", "enable", "on"):
         return True
@@ -53,7 +53,7 @@ def bool_converter(maybe_bool: str) -> bool:
 
 
 @wrap_transformer
-def codeblock_converter(codeblock: str) -> str:
+def codeblock_transformer(codeblock: str) -> str:
     new = None
     if all([codeblock.startswith("`"), codeblock.endswith("`")]):
         new = codeblock.strip("`")
@@ -62,7 +62,7 @@ def codeblock_converter(codeblock: str) -> str:
 
 
 @wrap_transformer
-def timezone_converter(timezone: str) -> str:
+def timezone_transformer(timezone: str) -> str:
     try:
         zone = zoneinfo.ZoneInfo(timezone)
     except zoneinfo.ZoneInfoNotFoundError:
@@ -71,7 +71,7 @@ def timezone_converter(timezone: str) -> str:
 
 
 @wrap_transformer
-def mention_converter(mention: str) -> int:
+def mention_transformer(mention: str) -> int:
     match = EXTRACT_MENTION_REGEX.match(mention)
     if not match:
         raise ValueError("Could not find a valid mention.")
@@ -80,7 +80,7 @@ def mention_converter(mention: str) -> int:
 
 
 @wrap_transformer
-def timeout_converter(provided_timeout: str) -> int:
+def timeout_transformer(provided_timeout: str) -> int:
     if not provided_timeout.isdigit():
         raise ValueError("`timeout` must be a number.")
 
@@ -91,7 +91,7 @@ def timeout_converter(provided_timeout: str) -> int:
 
 
 @wrap_transformer
-def max_days_converter(provided_max_days: str) -> int:
+def max_days_transformer(provided_max_days: str) -> int:
     if not provided_max_days.isdigit():
         raise ValueError("`max_days` must be a number.")
 
@@ -134,7 +134,7 @@ class text_channel_transformer(Transformer):
                 raise TypeError("A valid text channel must be provided")
 
 
-class command_converter(Transformer):
+class command_transformer(Transformer):
     @classmethod
     def transform(
         cls, interaction: discord.Interaction, command_name: str

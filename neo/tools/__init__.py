@@ -54,10 +54,12 @@ async def convert_setting(
     value = None
 
     transformer = valid_setting["transformer"]
-    if isinstance(transformer, app_commands.Transformer):
+    if isinstance(transformer, type) and issubclass(
+        transformer, app_commands.Transformer
+    ):
         if (
             converted := await utils.maybe_coroutine(
-                transformer.transform, interaction, new_value
+                transformer().transform, interaction, new_value
             )
         ) is not None:
             value = converted

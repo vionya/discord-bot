@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class SettingData(TypedDict):
-    transformer: Transformer | Callable[[str], Any]
+    transformer: type[Transformer] | Callable[[str], Any]
     description: Optional[str]
 
 
