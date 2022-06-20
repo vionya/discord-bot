@@ -87,6 +87,7 @@ class InviteDropdown(discord.ui.Select["InviteMenu"]):
 
         url = discord.utils.oauth_url(
             self.view.application_id,
+            scopes=('bot', 'applications.commands'),  # extra assurance in case the default changes
             permissions=discord.Permissions(int(self.values[0])),
         )
         await interaction.response.send_message(

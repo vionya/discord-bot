@@ -21,6 +21,17 @@ def format_exception(exc: BaseException | OptExcInfo) -> str:
     return "".join(traceback.format_exception(*exc_info)).rstrip()
 
 
+def shorten(text: str, width: int) -> str:
+    if len(text) > width:
+        text = text[: width - 3] + "..."
+    return text
+
+
+def humanize_snake_case(text: str) -> str:
+    """Transform a snake_case variable name to a human-friendly representation"""
+    return text.replace("_", " ").title()
+
+
 class Table:
     built_columns: str
     built_rows: str
@@ -34,30 +45,38 @@ class Table:
 
     def init_columns(self, *columns: str):
         self.columns = [*columns]
+        # 4 spaces of padding around each column
         self.widths = [len(col) + 4 for col in columns]
 
     def add_row(self, *row: str):
         if len(row) > len(self.columns):
             raise ValueError("Row has too many columns")
-        self.rows.append([*row])
 
+        self.rows.append([*row])
         for index, item in enumerate(row):
             if (len(item) + 4) > self.widths[index]:
+                # If the length of the value exceeds the initial column width,
+                # it's re-calculated to meet the maximum width in the data
                 self.widths[index] = len(item) + 4
 
     def build(self):
-        cols = []
+        cols: list[str] = []
         for index, col in enumerate(self.columns):
+            # Center the column header within the padding determined by
+            # the added rows
             cols.append(col.center(self.widths[index]))
         self.built_columns = "|" + "|".join(cols) + "|"
 
+        # Put a "+" at each column separator, in between "-"s
         separator = "+".join("-" * w for w in self.widths)
         self.border = "+" + separator + "+"
 
         rows: list[str] = []
         for row in self.rows:
-            final_row = []
+            final_row: list[str] = []
             for index, item in enumerate(row):
+                # For each row, repeat the same process as done for the
+                # column headers, centering based on calculated width
                 final_row.append(item.center(self.widths[index]))
             rows.append("|" + "|".join(final_row) + "|")
         self.built_rows = "\n".join(rows)
@@ -90,6 +109,16 @@ class Color(Enum):
         return obj
 
     def __call__(self, string: str):  # Is this considered a crime?
+        """
+        Apply the ANSI color to the provided string
+
+        Trailing resets are provided as well
+
+        ```py
+        >>> Color.PURPLE("foo")
+        "\\033[38;2;162;155;254mfoo\\033[0m"
+        ```
+        """
         return f"{self.value}{string}{Color.RESET.value}"
 
 

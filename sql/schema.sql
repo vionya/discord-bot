@@ -12,7 +12,6 @@ CREATE TABLE profiles (
 
 CREATE TABLE guild_configs (
     guild_id          BIGINT PRIMARY KEY,
-    prefix            TEXT DEFAULT 'n!',
     starboard         BOOLEAN DEFAULT FALSE,
     disabled_channels BIGINT[] DEFAULT ARRAY[]::BIGINT[],
     disabled_commands TEXT[] DEFAULT ARRAY[]::TEXT[]
@@ -28,9 +27,8 @@ CREATE TABLE highlights (
 CREATE TABLE todos (
     user_id    BIGINT NOT NULL,
     content    TEXT NOT NULL,
-    guild_id   TEXT NOT NULL, -- This can be an ID or @me, so we have to be inclusive
-    channel_id BIGINT NOT NULL,
-    message_id BIGINT NOT NULL,
+    todo_id    UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     edited     BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
 );
@@ -60,10 +58,9 @@ CREATE TABLE stars (
 );
 
 CREATE TABLE reminders (
-    user_id    BIGINT NOT NULL,
-    message_id BIGINT NOT NULL,
-    channel_id BIGINT NOT NULL,
-    content    VARCHAR(1000) NOT NULL,
-    end_time   TIMESTAMP WITH TIME ZONE NOT NULL,
+    user_id     BIGINT NOT NULL,
+    reminder_id UUID NOT NULL,
+    content     VARCHAR(1000) NOT NULL,
+    end_time    TIMESTAMP WITH TIME ZONE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
 );

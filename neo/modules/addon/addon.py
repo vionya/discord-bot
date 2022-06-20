@@ -2,18 +2,16 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from collections.abc import Coroutine
+from collections.abc import Awaitable, Callable
 from itertools import chain
 from types import MethodType
-from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeGuard, cast
+from typing import Any, Protocol, TypeGuard, cast
 
+from discord import app_commands
 from discord.ext import commands
 from typing_extensions import Self
 
-if TYPE_CHECKING:
-    from discord import app_commands
-
-ReceiverRet = Any | Coroutine[None, None, Any]
+ReceiverRet = Any | Awaitable[Any]
 
 
 class Receiver(Protocol):
@@ -32,6 +30,8 @@ class AddonMeta(commands.CogMeta):
     __receivers__: dict[str, Receiver]
 
     def __new__(cls, _name, bases, attrs, **kwargs) -> Self:
+        is_app_group = kwargs.pop("app_group", None)
+
         _cls = cast(Self, super().__new__(cls, _name, bases, attrs, **kwargs))
 
         receivers = {}
@@ -41,12 +41,26 @@ class AddonMeta(commands.CogMeta):
                 recv_func = attr
                 receivers[recv_func.__event_name__] = recv_func
 
+        if is_app_group:
+            setattr(_cls, "__cog_is_app_commands_group__", True)
+
         _cls.__receivers__ = receivers
         return _cls
 
 
 class Addon(commands.Cog, metaclass=AddonMeta):
     __receivers__: dict[str, Receiver]
+
+    def __new__(cls, *args, **kwargs) -> Self:
+        instance = super().__new__(cls, *args, **kwargs)
+
+        for cmd in instance.__cog_app_commands__:
+            setattr(cmd, "addon", instance)
+
+        if grp := instance.__cog_app_commands_group__:
+            setattr(grp, "addon", instance)
+
+        return instance
 
     def __init__(self, bot):
         """
@@ -143,6 +157,9 @@ class Addon(commands.Cog, metaclass=AddonMeta):
     ]:
         return [
             c
-            for c in chain(self.__cog_commands__, self.__cog_app_commands__)
-            if c.parent is None
+            for c in chain(
+                self.__cog_commands__,
+                self.__cog_app_commands__,
+            )
+            if c.parent in (None, self.__cog_app_commands_group__, self)
         ]

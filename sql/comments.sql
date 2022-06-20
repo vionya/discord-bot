@@ -47,16 +47,6 @@ Default Value: `True`
 ';
 
 -- Table: guild_configs | Documentation for settings --
-COMMENT ON COLUMN guild_configs.prefix IS
-'Sets the bot''s prefix for the server.
-Pinging the bot is always an alternative prefix.
-
-Expected Value Type: A string of text
-Default Value: `n!`
-
-**Current Value:** `{}`
-';
-
 COMMENT ON COLUMN guild_configs.starboard IS
 'Controls whether the server''s starboard is enabled.
 

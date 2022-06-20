@@ -1,9 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
-from .formatters import format_exception
+from ..tools.formatters import format_exception
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 
 class PeriodicTimer:
@@ -11,14 +17,14 @@ class PeriodicTimer:
 
     __slots__ = ("callback", "interval", "instance", "is_stopped", "logger", "task")
 
-    def __init__(self, callback, interval: int):
+    def __init__(self, callback: Callable[..., Awaitable[None]], interval: int):
         self.callback = callback
         self.interval = interval
         self.instance = None
         self.is_stopped = False
         self.logger = logging.getLogger(callback.__module__)
 
-    def __get__(self, instance: object | None, owner):
+    def __get__(self, instance: object | None, cls):
         if instance is None:
             return self
 
@@ -51,7 +57,7 @@ class PeriodicTimer:
 
 
 def periodic(interval: int = 60):
-    def inner(func):
+    def inner(func: Callable[..., Awaitable[None]]) -> PeriodicTimer:
         return PeriodicTimer(func, interval)
 
     return inner

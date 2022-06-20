@@ -6,24 +6,21 @@ import asyncio
 import random
 from collections import Counter
 from functools import partial
-from operator import attrgetter
 from sys import version as py_version
 from typing import Optional
 
 import discord
 import neo
-from discord.ext import commands
+from discord import app_commands
 from googletrans import LANGUAGES, Translator
-from neo.classes.context import NeoContext
-from neo.classes.formatters import Table
-from neo.modules import DropdownMenu, EmbedPages, args, cse, dictionary
-from neo.tools import shorten, parse_ids, deprecate
+from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
+from neo.tools import parse_ids, shorten
+from neo.tools.formatters import Table
 
 from .auxiliary.utility import (
     InfoButtons,
     SwappableEmbedButton,
     definitions_to_embed,
-    get_translation_kwargs,
     result_to_embed,
     translate,
 )
@@ -127,53 +124,20 @@ class Utility(neo.Addon):
         )
         self.bot.add_view(self.info_buttons())
 
-    # Create a fake slash command which directly invokes the help command
-    # Uses `app_command_name` to falsify the command without interfering with
-    # the actual command instance
-    @discord.app_commands.command(name="help")
-    @discord.app_commands.describe(command="The command to get help for")
-    async def help_slash(
-        self, interaction: discord.Interaction, *, command: Optional[str] = None
-    ):
-        """Displays help for the bot"""
-        if self.bot.help_command is None:
-            return
-
-        ctx = await NeoContext.from_interaction(interaction)
-        self.bot.help_command.context = ctx
-        await self.bot.help_command.command_callback(ctx, command=command)
-
-    @help_slash.autocomplete("command")
-    async def help_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> list[discord.app_commands.Choice]:
-        all_commands = set(
-            [
-                *map(attrgetter("qualified_name"), self.bot.walk_commands()),
-                *map(attrgetter("qualified_name"), self.bot.tree.walk_commands()),
-            ]
-        )
-        return [
-            *map(
-                lambda k: discord.app_commands.Choice(name=k, value=k),
-                filter(lambda k: current in k, all_commands),
-            )
-        ][:25]
-
-    @commands.hybrid_command(name="google", aliases=["g"])
-    @discord.app_commands.describe(query="The query to search for")
-    async def google_command(self, ctx, *, query: str):
+    @app_commands.command(name="google")
+    @app_commands.describe(query="The query to search for")
+    async def google_command(self, interaction: discord.Interaction, query: str):
         """Search Google for a query"""
-        await self.google_command_callback(ctx, query)
+        await self.google_command_callback(interaction, query)
 
-    @commands.hybrid_command(name="image", aliases=["i"])
-    @discord.app_commands.describe(query="The query to search for")
-    async def google_image_command(self, ctx, *, query: str):
+    @app_commands.command(name="image")
+    @app_commands.describe(query="The query to search for")
+    async def google_image_command(self, interaction: discord.Interaction, query: str):
         """Search Google Images for a query"""
-        await self.google_command_callback(ctx, query, True)
+        await self.google_command_callback(interaction, query, True)
 
     async def google_command_callback(
-        self, ctx: NeoContext, query: str, image: bool = False
+        self, interaction: discord.Interaction, query: str, image: bool = False
     ):
         resp = await self.google.search(query, image=image)
 
@@ -185,32 +149,10 @@ class Utility(neo.Addon):
         menu = DropdownMenu.from_pages(
             pages, embed_auto_label=True, embed_auto_desc=True
         )
-        await menu.start(ctx)
+        await menu.start(interaction)
 
-    @args.add_arg("word", nargs="+", help="The word to search a dictionary for")
-    @args.command(name="define")
-    @deprecate(reason="Use the `/define` slash command instead")
-    async def dictionary_command(self, ctx, *, query):
-        """Search the dictionary for a word's definition"""
-        try:
-            resp = await self.dictionary.define(" ".join(query.word))
-        except dictionary.DefinitionError:
-            raise RuntimeError("No definition found")
-
-        embeds = []
-        for word in resp.words:
-            embeds.extend(definitions_to_embed(word))
-        if not embeds:
-            raise RuntimeError("No definition found")
-
-        pages = EmbedPages(embeds)
-        menu = DropdownMenu.from_pages(
-            pages, embed_auto_label=True, embed_auto_desc=True
-        )
-        await menu.start(ctx)
-
-    @discord.app_commands.command(name="define")
-    @discord.app_commands.describe(term="The term to search the dictionary for")
+    @app_commands.command(name="define")
+    @app_commands.describe(term="The term to search the dictionary for")
     async def dictionary_app_command(self, interaction: discord.Interaction, term: str):
         """Search for a term's dictionary definition"""
         try:
@@ -230,40 +172,13 @@ class Utility(neo.Addon):
         )
         await menu.start(interaction)
 
-    @commands.command(name="translate", aliases=["tr"], usage="[directive] <content>")
-    @deprecate(reason="Use the `/translate` slash command instead")
-    async def translation_command(self, ctx, *, input):
-        """
-        Translate a string of text
-
-        If just a string of text is supplied, the source language will be
-        auto-detected and translated to English.
-        Ex: `translate amigo`
-
-        To translate between particular languages, use the `->` operator.
-        Ex: `translate en->ja Hello` *Translates "hello" to Japanese*
-        Ex: `translate *->ja Hello` *Same as above, but auto-detects source language*
-        """
-        content, kwargs = get_translation_kwargs(input)
-        translated = await translate(self.translator, content, **kwargs)
-        embed = neo.Embed(
-            description=f"**Source Language** `{kwargs['src']}` "
-            f"[{LANGUAGES.get(translated.src, 'Auto-Detected').title()}]"
-            f"\n**Destination Language** {LANGUAGES.get(translated.dest, 'Unknown').title()}"
-        ).add_field(
-            name="Translated Content",
-            value=shorten(translated.text, 1024),
-            inline=False,
-        )
-        await ctx.send(embed=embed)
-
-    @discord.app_commands.command(name="translate")
-    @discord.app_commands.describe(
+    @app_commands.command(name="translate")
+    @app_commands.describe(
         source="The language to translate from. Default 'en'",
         destination="The language to translate to. Default 'en'",
         content="The content to translate",
     )
-    @discord.app_commands.rename(source="from", destination="to")
+    @app_commands.rename(source="from", destination="to")
     async def translate_app_command(
         self,
         interaction: discord.Interaction,
@@ -288,62 +203,16 @@ class Utility(neo.Addon):
         )
         await interaction.response.send_message(embeds=[embed])
 
-    @commands.guild_only()
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.has_permissions(manage_messages=True)
-    @args.add_arg(
-        "limit", type=int, default=5, nargs="?", help="The number of messages to clear"
-    )
-    @args.add_arg(
-        "-b",
-        "--before",
-        type=int,
-        help="Purge only messages before the message with the provided ID",
-    )
-    @args.add_arg(
-        "-a",
-        "--after",
-        type=int,
-        help="Purge only messages after the message with the provided ID",
-    )
-    @args.add_arg(
-        "-u",
-        "--user",
-        type=commands.MemberConverter,
-        action="append",
-        help="Purge only messages from the given member (can be used"
-        " multiple times to select multiple)",
-    )
-    @args.command(name="purge", aliases=["c"])
-    @deprecate(reason="Use the `/clear` slash command instead")
-    async def purge_command(self, ctx, *, input):
-        """Purge messages from the current channel"""
-        purged = await ctx.channel.purge(
-            limit=min(max(input.limit, 0), 2000),
-            check=(lambda m: m.author in input.user if input.user else lambda _: True),
-            before=discord.Object(input.before) if input.before else None,
-            after=discord.Object(input.after) if input.after else None,
-        )
-
-        deleted = Counter([m.author for m in purged])
-        embed = neo.Embed(
-            title="Channel Purge Breakdown",
-            description="\n".join(
-                f"**{m.name}** {times} messages" for m, times in deleted.items()
-            ),
-        ).set_footer(text="This message will expire in 10 seconds")
-        await ctx.send(embed=embed, delete_after=10)
-
-    @discord.app_commands.command(name="clear")
-    @discord.app_commands.guild_only()
-    @discord.app_commands.describe(
+    @app_commands.command(name="clear")
+    @app_commands.guild_only()
+    @app_commands.describe(
         before="Delete only messages sent before this message ID or URL",
         after="Delete only messages sent after this message ID or URL",
         user="Delete only messages sent by this user",
         limit="The number of messages to delete",
     )
-    @discord.app_commands.checks.bot_has_permissions(manage_messages=True)
-    @discord.app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def clear_app_command(
         self,
         interaction: discord.Interaction,
@@ -372,17 +241,32 @@ class Utility(neo.Addon):
         )
         await interaction.response.send_message(embeds=[embed])
 
-    @commands.command(name="choose")
-    async def choose_command(self, ctx, *, choices: str):
-        """
-        Make a random choice from a set of options
-
-        To separate each option, use a comma (`,`)
-        Ex: `choose option a, option b, option c`
-        """
-        options = [opt.strip() for opt in choices.split(",")]
-        if len(options) < 2:
-            raise ValueError("At least 2 options must be provided")
+    @app_commands.command(name="choose")
+    @app_commands.rename(
+        opt_0="option-1",
+        opt_1="option-2",
+        opt_2="option-3",
+        opt_3="option-4",
+        opt_4="option-5",
+    )
+    @app_commands.describe(
+        opt_0="The first choice to choose from",
+        opt_1="The second choice to choose from",
+        opt_2="The third choice to choose from (optional)",
+        opt_3="The fourth choice to choose from (optional)",
+        opt_4="The fifth choice to choose from (optional)",
+    )
+    async def choose_command(
+        self,
+        interaction: discord.Interaction,
+        opt_0: str,
+        opt_1: str,
+        opt_2: Optional[str] = None,
+        opt_3: Optional[str] = None,
+        opt_4: Optional[str] = None,
+    ):
+        """Make a (pseudo-)random choice from up to 5 different options"""
+        options = [opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt]
 
         data = Counter(random.choice(options) for _ in range(1000))
 
@@ -398,20 +282,20 @@ class Utility(neo.Addon):
                 name="Selection", value=f"`{shorten(data.most_common(1)[0][0], 250)}`"
             )
             .set_author(
-                name=f"{ctx.author}'s choice results",
-                icon_url=ctx.author.display_avatar,
+                name=f"{interaction.user}'s choice results",
+                icon_url=interaction.user.display_avatar,
             )
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     # Information commands below
 
-    @commands.hybrid_command(name="avatar", aliases=["av", "avy", "pfp"])
-    @discord.app_commands.describe(
-        user="The user to get the avatar of. Yourself if empty"
-    )
+    @app_commands.command(name="avatar")
+    @app_commands.describe(user="The user to get the avatar of. Yourself if empty")
     async def avatar_command(
-        self, ctx: NeoContext, *, user: Optional[discord.User | discord.Member] = None
+        self,
+        interaction: discord.Interaction,
+        user: Optional[discord.User | discord.Member] = None,
     ):
         """Retrieves the avatar of yourself, or a specified user"""
         kwargs = {}
@@ -419,9 +303,9 @@ class Utility(neo.Addon):
         embed.description = ""
 
         if isinstance(user, neo.partials.PartialUser) or user is None:
-            id = (user or ctx.author).id
+            id = (user or interaction.user).id
             try:
-                user_object = await ctx.guild.fetch_member(id)  # type: ignore
+                user_object = await interaction.guild.fetch_member(id)  # type: ignore
             except (discord.HTTPException, AttributeError):
                 user_object = await self.bot.fetch_user(id)
 
@@ -449,26 +333,26 @@ class Utility(neo.Addon):
         )
         embed = embed.set_image(url=avatar).set_author(name=user_object)
 
-        await ctx.send(embed=embed, **kwargs)
+        await interaction.response.send_message(embed=embed, **kwargs)
 
     # Context menu command added in __init__
     async def avatar_context_command(
         self, interaction: discord.Interaction, user: discord.Member | discord.User
     ):
-        ctx = await NeoContext.from_interaction(interaction)
-        ctx.interaction.namespace.ephemeral = True  # type: ignore
-        await self.avatar_command(ctx, user=user)
+        await self.avatar_command.callback(self, interaction, user)  # type: ignore
 
-    @commands.hybrid_command(name="userinfo", aliases=["ui"])
-    @discord.app_commands.describe(user="The user to get info about. Yourself if empty")
+    @app_commands.command(name="userinfo")
+    @app_commands.describe(user="The user to get info about. Yourself if empty")
     async def user_info_command(
-        self, ctx: NeoContext, user: Optional[discord.Member | discord.User] = None
+        self,
+        interaction: discord.Interaction,
+        user: Optional[discord.Member | discord.User] = None,
     ):
         """Retrieves information of yourself, or a specified user"""
         if isinstance(user, neo.partials.PartialUser) or user is None:
-            id = (user or ctx.author).id
+            id = (user or interaction.user).id
             try:
-                user_object = await ctx.guild.fetch_member(id)  # type: ignore
+                user_object = await interaction.guild.fetch_member(id)  # type: ignore
             except (discord.HTTPException, AttributeError):
                 user_object = await self.bot.fetch_user(id)
 
@@ -498,13 +382,13 @@ class Utility(neo.Addon):
                 + title
             )
 
-        if isinstance(user_object, discord.Member) and ctx.guild:
+        if isinstance(user_object, discord.Member) and interaction.guild:
             description += (
                 f"\n**Joined Server** <t:{int(user_object.joined_at.timestamp())}:D>"
                 if user_object.joined_at
                 else ""
             )
-            if user_object.id == ctx.guild.owner_id:
+            if user_object.id == interaction.guild.owner_id:
                 title = "{0} {1}".format(ICON_MAPPING["guild_owner"], title)
 
         embed.title = title
@@ -512,64 +396,62 @@ class Utility(neo.Addon):
 
         content = None
         if (
-            ctx.interaction
-            and ctx.guild
-            and not ctx.guild.default_role.permissions.external_emojis
+            interaction.guild
+            and not interaction.guild.default_role.permissions.external_emojis
         ):
             content = (
                 'Make sure @everyone has "Use External Emoji" permissions, otherwise'
                 " `userinfo` can't properly display icons!"
             )
 
-        await ctx.send(content=content, embed=embed)
+        await interaction.response.send_message(content=content, embed=embed)
 
     # Context menu command added in __init__
     async def user_info_context_command(
         self, interaction: discord.Interaction, user: discord.Member | discord.User
     ):
-        ctx = await NeoContext.from_interaction(interaction)
-        ctx.interaction.namespace.ephemeral = True  # type: ignore
-        await self.user_info_command(ctx, user)
+        await self.user_info_command.callback(self, interaction, user)  # type: ignore
 
-    @commands.guild_only()
-    @commands.hybrid_command(name="serverinfo", aliases=["si"])
-    async def guild_info_command(self, ctx: NeoContext):
+    @app_commands.guild_only()
+    @app_commands.command(name="serverinfo")
+    async def guild_info_command(self, interaction: discord.Interaction):
         """Retrieves information about the current server"""
         # The guild_only check guarantees that this will always work
-        assert ctx.guild
+        assert interaction.guild
 
-        animated_emotes = len([e for e in ctx.guild.emojis if e.animated])
-        static_emotes = len(ctx.guild.emojis) - animated_emotes
+        animated_emotes = len([e for e in interaction.guild.emojis if e.animated])
+        static_emotes = len(interaction.guild.emojis) - animated_emotes
 
         embed = neo.Embed(
-            title=f"{PREMIUM_ICON_MAPPING[ctx.guild.premium_tier]} {ctx.guild}",
-            description=f"**Description** {ctx.guild.description}\n\n"
-            * bool(ctx.guild.description)
-            + f"**Created** <t:{int(ctx.guild.created_at.timestamp())}:D>"
-            f"\n**Owner** <@{ctx.guild.owner_id}>"
-            f"\n\n**Emotes** {static_emotes}/{ctx.guild.emoji_limit} static"
-            f" | {animated_emotes}/{ctx.guild.emoji_limit} animated"
-            f"\n**Filesize Limit** {round(ctx.guild.filesize_limit / 1_000_000)} MB"
-            f"\n**Bitrate Limit** {round(ctx.guild.bitrate_limit / 1_000)} KB/s",
-        ).set_thumbnail(url=ctx.guild.icon)
+            title=f"{PREMIUM_ICON_MAPPING[interaction.guild.premium_tier]} {interaction.guild}",
+            description=f"**Description** {interaction.guild.description}\n\n"
+            * bool(interaction.guild.description)
+            + f"**Created** <t:{int(interaction.guild.created_at.timestamp())}:D>"
+            f"\n**Owner** <@{interaction.guild.owner_id}>"
+            f"\n\n**Emotes** {static_emotes}/{interaction.guild.emoji_limit} static"
+            f" | {animated_emotes}/{interaction.guild.emoji_limit} animated"
+            f"\n**Filesize Limit** {round(interaction.guild.filesize_limit / 1_000_000)} MB"
+            f"\n**Bitrate Limit** {round(interaction.guild.bitrate_limit / 1_000)} KB/s",
+        ).set_thumbnail(url=interaction.guild.icon)
 
         content = None
         if (
-            ctx.interaction
-            and ctx.guild
-            and not ctx.guild.default_role.permissions.external_emojis
+            interaction.guild
+            and not interaction.guild.default_role.permissions.external_emojis
         ):
             content = (
                 'Make sure @everyone has "Use External Emoji" permissions, otherwise'
                 " `serverinfo` can't properly display icons!"
             )
 
-        await ctx.send(content=content, embed=embed)
+        await interaction.response.send_message(content=content, embed=embed)
 
-    @commands.guild_only()
-    @commands.hybrid_command(name="roleinfo", aliases=["ri"])
-    @discord.app_commands.describe(role="The role to get info about")
-    async def role_info_command(self, ctx: NeoContext, *, role: discord.Role):
+    @app_commands.guild_only()
+    @app_commands.command(name="roleinfo")
+    @app_commands.describe(role="The role to get info about")
+    async def role_info_command(
+        self, interaction: discord.Interaction, *, role: discord.Role
+    ):
         """
         Retrives information about the given role
 
@@ -590,21 +472,18 @@ class Utility(neo.Addon):
 
         content = None
         if (
-            ctx.interaction
-            and ctx.guild
-            and not ctx.guild.default_role.permissions.external_emojis
+            interaction.guild
+            and not interaction.guild.default_role.permissions.external_emojis
         ):
             content = (
                 'Make sure @everyone has "Use External Emoji" permissions, otherwise'
                 " `roleinfo` can't properly display icons!"
             )
 
-        await ctx.send(content=content, embed=embed)
+        await interaction.response.send_message(content=content, embed=embed)
 
-    @commands.hybrid_command(
-        name="info", aliases=["about", "invite", "support", "source", "privacy"]
-    )
-    async def neo_info_command(self, ctx: NeoContext):
+    @app_commands.command(name="info")
+    async def neo_info_command(self, interaction: discord.Interaction):
         """Show information about neo phoenix"""
         embed = neo.Embed(
             description=(
@@ -628,7 +507,7 @@ class Utility(neo.Addon):
             name=f"Developed by {self.appinfo.owner}",
             icon_url=self.appinfo.owner.display_avatar,
         )
-        await ctx.send(embed=embed, view=self.info_buttons())
+        await interaction.response.send_message(embed=embed, view=self.info_buttons())
 
     async def message_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message

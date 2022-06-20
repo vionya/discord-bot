@@ -7,20 +7,20 @@ import inspect
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientSession
 from asyncpg import create_pool
 from discord.ext import commands
 
-from .classes import Embed, containers, context, formatters, help_command, partials
+from .classes import Embed, containers, context, exceptions, help_command, partials
 from .modules import *  # noqa: F403
 from .tools import *  # noqa: F403
-from .tools import recursive_getattr
+from .tools import formatters, recursive_getattr
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine, Mapping
+    from collections.abc import Awaitable, Mapping
 
     from asyncpg import Pool
 
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from .types.config import NeoConfig
 
 
-__version__ = "0.15.2"
+__version__ = "1.0.0"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
@@ -47,7 +47,7 @@ class Neo(commands.Bot):
         self.profiles: dict[int, containers.NeoUser] = {}
         self.configs: dict[int, containers.NeoGuildConfig] = {}
 
-        kwargs["command_prefix"] = self.get_prefix
+        kwargs["command_prefix"] = self.cfg["bot"]["prefix"]
         kwargs["activity"] = discord.Activity(
             name=config["bot"]["activity_name"],
             type=discord.ActivityType[config["bot"]["activity_type"]],
@@ -55,25 +55,18 @@ class Neo(commands.Bot):
         )
         kwargs["status"] = discord.Status[config["bot"]["status"]]
         kwargs["allowed_mentions"] = discord.AllowedMentions.none()
-        kwargs["help_command"] = help_command.NeoHelpCommand()
+        kwargs["help_command"] = None
         kwargs["intents"] = intents
         kwargs["case_insensitive"] = True
 
         super().__init__(**kwargs)
 
-        self.cooldown = commands.CooldownMapping.from_cooldown(
-            2, 4, commands.BucketType.user
-        )
-        self.add_check(self.global_cooldown, call_once=True)  # Register global cooldown
-        self.add_check(
-            self.channel_check, call_once=True
-        )  # Register channel disabled check
-        self.add_check(self.guild_disabled_check)  # Register command disabled check
-
         self.tree.on_error = self.general_error_handler  # type: ignore
         self.tree.interaction_check = self.tree_interaction_check
 
         self.on_command_error = self.general_error_handler  # type: ignore
+
+        self.tree.add_command(help_command.AppHelpCommand(self))
 
         self._async_ready = asyncio.Event()
         asyncio.create_task(self.__ainit__())
@@ -192,18 +185,6 @@ class Neo(commands.Bot):
         if after.content != before.content:
             await self.process_commands(after)
 
-    async def get_prefix(self, message: discord.Message) -> list[str]:
-        if message.guild:
-            return commands.when_mentioned_or(
-                getattr(
-                    self.configs.get(message.guild.id),
-                    "prefix",
-                    self.cfg["bot"]["prefix"],
-                )
-            )(self, message)
-
-        return commands.when_mentioned_or(self.cfg["bot"]["prefix"])(self, message)
-
     async def on_error(self, *args, **kwargs):
         log.error("\n" + formatters.format_exception(sys.exc_info()))
 
@@ -219,49 +200,40 @@ class Neo(commands.Bot):
                 await origin.response.send_message(content, ephemeral=True)
 
         original_error: BaseException = recursive_getattr(
-            exception, "original", exception
-        )
+            exception, "__cause__"
+        ) or recursive_getattr(exception, "original", exception)
 
-        if isinstance(original_error, AssertionError):
-            return await send(
-                "Something that shouldn't have gone wrong went wrong. Please report this!"
-            )
-
-        if exception.__class__.__name__ in self.cfg["bot"]["ignored_exceptions"]:
-            if not isinstance(origin, discord.Interaction):
-                return
-
+        level = logging.INFO
         try:
+            if isinstance(original_error, AssertionError):
+                level = logging.ERROR
+                return await send("Something weird happened. Please report this!")
+
+            if (
+                original_error.__class__.__name__
+                in self.cfg["bot"]["ignored_exceptions"]
+            ):
+                level = logging.DEBUG
+                if not isinstance(origin, discord.Interaction):
+                    # In the event of interactions, exceptions can be displayed ephemerally
+                    return
+
             await send(str(original_error))
+
         except discord.Forbidden:
             pass
 
-        log.error(
-            f"In command: {getattr(origin.command, 'qualified_name', '[unknown command]')}\n"  # type: ignore
-            + formatters.format_exception(original_error)
-        )
+        finally:
+            log.log(
+                level,
+                f"In command: {getattr(origin.command, 'qualified_name', '[unknown command]')}\n"  # type: ignore
+                + formatters.format_exception(original_error),
+            )
 
     async def get_context(
         self, message: discord.Message | discord.Interaction, *, cls=context.NeoContext
     ):
         return await super().get_context(message, cls=cls)
-
-    # TODO: Remove this if/when it's properly supported by discord.py
-    def add_command(self, command, /):
-        if isinstance(command, commands.HybridCommand | commands.HybridGroup):
-            if command.app_command is not None and all(
-                [
-                    command.with_app_command,
-                    command.cog is None
-                    or not command.cog.__cog_is_app_commands_group__,
-                ]
-            ):
-                self.tree.add_command(command.app_command)
-            if getattr(command, "with_command", True):
-                commands.GroupMixin.add_command(self, command)
-            return
-        else:
-            super().add_command(command)
 
     def get_user(self, id, *, as_partial=False):
         user = self._connection.get_user(id)
@@ -280,89 +252,76 @@ class Neo(commands.Bot):
             interaction.type == discord.InteractionType.application_command
             and interaction.command
         ):
-            ctx = await context.NeoContext.from_interaction(interaction)
-            # Get global checks
-            checks = [*self._checks, *self._check_once]
-
-            if len(checks) == 0:
-                return True
-
-            # Verify the app commands against the global checks
+            # Verify the interaction against the checks
+            # Hierarchy prioritizes channel check first since it will overrule anyways
             try:
-                return await discord.utils.async_all(f(ctx) for f in checks)  # type: ignore
+                await self.channel_check(interaction)
+                await self.guild_disabled_check(interaction)
             except Exception as e:
                 # If it fails, then re-raise it wrapped in an invoke error
-                raise discord.app_commands.CommandInvokeError(interaction.command, e)
+                raise discord.app_commands.CommandInvokeError(
+                    interaction.command, e
+                ) from e
 
         return True
 
-    async def global_cooldown(self, ctx: context.NeoContext):
-        if await self.is_owner(ctx.author):
-            return True
-
-        retry_after = self.cooldown.update_rate_limit(ctx.message)
-        actual_cooldown = self.cooldown._cooldown
-        if not actual_cooldown:
-            return True
-
-        if retry_after:
-            raise commands.CommandOnCooldown(
-                actual_cooldown, retry_after, commands.BucketType.user
-            )
-        return True
-
-    async def channel_check(self, ctx: context.NeoContext):
-        if not ctx.guild or not isinstance(ctx.author, discord.Member):
+    # TODO: Remove this in favor of Discord's built-in permissions system?
+    async def channel_check(self, interaction: discord.Interaction):
+        # Only relevant in guilds
+        if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return True
 
         predicates = [
-            getattr(ctx.guild, "id", None) not in self.configs,
-            await self.is_owner(ctx.author),
+            # If the guild ID has no associated config, this check is irrelevant
+            interaction.guild.id not in self.configs,
+            # Bypasses
+            await self.is_owner(interaction.user),
+            interaction.user.guild_permissions.administrator,
         ]
-
-        if hasattr(ctx.channel, "permissions_for"):
-            predicates.append(ctx.channel.permissions_for(ctx.author).administrator)
 
         if any(predicates):
             return True
 
-        if ctx.channel.id in self.configs[ctx.guild.id].disabled_channels:
-            raise commands.DisabledCommand("Commands are disabled in this channel.")
+        elif (
+            interaction.channel_id
+            in self.configs[interaction.guild.id].disabled_channels
+        ):
+            # If the channel is in the list of disabled IDs, the command
+            # can't be executed
+            raise exceptions.DisabledChannel()
+
         return True
 
-    async def guild_disabled_check(self, ctx: context.NeoContext):
+    # TODO: Remove in favor of built-in Discord permissions as well?
+    async def guild_disabled_check(self, interaction: discord.Interaction):
         if (
-            not ctx.guild
-            or not isinstance(ctx.author, discord.Member)
-            or not ctx.command
+            not interaction.guild
+            or not isinstance(interaction.user, discord.Member)
+            or not isinstance(interaction.command, discord.app_commands.Command)
         ):
             return True
 
         predicates = [
-            getattr(ctx.guild, "id", None) not in self.configs,
-            await self.is_owner(ctx.author),
+            interaction.guild.id not in self.configs,
+            await self.is_owner(interaction.user),
+            interaction.user.guild_permissions.administrator,
         ]
-
-        if hasattr(ctx.channel, "permissions_for"):
-            predicates.append(ctx.channel.permissions_for(ctx.author).administrator)
 
         if any(predicates):
             return True
 
-        disabled = self.configs[ctx.guild.id].disabled_commands
-        if str(ctx.command.qualified_name) in disabled or (
-            str(ctx.command.root_parent.name) in disabled  # type: ignore
-            if getattr(ctx.command, "root_parent", None) is not None
-            else False
+        disabled = self.configs[interaction.guild.id].disabled_commands
+        if (
+            interaction.command.qualified_name in disabled
+            or getattr(interaction.command.root_parent, "name", "") in disabled
         ):
-            raise commands.DisabledCommand("This command is disabled in this server.")
-        return True
+            raise exceptions.DisabledCommand(interaction.command.qualified_name)
 
     # discord.py's `Client.dispatch` API is both private and *volatile*.
     # This serves as a similar implementation that will not change in the future.
 
     def broadcast(self, event: str, *args, **kwargs):
-        coros: list[Coroutine[None, None, Any]] = []
+        coros: list[Awaitable[None]] = []
         for addon in self.cogs.values():
             if event in addon.__receivers__:
                 receiver = addon.__receivers__[event]

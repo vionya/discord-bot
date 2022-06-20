@@ -2,7 +2,10 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 T = TypeVar("T")
 
@@ -50,8 +53,17 @@ def deprecate(
 
 def with_docstring(docstring: str) -> Callable[[Callable[..., Any]], Any]:
     """Dynamically set a function's doc string"""
+
     def inner(func: Callable[..., Any]) -> Callable[..., Any]:
         func.__doc__ = docstring
         return func
 
     return inner
+
+
+# This functionality could just be patched into app commands as a parameter, but
+# doing it this way stops the type checker from being angry about it
+def no_defer(callback: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorates a callback, preventing the app command from being automatically deferred"""
+    setattr(callback, "no_defer", True)
+    return callback

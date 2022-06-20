@@ -18,12 +18,10 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
         self,
         *,
-        settings: dict[str, Any],
+        settings: neo.containers.SettingsMapping,
         addon: StarboardAddon,
-        ctx: neo.context.NeoContext,
         **kwargs,
     ):
-        self.ctx = ctx
         self.addon = addon
         self.settings = settings
 
@@ -34,43 +32,44 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             return
 
         index = self.view.current_page
-        current_setting = [*self.settings.keys()][index]
+        current_setting = [*self.settings.values()][index]
 
         outer_self = self
 
         class ChangeSettingModal(discord.ui.Modal, title="Edit starboard settings"):
             new_value = discord.ui.TextInput(
-                label=f"Changing {current_setting}",
+                label=f"Changing {current_setting.display_name}",
                 placeholder="New value",
                 min_length=1,
                 max_length=500,
             )
 
             async def on_submit(self, interaction):
-                if not outer_self.ctx.guild or not outer_self.view:
+                if not interaction.guild or not outer_self.view:
                     return
 
                 try:
-                    await outer_self.addon.set_option(
-                        outer_self.ctx, current_setting, self.new_value.value
-                    )
+                    if self.new_value.value:
+                        await outer_self.addon.set_option(
+                            interaction, current_setting.key, self.new_value.value
+                        )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
                     await interaction.response.send_message(
-                        f"Setting `{current_setting}` has been changed!", ephemeral=True
+                        "Your settings have been updated!", ephemeral=True
                     )
 
-                    description = outer_self.settings[current_setting][
+                    description = outer_self.settings[current_setting.key][
                         "description"
                     ].format(
                         getattr(
-                            outer_self.addon.starboards[outer_self.ctx.guild.id],
-                            current_setting,
+                            outer_self.addon.starboards[interaction.guild.id],
+                            current_setting.key,
                         )
                     )
                     outer_self.view.pages.items[index].description = (
-                        f"**Setting: `{current_setting}`**\n\n" + description
+                        f"**Setting: `{current_setting.display_name}`**\n\n" + description
                     )
                     await outer_self.view.refresh_page()
 

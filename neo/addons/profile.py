@@ -8,41 +8,41 @@ from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
-from discord.ext import commands
-from neo.classes.converters import timeout_converter, timezone_converter
+from discord import app_commands
+from neo.classes.containers import Setting, SettingsMapping
+from neo.classes.transformers import (
+    bool_transformer,
+    timeout_transformer,
+    timezone_transformer,
+)
 from neo.modules import ButtonsMenu
-from neo.tools import convert_setting, is_registered_profile
+from neo.tools import (
+    convert_setting,
+    generate_setting_mapping_autocomplete,
+    instantiate,
+    is_registered_profile,
+    prompt_user,
+)
+from neo.tools.checks import is_registered_profile_predicate
 
 from .auxiliary.profile import ChangeSettingButton, ResetSettingButton
 
-if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
-    from neo.types.settings_mapping import SettingsMapping
+SETTINGS_MAPPING = SettingsMapping(
+    Setting("receive_highlights", transformer=bool_transformer),
+    Setting("timezone", transformer=timezone_transformer),
+    Setting(
+        "hl_timeout", transformer=timeout_transformer, name_override="Highlight Timeout"
+    ),
+    Setting(
+        "default_ephemeral",
+        transformer=bool_transformer,
+        name_override="Private By Default",
+    ),
+)
 
 
-SETTINGS_MAPPING: SettingsMapping = {
-    "receive_highlights": {
-        "converter": commands.converter._convert_to_bool,
-        "description": None,
-    },
-    "timezone": {"converter": timezone_converter, "description": None},
-    "hl_timeout": {"converter": timeout_converter, "description": None},
-    "default_ephemeral": {
-        "converter": commands.converter._convert_to_bool,
-        "description": None,
-    },
-}
-
-
-class Profile(neo.Addon):
-    """
-    neo phoenix's profile management module
-
-    Create a profile to gain access to features such as:
-    - Todos
-    - Highlights
-    ...and more!
-    """
+class Profile(neo.Addon, app_group=True):
+    """neo phoenix's profile management module"""
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot
@@ -64,140 +64,142 @@ class Profile(neo.Addon):
 
             SETTINGS_MAPPING[col_name]["description"] = col_desc
 
-    @commands.hybrid_group(
-        name="profilesettings", aliases=["settings"], invoke_without_command=True
-    )
-    @is_registered_profile()
-    async def profile_settings(self, ctx: NeoContext):
-        """Group command for managing profile settings"""
-
-    @profile_settings.command(name="list")
-    async def profile_settings_list(self, ctx: NeoContext):
-        """Lists profile settings"""
-        profile = self.bot.profiles[ctx.author.id]
-        embeds = []
-
-        for setting, setting_info in SETTINGS_MAPPING.items():
-            description = (setting_info["description"] or "").format(
-                getattr(profile, setting)
-            )
-            embed = neo.Embed(
-                title=f"Settings for {ctx.author}",
-                description=f"**Setting: `{setting}`**\n\n" + description,
-            ).set_thumbnail(url=ctx.author.display_avatar)
-            embeds.append(embed)
-
-        menu = ButtonsMenu.from_embeds(embeds)
-        menu.add_item(
-            ChangeSettingButton(
-                ctx=ctx,
-                addon=self,
-                settings=SETTINGS_MAPPING,
-                label="Change this setting",
-                style=discord.ButtonStyle.primary,
-                row=0,
-            )
-        )
-        menu.add_item(
-            ResetSettingButton(
-                ctx=ctx,
-                addon=self,
-                settings=SETTINGS_MAPPING,
-                label="Reset this setting",
-                style=discord.ButtonStyle.danger,
-                row=0,
-            )
-        )
-
-        await menu.start(ctx)
-
-    async def set_option(self, ctx: NeoContext, setting: str, new_value: str):
-        value = await convert_setting(ctx, SETTINGS_MAPPING, setting, new_value)
-        profile = self.bot.profiles[ctx.author.id]
+    async def set_option(
+        self, interaction: discord.Interaction, setting: str, new_value: str
+    ):
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
+        profile = self.bot.profiles[interaction.user.id]
         setattr(profile, setting, value)
-        self.bot.broadcast("user_settings_update", ctx.author, profile)
+        self.bot.broadcast("user_settings_update", interaction.user, profile)
 
-    async def reset_option(self, ctx: NeoContext, setting: str):
+    async def reset_option(self, interaction: discord.Interaction, setting: str):
         if not SETTINGS_MAPPING.get(setting):
-            raise commands.BadArgument(
+            raise NameError(
                 "That's not a valid setting! " "Try `settings` for a list of settings!"
             )
-        profile = self.bot.profiles[ctx.author.id]
+        profile = self.bot.profiles[interaction.user.id]
         await profile.reset_attribute(setting)
-        self.bot.broadcast("user_settings_update", ctx.author, profile)
+        self.bot.broadcast("user_settings_update", interaction.user, profile)
 
-    @profile_settings.command(name="set")
-    @discord.app_commands.describe(
-        setting="The setting to set. More information can be found in the settings list",
-        new_value="The new value to assign to this setting. More information"
-        " can be found in the settings list",
-    )
-    @discord.app_commands.rename(new_value="new-value")
-    @is_registered_profile()
-    async def profile_settings_set(
-        self, ctx: NeoContext, setting: str, *, new_value: str
-    ):
-        """
-        Updates the value of a profile setting
+    @instantiate
+    class ProfileSettings(app_commands.Group, name="settings"):
+        """Commands for managing profile settings"""
 
-        More information on the available settings and their functions is in the `settings` command
-        """
-        await self.set_option(ctx, setting, new_value)
-        await ctx.send(f"Setting `{setting}` has been changed!")
+        addon: Profile
 
-    @profile_settings.command(name="reset")
-    @discord.app_commands.describe(setting="The setting to reset")
-    @is_registered_profile()
-    async def profile_settings_reset(self, ctx: NeoContext, setting: str):
-        """
-        Resets the value of a profile setting to its default
+        @app_commands.command(name="list")
+        @is_registered_profile()
+        async def profile_settings_list(self, interaction: discord.Interaction):
+            """Lists profile settings"""
+            profile = self.addon.bot.profiles[interaction.user.id]
+            embeds = []
 
-        Defaults can be found in the `settings` command
-        """
-        await self.reset_option(ctx, setting)
-        await ctx.send(f"Setting `{setting}` has been reset!")
+            for setting, setting_info in SETTINGS_MAPPING.items():
+                description = (setting_info["description"] or "").format(
+                    getattr(profile, setting)
+                )
+                embed = neo.Embed(
+                    title=f"Settings for {interaction.user}",
+                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
+                    + description,
+                ).set_thumbnail(url=interaction.user.display_avatar)
+                embeds.append(embed)
 
-    @profile_settings_set.autocomplete("setting")
-    @profile_settings_reset.autocomplete("setting")
-    async def profile_settings_set_reset_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ):
-        return [
-            *map(
-                lambda k: discord.app_commands.Choice(name=k, value=k),
-                filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
+            menu = ButtonsMenu.from_embeds(embeds)
+
+            menu.add_item(
+                ChangeSettingButton(
+                    addon=self.addon,
+                    settings=SETTINGS_MAPPING,
+                    label="Change this setting",
+                    style=discord.ButtonStyle.primary,
+                    row=0,
+                )
             )
-        ]
+            menu.add_item(
+                ResetSettingButton(
+                    addon=self.addon,
+                    settings=SETTINGS_MAPPING,
+                    label="Reset this setting",
+                    style=discord.ButtonStyle.danger,
+                    row=0,
+                )
+            )
 
-    @commands.hybrid_group()
-    async def profile(self, ctx: NeoContext):
-        """Group command for profiles"""
+            await menu.start(interaction)
 
-    @profile.command(name="show")
+        @app_commands.command(name="set")
+        @app_commands.describe(
+            setting="The setting to set. More information can be found in the settings list",
+            new_value="The new value to assign to this setting. More information"
+            " can be found in the settings list",
+        )
+        @discord.app_commands.rename(new_value="new-value")
+        @is_registered_profile()
+        async def profile_settings_set(
+            self, interaction: discord.Interaction, setting: str, new_value: str
+        ):
+            """
+            Updates the value of a profile setting
+
+            More information on the available settings and their functions is in the `settings` command
+            """
+            await self.addon.set_option(interaction, setting, new_value)
+            await interaction.response.send_message(
+                f"Setting `{setting}` has been changed!"
+            )
+
+        @app_commands.command(name="reset")
+        @app_commands.describe(setting="The setting to reset")
+        @is_registered_profile()
+        async def profile_settings_reset(
+            self, interaction: discord.Interaction, setting: str
+        ):
+            """
+            Resets the value of a profile setting to its default
+
+            Defaults can be found in the `settings` command
+            """
+            await self.addon.reset_option(interaction, setting)
+            await interaction.response.send_message(
+                f"Setting `{setting}` has been reset!"
+            )
+
+        @profile_settings_set.autocomplete("setting")
+        @profile_settings_reset.autocomplete("setting")
+        async def profile_settings_set_reset_autocomplete(
+            self, interaction: discord.Interaction, current: str
+        ):
+            return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
+
+    @app_commands.command(name="show")
     @discord.app_commands.describe(
         user="The user to view the profile for. Yourself if empty"
     )
     async def profile_show(
-        self, ctx: NeoContext, *, user: Optional[discord.User | discord.Member] = None
+        self,
+        interaction: discord.Interaction,
+        user: Optional[discord.User | discord.Member] = None,
     ):
         """Displays the neo profile of yourself, or a specified user."""
-        user = user or ctx.author
-        if user == ctx.author:
-            await is_registered_profile().predicate(ctx)
+        user = user or interaction.user
+        if user == interaction.user:
+            is_registered_profile_predicate(interaction)
 
         profile = self.bot.profiles.get(user.id)
         if profile is None:
             raise AttributeError("This user doesn't have a neo profile!")
 
+        assert self.bot.user
         embed = neo.Embed(
             description=(
                 f"**<@{user.id}>'s neo profile**\n\n"
                 f"**Created** <t:{int(profile.created_at.timestamp())}>"
             )
         ).set_thumbnail(
-            url=ctx.me.display_avatar
-            if user != ctx.author
-            else ctx.author.display_avatar
+            url=self.bot.user.display_avatar
+            if user != interaction.user
+            else interaction.user.display_avatar
         )
         if getattr(profile, "timezone", None):
             embed.add_field(
@@ -207,24 +209,27 @@ class Profile(neo.Addon):
                 ),
                 inline=False,
             )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @profile.command(name="create")
-    async def profile_create(self, ctx: NeoContext):
+    @app_commands.command(name="create")
+    async def profile_create(self, interaction: discord.Interaction):
         """Creates your neo profile!"""
-        if ctx.author.id in self.bot.profiles:
+        if interaction.user.id in self.bot.profiles:
             raise RuntimeError("You already have a profile!")
 
-        profile = await self.bot.add_profile(ctx.author.id)
-        self.bot.broadcast("user_settings_update", ctx.author, profile)
-        await ctx.send("Successfully initialized your profile!")
+        profile = await self.bot.add_profile(interaction.user.id)
+        self.bot.broadcast("user_settings_update", interaction.user, profile)
+        await interaction.response.send_message(
+            "Successfully initialized your profile!"
+        )
 
-    @profile.command(name="delete")
+    @app_commands.command(name="delete")
     @is_registered_profile()
-    async def profile_delete(self, ctx: NeoContext):
+    async def profile_delete(self, interaction: discord.Interaction):
         """Permanently deletes your neo profile"""
         if (
-            await ctx.prompt_user(
+            await prompt_user(
+                interaction,
                 "Are you sure you want to delete your profile?"
                 "\nThis will delete your profile and all associated "
                 "info (todos, highlights, etc), and **cannot** be undone.",
@@ -236,7 +241,7 @@ class Profile(neo.Addon):
         ):
             return
 
-        await self.bot.delete_profile(ctx.author.id)
+        await self.bot.delete_profile(interaction.user.id)
 
 
 async def setup(bot: neo.Neo):

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 import re
 from collections import defaultdict
 from enum import Enum
@@ -13,16 +12,21 @@ from typing import TYPE_CHECKING, Optional
 
 import discord
 import neo
-from discord.ext import commands
+from discord import app_commands
 from neo.classes.containers import TimedSet
 from neo.classes.partials import PartialUser
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile
+from neo.tools import (
+    generate_autocomplete_list,
+    is_clear_all,
+    is_registered_profile,
+    is_valid_index,
+    send_confirmation
+)
 
 if TYPE_CHECKING:
     from neo.classes.containers import NeoUser
-    from neo.classes.context import NeoContext
 
 
 class DefaultAvatars(Enum):
@@ -202,7 +206,7 @@ class Highlight:
         return self.pattern.search(other)
 
 
-class Highlights(neo.Addon):
+class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     """Commands for managing highlights"""
 
     def __init__(self, bot: neo.Neo):
@@ -237,7 +241,7 @@ class Highlights(neo.Addon):
             del self.flat_highlights
         self.flat_highlights
 
-    @commands.Cog.listener("on_message")
+    @neo.Addon.listener("on_message")
     async def listen_for_highlights(self, message: discord.Message):
         if not self.bot.is_ready():
             return  # Return if bot is not ready, so flat_highlights is computed correctly
@@ -285,18 +289,12 @@ class Highlights(neo.Addon):
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 
-    async def cog_check(self, ctx: NeoContext):
-        return await is_registered_profile().predicate(ctx)
-
-    @commands.hybrid_group(aliases=["hl"])
-    async def highlight(self, ctx: NeoContext):
-        """Group command for managing highlights"""
-
-    @highlight.command(name="list")
-    async def highlight_list(self, ctx: NeoContext):
+    @app_commands.command(name="list")
+    @is_registered_profile()
+    async def highlight_list(self, interaction: discord.Interaction):
         """List your highlights"""
         description = ""
-        user_highlights = self.highlights.get(ctx.author.id, [])
+        user_highlights = self.highlights.get(interaction.user.id, [])
 
         for index, hl in enumerate(user_highlights, 1):
             description += "`{0}` `{1}`\n".format(index, hl.content)
@@ -304,21 +302,26 @@ class Highlights(neo.Addon):
         embed = (
             neo.Embed(description=description or "You have no highlights")
             .set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used")
-            .set_author(name=f"{ctx.author}'s highlights", icon_url=ctx.author.avatar)
+            .set_author(
+                name=f"{interaction.user}'s highlights",
+                icon_url=interaction.user.avatar,
+            )
         )
 
-        await ctx.send(embeds=[embed])
+        await interaction.response.send_message(embeds=[embed])
 
-    @highlight.command(name="add")
-    @discord.app_commands.describe(content="The word or phrase to be highlighted by")
-    async def highlight_add(self, ctx: NeoContext, *, content: str):
+    @app_commands.command(name="add")
+    @app_commands.describe(content="The word or phrase to be highlighted by")
+    @is_registered_profile()
+    async def highlight_add(self, interaction: discord.Interaction, content: str):
         """
         Add a new highlight
 
         Highlights will notify you when the word/phrase you add is mentioned
 
         **Notes**
-        - Highlights will __never__ be triggered from private threads
+        - Highlights will __never__ be triggered from private threads that
+        you are not a member of
         - Highlights will __never__ be triggered by bots
         - You must be a member of a channel to be highlighted in it
         """
@@ -329,10 +332,12 @@ class Highlights(neo.Addon):
                 f"Highlights cannot be longer than {MAX_TRIGGER_LEN:,} characters!"
             )
 
-        if len(self.highlights.get(ctx.author.id, [])) >= MAX_TRIGGERS:
+        if len(self.highlights.get(interaction.user.id, [])) >= MAX_TRIGGERS:
             raise ValueError("You've used up all of your highlight slots!")
 
-        if content in [hl.content for hl in self.highlights.get(ctx.author.id, [])]:
+        if content in [
+            hl.content for hl in self.highlights.get(interaction.user.id, [])
+        ]:
             raise ValueError("Cannot have multiple highlights with the same content.")
 
         result = await self.bot.db.fetchrow(
@@ -343,45 +348,30 @@ class Highlights(neo.Addon):
             ) VALUES ( $1, $2 )
             RETURNING *
             """,
-            ctx.author.id,
+            interaction.user.id,
             content,
         )
-        self.highlights[ctx.author.id].append(Highlight(self.bot, **result))
+        self.highlights[interaction.user.id].append(Highlight(self.bot, **result))
         self.recompute_flattened()
-        await ctx.send_confirmation()
+        await send_confirmation(interaction)
 
-    @highlight.command(name="remove", aliases=["rm"])
-    @discord.app_commands.describe(
-        index='A highlight index to remove, or "~" to clear all highlights'
-    )
-    async def highlight_remove(self, ctx: NeoContext, index: str):
-        """
-        Remove a highlight by index
+    @app_commands.command(name="remove")
+    @app_commands.describe(index="A highlight index to remove")
+    @is_registered_profile()
+    async def highlight_remove(self, interaction: discord.Interaction, index: str):
+        """Remove a highlight by index"""
+        if is_clear_all(index):
+            highlights = self.highlights.get(interaction.user.id, []).copy()
+            self.highlights.pop(interaction.user.id, None)
 
-        Passing `~` will remove all highlights at once
-        """
-        if index.isnumeric():
-            indices = [int(index)]
-        elif index == "~":
-            indices = ["~"]
-        else:
-            raise ValueError("Invalid input for index.")
-
-        if "~" in indices:
-            highlights = self.highlights.get(ctx.author.id, []).copy()
-            self.highlights.pop(ctx.author.id, None)
-
-        else:
-            (indices := [*map(str, indices)]).sort(
-                reverse=True
-            )  # Pop in an way that preserves the list's original order
+        elif is_valid_index(index):
             try:
-                highlights = [
-                    self.highlights[ctx.author.id].pop(index - 1)
-                    for index in map(int, filter(str.isdigit, indices))
-                ]
+                highlights = [self.highlights[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
+
+        else:
+            raise TypeError("Invalid input provided.")
 
         await self.bot.db.execute(
             """
@@ -391,11 +381,11 @@ class Highlights(neo.Addon):
                 user_id = $1 AND
                 content = ANY($2::TEXT[])
             """,
-            ctx.author.id,
+            interaction.user.id,
             [*map(attrgetter("content"), highlights)],
         )
         self.recompute_flattened()
-        await ctx.send_confirmation()
+        await send_confirmation(interaction)
 
     @highlight_remove.autocomplete("index")
     async def highlight_remove_autocomplete(
@@ -404,14 +394,10 @@ class Highlights(neo.Addon):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts: list[str | int] = ["~"]
-        opts.extend([*range(1, len(self.highlights[interaction.user.id]) + 1)][:24])
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-                map(str, opts),
-            )
+        highlights = [
+            highlight.content for highlight in self.highlights[interaction.user.id]
         ]
+        return generate_autocomplete_list(highlights, current, insert_wildcard=True)
 
     def perform_blocklist_action(
         self, *, profile: NeoUser, ids: list[int], action="block"
@@ -430,52 +416,45 @@ class Highlights(neo.Addon):
 
         profile.hl_blocks = [*blacklist]
 
-    @highlight.command(name="block", usage="<id>")
-    @discord.app_commands.describe(
+    @app_commands.command(name="block")
+    @app_commands.describe(
         id="The ID of a user, server, or channel to block",
         user="A user to block",
         channel="A channel to block",
     )
+    @is_registered_profile()
     async def highlight_block(
         self,
-        ctx: NeoContext,
+        interaction: discord.Interaction,
         id: Optional[str] = None,
         user: Optional[discord.User | discord.Member] = None,
         channel: Optional[discord.TextChannel] = None,
     ):
         """Block a target from highlighting you"""
         if not (id or "").isnumeric() and not any([user, channel]):
-            raise commands.BadArgument("Please input a valid ID.")
+            raise TypeError("Please input a valid ID.")
 
-        profile = self.bot.profiles[ctx.author.id]
+        profile = self.bot.profiles[interaction.user.id]
 
-        if ctx.interaction:
-            ids = [
-                *map(
-                    lambda obj: obj.id
-                    if isinstance(obj, discord.abc.Snowflake)
-                    else int(obj),
-                    filter(None, [user, channel, id]),
-                )
-            ]
-        else:
-            if not id:
-                raise commands.MissingRequiredArgument(
-                    commands.Parameter(
-                        name="id", kind=inspect.Parameter.POSITIONAL_ONLY
-                    )
-                )
-            ids = [int(id)]
+        ids = [
+            *map(
+                lambda obj: obj.id
+                if isinstance(obj, discord.abc.Snowflake)
+                else int(obj),
+                filter(None, [user, channel, id]),
+            )
+        ]
 
         self.perform_blocklist_action(profile=profile, ids=ids)
-        await ctx.send_confirmation()
+        await send_confirmation(interaction)
 
-    @highlight.command(name="blocklist")
-    async def highlight_block_list(self, ctx: NeoContext):
+    @app_commands.command(name="blocklist")
+    @is_registered_profile()
+    async def highlight_block_list(self, interaction: discord.Interaction):
         """
         Manage a blocklist for highlights.
         """
-        profile = self.bot.profiles[ctx.author.id]
+        profile = self.bot.profiles[interaction.user.id]
 
         def transform_mention(id):
             mention = getattr(
@@ -490,21 +469,22 @@ class Highlights(neo.Addon):
             per_page=10,
             use_embed=True,
             template_embed=neo.Embed().set_author(
-                name=f"{ctx.author}'s highlight blocks",
-                icon_url=ctx.author.display_avatar,
+                name=f"{interaction.user}'s highlight blocks",
+                icon_url=interaction.user.display_avatar,
             ),
         )
-        await menu.start(ctx)
+        await menu.start(interaction)
 
-    @highlight.command(name="unblock")
-    @discord.app_commands.describe(
+    @app_commands.command(name="unblock")
+    @app_commands.describe(
         id="The ID of a user, server, or channel to unblock",
         user="A user to unblock",
         channel="A channel to unblock",
     )
+    @is_registered_profile()
     async def highlight_unblock(
         self,
-        ctx: NeoContext,
+        interaction: discord.Interaction,
         id: Optional[str] = None,
         user: Optional[discord.User | discord.Member] = None,
         channel: Optional[discord.TextChannel] = None,
@@ -517,30 +497,21 @@ class Highlights(neo.Addon):
         One *or more* IDs can be provided to this command
         """
         if not (id or "").isnumeric() and not any([user, channel]):
-            raise commands.BadArgument("Please input a valid ID.")
+            raise TypeError("Please input a valid ID.")
 
-        profile = self.bot.profiles[ctx.author.id]
+        profile = self.bot.profiles[interaction.user.id]
 
-        if ctx.interaction:
-            ids = [
-                *map(
-                    lambda obj: obj.id
-                    if isinstance(obj, discord.abc.Snowflake)
-                    else int(obj),
-                    filter(None, [user, channel, id]),
-                )
-            ]
-        else:
-            if not id:
-                raise commands.MissingRequiredArgument(
-                    commands.Parameter(
-                        name="id", kind=inspect.Parameter.POSITIONAL_ONLY
-                    )
-                )
-            ids = [int(id)]
+        ids = [
+            *map(
+                lambda obj: obj.id
+                if isinstance(obj, discord.abc.Snowflake)
+                else int(obj),
+                filter(None, [user, channel, id]),
+            )
+        ]
 
         self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
-        await ctx.send_confirmation()
+        await send_confirmation(interaction)
 
     @highlight_unblock.autocomplete("id")
     async def highlight_unblock_autocomplete(

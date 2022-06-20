@@ -1,7 +1,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import Any, Callable, Optional, overload
+from typing import TYPE_CHECKING, Any, Optional, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class Patcher:

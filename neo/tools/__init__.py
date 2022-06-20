@@ -3,27 +3,24 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeGuard, TypeVar, overload
 
 from discord import app_commands, utils
-from discord.ext import commands
 
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, instantiate, with_docstring
+from .formatters import humanize_snake_case, shorten
+from .message_helpers import prompt_user, send_confirmation
 from .patcher import Patcher
 
 if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
-    from neo.types.settings_mapping import SettingsMapping
+    from collections.abc import Callable, Sequence
+
+    from discord import Interaction
+    from neo.classes.containers import SettingsMapping
 
 
 T = TypeVar("T")
-
-
-def shorten(text: str, width: int) -> str:
-    if len(text) > width:
-        text = text[: width - 3] + "..."
-    return text
 
 
 def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
@@ -34,7 +31,7 @@ def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
 
 
 async def convert_setting(
-    ctx: NeoContext, mapping: SettingsMapping, setting: str, new_value: str
+    interaction: Interaction, mapping: SettingsMapping, setting: str, new_value: str
 ):
     # Use try/except here because, if the __getitem__ succeeds,
     # it's roughly 30% faster than using dict.get. Because of the
@@ -45,40 +42,76 @@ async def convert_setting(
     try:
         valid_setting = mapping[setting]
     except KeyError:
-        raise commands.BadArgument(
+        raise NameError(
             "That's not a valid setting! " "Try `settings` for a list of settings!"
         )
 
     value = None
 
-    converter = valid_setting["converter"]
-    if isinstance(converter, commands.Converter):
-        if (converted := await converter.convert(ctx, new_value)) is not None:
+    transformer = valid_setting["transformer"]
+    if isinstance(transformer, type) and issubclass(
+        transformer, app_commands.Transformer
+    ):
+        if (
+            converted := await utils.maybe_coroutine(
+                transformer().transform, interaction, new_value
+            )
+        ) is not None:
             value = converted
 
-    elif (converted := try_or_none(converter, new_value)) is not None:
+    elif (converted := try_or_none(transformer, new_value)) is not None:
         value = converted
 
     else:
-        raise commands.BadArgument(
-            "Bad value provided for setting `{}`".format(setting)
-        )
+        raise ValueError("Bad value provided for setting `{}`".format(setting))
 
     return value
 
 
-def recursive_getattr(target: Any, attr: str, default: Any = None) -> Any:
+@overload
+def recursive_getattr(target: Any, attr: str, /) -> Any:
+    ...
+
+
+@overload
+def recursive_getattr(target: Any, attr: str, default: T, /) -> Any | T:
+    ...
+
+
+def recursive_getattr(*args):
+    if len(args) > 3:
+        raise TypeError(
+            f"recursive_getattr expected at most 3 arguments, got {len(args)}"
+        )
+
+    if len(args) == 3:
+        target, attr, default = args
+
+        # If a default was provided and the attribute doesn't exist on the
+        # target, return the default
+        if not hasattr(target, attr):
+            return default
+    else:
+        target, attr = args
+
+        # If a default was not provided and the attribute doesn't exist on
+        # the target, raise an AttributeError
+        if not hasattr(target, attr):
+            raise AttributeError(
+                f"'{target.__name__}' object has no attribute '{attr}'"
+            )
+
     # Get the named attribute from the target object
-    # with a default of None
-    found = getattr(target, attr, None)
-    # If nothing is found, return the default
-    if not found:
-        return default
+    found = getattr(target, attr)
 
     # If `found` has no attribute named `attr` then return it
     # Otherwise, recurse until we do find something
     return (
-        found if not hasattr(found, attr) else recursive_getattr(found, attr, default)
+        # `found` is now passed as the default as well as the target because
+        # if the attribute doesn't exist on `found`
+        found
+        if not hasattr(found, attr)
+        else recursive_getattr(found, attr, found)
     )
 
 
@@ -115,9 +148,119 @@ def parse_ids(argument: str) -> tuple[int, Optional[int]]:
         r"/(?P<channel_id>[0-9]{15,20})/(?P<message_id>[0-9]{15,20})/?$"
     )
     match = id_regex.match(argument) or link_regex.match(argument)
+
     if not match:
-        raise commands.MessageNotFound(argument)
+        raise ValueError(f"Message {argument} not found")
+
     data = match.groupdict()
     channel_id = utils._get_as_snowflake(data, "channel_id")
     message_id = int(data["message_id"])
     return message_id, channel_id
+
+
+ClearAllOption = "Clear all"
+
+
+def generate_autocomplete_list(
+    container: Sequence[Any],
+    current: str,
+    *,
+    insert_wildcard: bool = False,
+    show_previews: bool = True,
+    focus_current: bool = True,
+) -> list[app_commands.Choice[str] | app_commands.Choice[int]]:
+    """
+    Generate a list of choices suitable for an autocomplete function
+
+    Parameters
+    ----------
+    container: Sequence[Any]
+        The items from which the autocomplete list will be generated
+    current: str
+        The current value that the user has input
+    insert_wildcard: bool
+        Whether the wildcard character (`~`) should be prepended to the output
+        Default: False
+    show_previews: bool
+        Whether previews of the content should be included alongside indices
+        Default: True
+    focus_current: bool
+        Whether the list should adapt to show indices surrounding the current value
+        Default: True
+    """
+
+    if len(current) == 0 or focus_current is False:
+        # If the field is empty or focus_current is False,
+        # the range simply goes from (1..min(container length + 1, 26 [or 25 if wildcard is enabled]))
+        valid_range = range(1, min(len(container) + 1, 26 - int(insert_wildcard)))
+
+    elif current.isnumeric():
+        # If the field has a value, then the autocomplete will start with
+        # the current value, and then show a range of indices surrounding
+        # the current value
+        user_index = int(current)
+
+        if user_index < 0 or user_index > len(container):
+            return []
+
+        valid_range = []
+        len_left = len(container[: user_index - 1])
+
+        for i in [
+            user_index,
+            # start from at most 12 before the user index
+            *range(user_index - min(len_left, 12), user_index),
+            # go from the user index + 1 to the end of the container's length
+            *range(user_index + 1, user_index + (len(container) - len_left)),
+        ]:
+            valid_range.append(i)
+            if len(valid_range) == 25 - int(insert_wildcard):
+                # break at 25 (or 24 if wildcard enabled) since that's the max allowed
+                # number of autocomplete values
+                break
+
+    else:
+        return []
+
+    opts: list[str | int] = (
+        [ClearAllOption, *valid_range] if insert_wildcard else [*valid_range]
+    )
+
+    opt_names: list[str] = []
+
+    for opt in opts:
+        opt_name = str(opt)
+        if isinstance(opt, int) and show_previews is True:
+            content = shorten(container[opt - 1], 50 - (len(opt_name) + 3))
+            opt_name = f"{opt_name} - {content}"
+        opt_names.append(opt_name)
+
+    return [
+        app_commands.Choice[Any](
+            name=name, value=str(val) if insert_wildcard else int(val)
+        )
+        for name, val in zip(opt_names, opts)
+    ]
+
+
+def is_valid_index(value: str) -> TypeGuard[int]:
+    return value.isnumeric()
+
+
+def is_clear_all(value: str) -> TypeGuard[Literal["Clear all"]]:
+    return value == ClearAllOption
+
+
+def generate_setting_mapping_autocomplete(
+    mapping: SettingsMapping, current: str
+) -> list[app_commands.Choice[str]]:
+    """Generate a list of choices suitable for an autocomplete function of a settings mapping"""
+    setting_pairs = []
+    for k, v in mapping.items():
+        setting_pairs.append((v.display_name, k))
+
+    setting_pairs = [*filter(lambda pair: current in pair[0], setting_pairs)][:25]
+
+    return [
+        app_commands.Choice(name=name, value=value) for name, value in setting_pairs
+    ]

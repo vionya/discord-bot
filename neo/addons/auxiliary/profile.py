@@ -4,6 +4,7 @@
 An auxiliary module for the `Profile` addon
 """
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import discord
@@ -15,14 +16,8 @@ if TYPE_CHECKING:
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
-        self,
-        *,
-        settings: dict[str, Any],
-        addon: Profile,
-        ctx: neo.context.NeoContext,
-        **kwargs,
+        self, *, settings: neo.containers.SettingsMapping, addon: Profile, **kwargs
     ):
-        self.ctx = ctx
         self.addon = addon
         self.settings = settings
 
@@ -33,13 +28,13 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             return
 
         index = self.view.current_page
-        current_setting = [*self.settings.keys()][index]
+        current_setting = [*self.settings.values()][index]
 
         outer_self = self
 
         class ChangeSettingModal(discord.ui.Modal, title="Edit profile settings"):
             new_value = discord.ui.TextInput(
-                label=f"Changing {current_setting}",
+                label=f"Changing {current_setting.display_name}",
                 placeholder="New value",
                 min_length=1,
                 max_length=500,
@@ -52,25 +47,25 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                 try:
                     if self.new_value.value:
                         await outer_self.addon.set_option(
-                            outer_self.ctx, current_setting, self.new_value.value
+                            interaction, current_setting.key, self.new_value.value
                         )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
                 else:
                     await interaction.response.send_message(
-                        f"Setting `{current_setting}` has been changed!", ephemeral=True
+                        "Your settings have been updated!", ephemeral=True
                     )
 
-                    description = outer_self.settings[current_setting][
+                    description = outer_self.settings[current_setting.key][
                         "description"
                     ].format(
                         getattr(
-                            outer_self.addon.bot.profiles[outer_self.ctx.author.id],
-                            current_setting,
+                            outer_self.addon.bot.profiles[interaction.user.id],
+                            current_setting.key,
                         )
                     )
                     outer_self.view.pages.items[index].description = (
-                        f"**Setting: `{current_setting}`**\n\n" + description
+                        f"**Setting: `{current_setting.display_name}`**\n\n" + description
                     )
                     await outer_self.view.refresh_page()
 
@@ -81,36 +76,30 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
 
 class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
-        self,
-        *,
-        settings: dict[str, Any],
-        addon: Profile,
-        ctx: neo.context.NeoContext,
-        **kwargs,
+        self, *, settings: neo.containers.SettingsMapping, addon: Profile, **kwargs
     ):
-        self.ctx = ctx
         self.addon = addon
         self.settings = settings
 
         super().__init__(**kwargs)
 
     async def callback(self, interaction):
-        if not self.ctx.guild or not self.view:
+        if not interaction.guild or not self.view:
             return
 
         index = self.view.current_page
-        current_setting = [*self.settings.keys()][index]
+        current_setting = [*self.settings.values()][index]
 
-        await self.addon.reset_option(self.ctx, current_setting)
+        await self.addon.reset_option(interaction, current_setting.key)
 
         await interaction.response.send_message(
-            f"Setting `{current_setting}` has been reset!", ephemeral=True
+            "Your settings have been updated!", ephemeral=True
         )
 
-        description = self.settings[current_setting]["description"].format(
-            getattr(self.addon.bot.profiles[self.ctx.author.id], current_setting)
+        description = self.settings[current_setting.key]["description"].format(
+            getattr(self.addon.bot.profiles[interaction.user.id], current_setting.key)
         )
         self.view.pages.items[index].description = (
-            f"**Setting: `{current_setting}`**\n\n" + description
+            f"**Setting: `{current_setting.display_name}`**\n\n" + description
         )
         await self.view.refresh_page()

@@ -4,59 +4,56 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+from datetime import datetime, timezone
 from operator import attrgetter
-from typing import TYPE_CHECKING
+from uuid import UUID, uuid4
 
 import discord
 import neo
-from discord.ext import commands
+from discord import app_commands
 from discord.utils import escape_markdown
+from neo.addons.auxiliary.todos import TodoEditModal
 from neo.modules import ButtonsMenu
-from neo.tools import is_registered_profile, shorten
-
-if TYPE_CHECKING:
-    from neo.classes.context import NeoContext
+from neo.tools import (
+    generate_autocomplete_list,
+    is_clear_all,
+    is_registered_profile,
+    is_valid_index,
+    send_confirmation,
+    shorten
+)
+from neo.tools.decorators import no_defer
 
 MAX_TODOS = 100
 
 
 class TodoItem:
-    __slots__ = ("user_id", "content", "guild_id", "channel_id", "message_id", "edited")
+    __slots__ = ("user_id", "content", "todo_id", "created_at", "edited")
 
     def __init__(
         self,
         *,
         user_id: int,
         content: str,
-        guild_id: str,
-        channel_id: int,
-        message_id: int,
+        todo_id: UUID,
+        created_at: datetime,
         edited: bool,
     ):
         self.user_id = user_id
         self.content = content
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.message_id = message_id
+        self.todo_id = todo_id
+        self.created_at = created_at
         self.edited = edited
 
     def __repr__(self):
-        return "<{0.__class__.__name__} user_id={0.user_id} message_id={0.message_id}>".format(
-            self
+        return (
+            "<{0.__class__.__name__} user_id={0.user_id} todo_id={0.todo_id}>".format(
+                self
+            )
         )
 
-    @property
-    def jump_url(self):
-        return "https://discord.com/channels/{0.guild_id}/{0.channel_id}/{0.message_id}".format(
-            self
-        )
 
-    @property
-    def created_at(self):
-        return discord.utils.snowflake_time(self.message_id)
-
-
-class Todos(neo.Addon):
+class Todos(neo.Addon, app_group=True, group_name="todo"):
     """Commands for managing a todo list"""
 
     def __init__(self, bot: neo.Neo):
@@ -75,19 +72,13 @@ class Todos(neo.Addon):
     async def handle_deleted_profile(self, user_id: int):
         self.todos.pop(user_id, None)
 
-    async def cog_check(self, ctx: NeoContext):
-        return await is_registered_profile().predicate(ctx)
-
-    @commands.hybrid_group()
-    async def todo(self, ctx: NeoContext):
-        """Group command for managing todos"""
-
-    @todo.command(name="list")
-    async def todo_list(self, ctx: NeoContext):
+    @app_commands.command(name="list")
+    @is_registered_profile()
+    async def todo_list(self, interaction: discord.Interaction):
         """List your todos"""
         formatted_todos = []
 
-        for index, todo in enumerate(self.todos[ctx.author.id], 1):
+        for index, todo in enumerate(self.todos[interaction.user.id], 1):
             formatted_todos.append(
                 "`{0}` {1}".format(
                     index, escape_markdown(shorten(todo.content, width=75))
@@ -99,24 +90,28 @@ class Todos(neo.Addon):
             per_page=10,
             use_embed=True,
             template_embed=neo.Embed().set_author(
-                name=f"{ctx.author}'s todos", icon_url=ctx.author.display_avatar
+                name=f"{interaction.user}'s todos",
+                icon_url=interaction.user.display_avatar,
             ),
         )
-        await menu.start(ctx)
+        await menu.start(interaction)
 
-    @todo.command(name="add")
-    @discord.app_commands.describe(content="The content of the new todo")
-    async def todo_add(self, ctx: NeoContext, *, content: str):
+    @app_commands.command(name="add")
+    @app_commands.describe(content="The content of the new todo")
+    @is_registered_profile()
+    async def todo_add(self, interaction: discord.Interaction, content: str):
         """Add a new todo"""
-        if len(self.todos[ctx.author.id]) >= MAX_TODOS:
+        if len(self.todos[interaction.user.id]) >= MAX_TODOS:
             raise ValueError("You've used up all your todo slots!")
 
+        if len(content) > 1500:
+            raise ValueError("Todo content may be no more than 1500 characters long")
+
         data = {
-            "user_id": ctx.author.id,
+            "user_id": interaction.user.id,
             "content": content,
-            "guild_id": str(getattr(ctx.guild, "id", "@me")),
-            "channel_id": ctx.channel.id,
-            "message_id": ctx.message.id,
+            "todo_id": uuid4(),
+            "created_at": datetime.now(timezone.utc),
             "edited": False,
         }
 
@@ -125,61 +120,52 @@ class Todos(neo.Addon):
             INSERT INTO todos (
                 user_id,
                 content,
-                guild_id,
-                channel_id,
-                message_id,
+                todo_id,
+                created_at,
                 edited
             ) VALUES (
-                $1, $2, $3, $4, $5, $6
+                $1, $2, $3, $4, $5
             )
             """,
             *data.values(),
         )
 
-        self.todos[ctx.author.id].append(TodoItem(**data))
-        await ctx.send_confirmation()
+        self.todos[interaction.user.id].append(TodoItem(**data))
+        await send_confirmation(interaction)
 
-    @todo.command(name="remove", aliases=["rm"])
-    @discord.app_commands.describe(index='A todo index to remove, or "~" to clear all')
-    async def todo_remove(self, ctx: NeoContext, index: str):
-        """
-        Remove a todo by index
+    @app_commands.command(name="remove")
+    @app_commands.describe(index="A todo index to remove")
+    @app_commands.rename(index="index")
+    @is_registered_profile()
+    async def todo_remove(
+        self,
+        interaction: discord.Interaction,
+        index: str,
+    ):
+        """Remove a todo by index"""
+        if is_clear_all(index):
+            todos = self.todos[interaction.user.id].copy()
+            self.todos[interaction.user.id].clear()
 
-        Passing `~` will remove all todos at once
-        """
-        if index.isnumeric():
-            indices = [int(index)]
-        elif index == "~":
-            indices = ["~"]
-        else:
-            raise ValueError("Invalid input for index.")
-
-        if "~" in indices:
-            todos = self.todos[ctx.author.id].copy()
-            self.todos[ctx.author.id].clear()
-
-        else:
-            (indices := [*map(str, indices)]).sort(
-                reverse=True
-            )  # Pop in an way that preserves the list's original order
+        elif is_valid_index(index):
             try:
-                todos = [
-                    self.todos[ctx.author.id].pop(index - 1)
-                    for index in map(int, filter(str.isdigit, indices))
-                ]
+                todos = [self.todos[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
                 raise IndexError("One or more of the provided indices is invalid.")
+
+        else:
+            raise TypeError("Invalid input provided.")
 
         await self.bot.db.execute(
             """
             DELETE FROM todos WHERE
-                message_id=ANY($1::BIGINT[]) AND
+                todo_id=ANY($1::UUID[]) AND
                 user_id=$2
             """,
-            [*map(attrgetter("message_id"), todos)],
-            ctx.author.id,
+            [*map(attrgetter("todo_id"), todos)],
+            interaction.user.id,
         )
-        await ctx.send_confirmation()
+        await send_confirmation(interaction)
 
     @todo_remove.autocomplete("index")
     async def todo_remove_autocomplete(
@@ -188,21 +174,16 @@ class Todos(neo.Addon):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts: list[str | int] = ["~"]
-        opts.extend([*range(1, len(self.todos[interaction.user.id]) + 1)][:24])
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=opt),
-                map(str, opts),
-            )
-        ]
+        todos = [todo.content for todo in self.todos[interaction.user.id]]
+        return generate_autocomplete_list(todos, current, insert_wildcard=True)
 
-    @todo.command(name="view", aliases=["show"])
-    @discord.app_commands.describe(index="A todo index to view")
-    async def todo_view(self, ctx: NeoContext, index: int):
+    @app_commands.command(name="view")
+    @app_commands.describe(index="A todo index to view")
+    @is_registered_profile()
+    async def todo_view(self, interaction: discord.Interaction, index: int):
         """View a todo by its listed index"""
         try:
-            todo = self.todos[ctx.author.id][index - 1]
+            todo = self.todos[interaction.user.id][index - 1]
         except IndexError:
             raise IndexError("Couldn't find that todo.")
 
@@ -210,46 +191,31 @@ class Todos(neo.Addon):
             neo.Embed(description=todo.content)
             .add_field(
                 name=f"Created on <t:{int(todo.created_at.timestamp())}>",
-                value=f"[Jump to origin]({todo.jump_url})",
+                value="This todo has{}been edited".format(
+                    " not " if not todo.edited else " "
+                ),
             )
             .set_author(
-                name="Viewing a todo {}".format("[edited]" if todo.edited else ""),
-                icon_url=ctx.author.display_avatar,
+                name="Viewing a todo",
+                icon_url=interaction.user.display_avatar,
             )
         )
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @todo.command(name="edit")
-    @discord.app_commands.describe(
-        index="A todo index to edit",
-        new_content="The new content to update the todo with"
-    )
-    @discord.app_commands.rename(new_content="new-content")
-    async def todo_edit(self, ctx, index: int, *, new_content: str):
+    @app_commands.command(name="edit")
+    @app_commands.describe(index="A todo index to edit")
+    @is_registered_profile()
+    @no_defer
+    async def todo_edit(self, interaction: discord.Interaction, index: int):
         """Edit the content of a todo"""
         try:
-            todo: TodoItem = self.todos[ctx.author.id][index - 1]
+            todo: TodoItem = self.todos[interaction.user.id][index - 1]
         except IndexError:
             raise IndexError("Couldn't find that todo.")
 
-        todo.content = new_content
-        todo.edited = True
-        await self.bot.db.execute(
-            """
-            UPDATE todos
-            SET
-                content=$1,
-                edited=TRUE
-            WHERE
-                message_id=$2 AND
-                user_id=$3
-            """,
-            new_content,
-            todo.message_id,
-            todo.user_id,
-        )
-        await ctx.send_confirmation()
+        modal = TodoEditModal(self, title="Editing a Todo", todo=todo)
+        await interaction.response.send_modal(modal)
 
     @todo_view.autocomplete("index")
     @todo_edit.autocomplete("index")
@@ -259,13 +225,8 @@ class Todos(neo.Addon):
         if interaction.user.id not in self.bot.profiles:
             return []
 
-        opts = [*range(1, len(self.todos[interaction.user.id]) + 1)][:24]
-        return [
-            *map(
-                lambda opt: discord.app_commands.Choice(name=opt, value=int(opt)),
-                map(str, opts),
-            )
-        ]
+        todos = [todo.content for todo in self.todos[interaction.user.id]]
+        return generate_autocomplete_list(todos, current)
 
 
 async def setup(bot):

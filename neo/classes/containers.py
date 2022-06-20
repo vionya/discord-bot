@@ -5,12 +5,17 @@ from __future__ import annotations
 import asyncio
 import zoneinfo
 from abc import ABCMeta, abstractmethod
-from collections.abc import MutableMapping, MutableSet
+from collections.abc import Mapping, MutableMapping, MutableSet
 from functools import cache
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+from neo.tools import humanize_snake_case
 
 if TYPE_CHECKING:
     import datetime
+
+    from neo.types.settings_mapping import SettingData
+    from typing_extensions import Never, Unpack
 
 
 def add_hook(attr_name: str):
@@ -43,7 +48,7 @@ class RecordContainer(metaclass=ABCMeta):
     Provides an OOP interface for getting data from and updating a database record
     """
 
-    __slots__ = ("ready", "pool", "hooks", "_data")
+    __slots__ = ("ready", "pool", "hooks")
 
     def __init__(self, *, pool, **record):
         super().__setattr__("ready", False)
@@ -167,14 +172,12 @@ class NeoUser(RecordContainer):
 
 class NeoGuildConfig(RecordContainer):
     guild_id: int
-    prefix: str
     starboard: bool
     disabled_channels: list[int]
     disabled_commands: list[str]
 
     __slots__ = (
         "guild_id",
-        "prefix",
         "starboard",
         "disabled_channels",
         "disabled_commands",
@@ -315,3 +318,67 @@ class TimedCache(MutableMapping):
 
     def __len__(self):
         return len(self.__dict__)
+
+
+class Setting(MutableMapping):
+    __slots__ = ("__setting_key", "__setting_data")
+
+    def __init__(self, key: str, /, **data: Unpack[SettingData]):
+        self.__setting_key = key
+
+        if "description" not in data:
+            data["description"] = None
+        self.__setting_data = data
+
+    @property
+    def display_name(self) -> str:
+        if "name_override" in self:
+            return self["name_override"]
+        else:
+            return humanize_snake_case(self.__setting_key)
+
+    @property
+    def key(self) -> str:
+        return self.__setting_key
+
+    def __getitem__(self, key: str):
+        return self.__setting_data[key]
+
+    def __setitem__(self, key: str, value: Any):
+        self.__setting_data[key] = value
+
+    def __delitem__(self, key: Never):
+        raise NotImplementedError
+
+    def __iter__(self):
+        return iter(self.__setting_data)
+
+    def __len__(self):
+        return len(self.__setting_data)
+
+
+class SettingsMapping(Mapping):
+    __slots__ = ("__settings_data",)
+
+    __settings_data: dict[str, Setting]
+
+    def __init__(self, *items: Setting):
+        self.__settings_data = {item.key: item for item in items}
+
+    def __getitem__(self, key: str):
+        return self.__settings_data[key]
+
+    def __iter__(self):
+        return iter(self.__settings_data)
+
+    def __len__(self) -> int:
+        return len(self.__settings_data)
+
+    def items(self):
+        return self.__settings_data.items()
+
+    def keys(self):
+        return self.__settings_data.keys()
+
+    def values(self):
+        return self.__settings_data.values()
