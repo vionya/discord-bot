@@ -167,7 +167,7 @@ def generate_autocomplete_list(
         # the range simply goes from (1..min(container length + 1, 26 [or 25 if wildcard is enabled]))
         valid_range = range(1, min(len(container) + 1, 26 - int(insert_wildcard)))
 
-    elif current.isdecimal():
+    elif current.isnumeric():
         # If the field has a value, then the autocomplete will start with
         # the current value, and then show a range of indices surrounding
         # the current value
