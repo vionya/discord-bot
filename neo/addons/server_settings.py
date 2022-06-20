@@ -271,6 +271,7 @@ class ServerConfig(
         await send_confirmation(interaction)
 
     @app_commands.command(name="unignore")
+    @app_commands.describe(channel="The channel to unignore")
     @is_owner_or_administrator()
     @is_registered_guild()
     async def server_settings_unignore_channel(
