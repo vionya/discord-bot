@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import re
-from typing_extensions import Self
 import zoneinfo
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 import discord
-from discord.app_commands import Transform, Transformer
+from discord.app_commands import Transformer
+from neo.tools import recursive_get_command
 from neo.types.commands import AnyCommand
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -141,9 +142,7 @@ class command_transformer(Transformer):
     ) -> AnyCommand:
         bot: Neo = interaction.client  # type: ignore
 
-        command = bot.get_command(command_name) or bot.tree.get_command(
-            command_name, type=discord.AppCommandType.chat_input
-        )
+        command = recursive_get_command(bot.tree, command_name)
         if not command:
             raise NameError(f"There is no command by the identifier `{command_name}`.")
         return command
