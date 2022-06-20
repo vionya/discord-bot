@@ -2,17 +2,19 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 import neo
 from discord.ext import commands
-from neo.classes.transformers import codeblock_transformer
 from neo.classes.formatters import Table, format_exception
+from neo.classes.transformers import codeblock_transformer
 from neo.modules import ButtonsMenu, Pages, args
 from neo.modules.exec import ExecWrapper, env_from_context
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Awaitable
+
     from neo.classes.context import NeoContext
 
 
@@ -57,7 +59,7 @@ class Devel(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        code: str = commands.parameter(converter=codeblock_transformer().wrapped)
+        code: str = commands.parameter(converter=codeblock_transformer().wrapped),
     ):
         """Executes some code, retaining the result"""
         (globals_ := env_from_context(ctx)).update(**(self._exec_scope | globals()))
@@ -88,7 +90,7 @@ class Devel(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        query: str = commands.parameter(converter=codeblock_transformer().wrapped)
+        query: str = commands.parameter(converter=codeblock_transformer().wrapped),
     ):
         """Perform an SQL query"""
         data = await self.bot.db.fetch(query)
@@ -106,28 +108,25 @@ class Devel(neo.Addon):
         menu = ButtonsMenu(pages)
         await menu.start(ctx)
 
-    @args.add_arg(
-        "-a",
-        "--action",
-        choices=["reload", "load", "unload"],
-        default="reload",
-        help="Controls the action to perform",
-    )
-    @args.add_arg("addons", nargs="+", help="Addons to action, `~ = all`")
-    @args.command(name="addon")
-    async def dev_addon(self, ctx: NeoContext, *, args):
+    @commands.command(name="addon")
+    async def dev_addon(
+        self,
+        ctx: NeoContext,
+        action: Optional[Literal["reload", "load", "unload"]] = "reload",
+        *addons: str,
+    ):
         """
         Manage addons
 
         It's not a great idea to unload everything
         """
-        action = getattr(self.bot, f"{args.action}_extension")
+        action_method: Callable[[str], Awaitable[None]] = getattr(self.bot, f"{action}_extension")
         failed: list[str] = []
-        if "~" in args.addons:
-            args.addons = self.bot.extensions.keys()
-        for addon in args.addons:
+        if "~" in addons:
+            addons = (*self.bot.extensions.keys(),)
+        for addon in addons:
             try:
-                await action(addon)
+                await action_method(addon)
             except BaseException as e:
                 failed.append("```py\n" + format_exception(e) + "\n```")
 
