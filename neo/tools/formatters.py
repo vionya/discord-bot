@@ -21,6 +21,17 @@ def format_exception(exc: BaseException | OptExcInfo) -> str:
     return "".join(traceback.format_exception(*exc_info)).rstrip()
 
 
+def shorten(text: str, width: int) -> str:
+    if len(text) > width:
+        text = text[: width - 3] + "..."
+    return text
+
+
+def humanize_snake_case(text: str) -> str:
+    """Transform a snake_case variable name to a human-friendly representation"""
+    return text.replace("_", " ").title()
+
+
 class Table:
     built_columns: str
     built_rows: str

@@ -9,6 +9,7 @@ from discord import app_commands, utils
 
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, instantiate, with_docstring
+from .formatters import humanize_snake_case, shorten
 from .message_helpers import prompt_user, send_confirmation
 from .patcher import Patcher
 
@@ -16,16 +17,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from discord import Interaction
-    from neo.types.settings_mapping import SettingsMapping
+    from neo.classes.containers import SettingsMapping
 
 
 T = TypeVar("T")
-
-
-def shorten(text: str, width: int) -> str:
-    if len(text) > width:
-        text = text[: width - 3] + "..."
-    return text
 
 
 def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
@@ -243,3 +238,18 @@ def is_valid_index(value: str) -> TypeGuard[int]:
 
 def is_clear_all(value: str) -> TypeGuard[Literal["Clear all"]]:
     return value == ClearAllOption
+
+
+def generate_setting_mapping_autocomplete(
+    mapping: SettingsMapping, current: str
+) -> list[app_commands.Choice[str]]:
+    """Generate a list of choices suitable for an autocomplete function of a settings mapping"""
+    setting_pairs = []
+    for k, v in mapping.items():
+        setting_pairs.append((v.display_name, k))
+
+    setting_pairs = [*filter(lambda pair: current in pair[0], setting_pairs)][:25]
+
+    return [
+        app_commands.Choice(name=name, value=value) for name, value in setting_pairs
+    ]
