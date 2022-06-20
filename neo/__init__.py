@@ -206,8 +206,8 @@ class Neo(commands.Bot):
                 await origin.response.send_message(content, ephemeral=True)
 
         original_error: BaseException = recursive_getattr(
-            exception, "__cause__", exception
-        )
+            exception, "__cause__"
+        ) or recursive_getattr(exception, "original", exception)
 
         level = logging.INFO
         try:

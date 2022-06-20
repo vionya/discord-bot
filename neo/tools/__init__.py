@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeGuard, TypeVar, overload
 
 from discord import app_commands, utils
 
@@ -73,20 +73,39 @@ async def convert_setting(
     return value
 
 
-def recursive_getattr(target: Any, attr: str, default: Any = None) -> Any:
-    # Get the named attribute from the target object
-    # with a default of None
-    found = getattr(target, attr, None)
-    # If nothing is found, return the default
-    if found is None:
+@overload
+def recursive_getattr(target: Any, attr: str, /) -> Any:
+    ...
+
+
+@overload
+def recursive_getattr(target: Any, attr: str, default: T, /) -> Any | T:
+    ...
+
+
+def recursive_getattr(*args):
+    if len(args) > 3:
+        raise TypeError(
+            f"recursive_getattr expected at most 3 arguments, got {len(args)}"
+        )
+
+    target, attr, default = args
+
+    # If the attribute isn't found on the target, return the default
+    if not hasattr(target, attr):
         return default
+
+    # Get the named attribute from the target object
+    found = getattr(target, attr)
 
     # If `found` has no attribute named `attr` then return it
     # Otherwise, recurse until we do find something
     return (
         # `found` is now passed as the default as well as the target because
         # if the attribute doesn't exist on `found`
-        found if not hasattr(found, attr) else recursive_getattr(found, attr, found)
+        found
+        if not hasattr(found, attr)
+        else recursive_getattr(found, attr, found)
     )
 
 
