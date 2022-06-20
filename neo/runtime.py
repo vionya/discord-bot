@@ -5,9 +5,9 @@ import logging
 import discord
 
 from neo.classes.app_commands import AutoEphemeralAppCommand
-from neo.classes.formatters import format_exception
 from neo.classes.interaction import AutoEphemeralInteractionResponse
 from neo.tools import Patcher
+from neo.tools.formatters import format_exception
 
 logger = logging.getLogger("neo")
 

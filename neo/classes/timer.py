@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from .formatters import format_exception
+from ..tools.formatters import format_exception
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable

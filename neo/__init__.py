@@ -14,18 +14,10 @@ from aiohttp import ClientSession
 from asyncpg import create_pool
 from discord.ext import commands
 
-from .classes import (
-    Embed,
-    containers,
-    context,
-    exceptions,
-    formatters,
-    help_command,
-    partials,
-)
+from .classes import Embed, containers, context, exceptions, help_command, partials
 from .modules import *  # noqa: F403
 from .tools import *  # noqa: F403
-from .tools import recursive_getattr
+from .tools import formatters, recursive_getattr
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Mapping

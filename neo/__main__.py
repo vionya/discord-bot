@@ -17,7 +17,7 @@ except ImportError:
     pass
 
 from neo import Neo
-from neo.classes.formatters import NeoLoggingFormatter
+from neo.tools.formatters import NeoLoggingFormatter
 
 from . import runtime
 

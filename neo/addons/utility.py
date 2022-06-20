@@ -13,9 +13,9 @@ import discord
 import neo
 from discord import app_commands
 from googletrans import LANGUAGES, Translator
-from neo.classes.formatters import Table
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
 from neo.tools import parse_ids, shorten
+from neo.tools.formatters import Table
 
 from .auxiliary.utility import (
     InfoButtons,
@@ -254,7 +254,7 @@ class Utility(neo.Addon):
         opt_1="The second choice to choose from",
         opt_2="The third choice to choose from (optional)",
         opt_3="The fourth choice to choose from (optional)",
-        opt_4="The fifth choice to choose from (optional)"
+        opt_4="The fifth choice to choose from (optional)",
     )
     async def choose_command(
         self,
