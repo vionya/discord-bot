@@ -9,33 +9,36 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
+from neo.classes.containers import Setting, SettingsMapping
 from neo.classes.transformers import (
     bool_transformer,
     timeout_transformer,
     timezone_transformer,
 )
 from neo.modules import ButtonsMenu
-from neo.tools import convert_setting, instantiate, is_registered_profile, prompt_user
+from neo.tools import (
+    convert_setting,
+    generate_setting_mapping_autocomplete,
+    instantiate,
+    is_registered_profile,
+    prompt_user,
+)
 from neo.tools.checks import is_registered_profile_predicate
 
 from .auxiliary.profile import ChangeSettingButton, ResetSettingButton
 
-if TYPE_CHECKING:
-    from neo.types.settings_mapping import SettingsMapping
-
-
-SETTINGS_MAPPING: SettingsMapping = {
-    "receive_highlights": {
-        "transformer": bool_transformer,
-        "description": None,
-    },
-    "timezone": {"transformer": timezone_transformer, "description": None},
-    "hl_timeout": {"transformer": timeout_transformer, "description": None},
-    "default_ephemeral": {
-        "transformer": bool_transformer,
-        "description": None,
-    },
-}
+SETTINGS_MAPPING = SettingsMapping(
+    Setting("receive_highlights", transformer=bool_transformer),
+    Setting("timezone", transformer=timezone_transformer),
+    Setting(
+        "hl_timeout", transformer=timeout_transformer, name_override="Highlight Timeout"
+    ),
+    Setting(
+        "default_ephemeral",
+        transformer=bool_transformer,
+        name_override="Private By Default",
+    ),
+)
 
 
 class Profile(neo.Addon, app_group=True):
@@ -97,7 +100,8 @@ class Profile(neo.Addon, app_group=True):
                 )
                 embed = neo.Embed(
                     title=f"Settings for {interaction.user}",
-                    description=f"**Setting: `{setting}`**\n\n" + description,
+                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
+                    + description,
                 ).set_thumbnail(url=interaction.user.display_avatar)
                 embeds.append(embed)
 
@@ -166,12 +170,7 @@ class Profile(neo.Addon, app_group=True):
         async def profile_settings_set_reset_autocomplete(
             self, interaction: discord.Interaction, current: str
         ):
-            return [
-                *map(
-                    lambda k: discord.app_commands.Choice(name=k, value=k),
-                    filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
-                )
-            ]
+            return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
 
     @app_commands.command(name="show")
     @discord.app_commands.describe(

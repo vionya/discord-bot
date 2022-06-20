@@ -8,10 +8,12 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
+from neo.classes.containers import Setting, SettingsMapping
 from neo.classes.transformers import bool_transformer, command_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import (
     convert_setting,
+    generate_setting_mapping_autocomplete,
     instantiate,
     is_registered_guild,
     prompt_user,
@@ -22,15 +24,9 @@ from neo.types.commands import AnyCommand
 
 from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 
-if TYPE_CHECKING:
-    from neo.types.settings_mapping import SettingsMapping
-
-SETTINGS_MAPPING: SettingsMapping = {
-    "starboard": {
-        "transformer": bool_transformer,
-        "description": None,
-    },
-}
+SETTINGS_MAPPING = SettingsMapping(
+    Setting("starboard", transformer=bool_transformer, name_override="Enable Starboard")
+)
 
 
 @app_commands.guild_only()
@@ -106,7 +102,8 @@ class ServerConfig(
                 )
                 embed = neo.Embed(
                     title=f"Settings for {interaction.guild}",
-                    description=f"**Setting: `{setting}`**\n\n" + description,
+                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
+                    + description,
                 ).set_thumbnail(url=interaction.guild.icon)
                 embeds.append(embed)
 
@@ -151,9 +148,7 @@ class ServerConfig(
             their functions is in the `server` command
             """
             await self.addon.set_option(interaction, setting, new_value)
-            await interaction.response.send_message(
-                f"Setting `{setting}` has been changed!"
-            )
+            await interaction.response.send_message("Your settings have been updated!")
 
         @app_commands.command(name="reset")
         @app_commands.describe(setting="The setting to reset")
@@ -168,21 +163,14 @@ class ServerConfig(
             Defaults can be found in the `server` command
             """
             await self.addon.reset_option(interaction, setting)
-            await interaction.response.send_message(
-                f"Setting `{setting}` has been reset!"
-            )
+            await interaction.response.send_message("Your settings have been updated!")
 
         @server_settings_set.autocomplete("setting")
         @server_settings_reset.autocomplete("setting")
         async def server_settings_set_reset_autocomplete(
             self, interaction: discord.Interaction, current: str
         ):
-            return [
-                *map(
-                    lambda k: discord.app_commands.Choice(name=k, value=k),
-                    filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
-                )
-            ]
+            return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
 
     @app_commands.command(name="create")
     @is_owner_or_administrator()

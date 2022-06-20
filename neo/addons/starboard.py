@@ -9,25 +9,35 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from neo.classes.containers import TimedCache
+from neo.classes.containers import TimedCache, SettingsMapping, Setting
 from neo.classes.transformers import max_days_transformer, text_channel_transformer
 from neo.modules import ButtonsMenu
-from neo.tools import convert_setting, instantiate, shorten
+from neo.tools import (
+    convert_setting,
+    generate_setting_mapping_autocomplete,
+    instantiate,
+    shorten,
+)
 from neo.tools.checks import valid_starboard_env
 
 from .auxiliary.starboard import ChangeSettingButton
 
 if TYPE_CHECKING:
     from asyncpg import Pool
-    from neo.types.settings_mapping import SettingsMapping
 
-SETTINGS_MAPPING: SettingsMapping = {
-    "channel": {"transformer": text_channel_transformer, "description": None},
-    "threshold": {"transformer": int, "description": None},
-    "format": {"transformer": str, "description": None},
-    "max_days": {"transformer": max_days_transformer, "description": None},
-    "emoji": {"transformer": discord.PartialEmoji.from_str, "description": None},
-}
+SETTINGS_MAPPING = SettingsMapping(
+    Setting(
+        "channel",
+        transformer=text_channel_transformer,
+        name_override="Starboard Channel",
+    ),
+    Setting("threshold", transformer=int, name_override="Minimum Stars Required"),
+    Setting("format", transformer=str, name_override="Starred Message Format"),
+    Setting("max_days", transformer=max_days_transformer),
+    Setting(
+        "emoji", transformer=discord.PartialEmoji.from_str, name_override="Star Emoji"
+    ),
+)
 
 
 class Star:
@@ -463,7 +473,8 @@ class StarboardAddon(
                 )
                 embed = neo.Embed(
                     title=f"Starboard settings for {interaction.guild}",
-                    description=f"**Setting: `{setting}`**\n\n" + description,
+                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
+                    + description,
                 ).set_thumbnail(url=interaction.guild.icon)
                 embeds.append(embed)
 
@@ -498,20 +509,13 @@ class StarboardAddon(
             More information on the available settings and their functions is in the `starboard` command
             """
             await self.addon.set_option(interaction, setting, new_value)
-            await interaction.response.send_message(
-                f"Setting `{setting}` has been changed!"
-            )
+            await interaction.response.send_message("Your settings have been updated!")
 
         @starboard_set.autocomplete("setting")
         async def starboard_set_autocomplete(
             self, interaction: discord.Interaction, current: str
         ):
-            return [
-                *map(
-                    lambda k: discord.app_commands.Choice(name=k, value=k),
-                    filter(lambda k: current in k, SETTINGS_MAPPING.keys()),
-                )
-            ]
+            return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
 
     async def set_option(
         self, interaction: discord.Interaction, setting: str, new_value: str
