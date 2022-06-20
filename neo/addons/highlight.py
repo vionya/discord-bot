@@ -320,7 +320,8 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         Highlights will notify you when the word/phrase you add is mentioned
 
         **Notes**
-        - Highlights will __never__ be triggered from private threads
+        - Highlights will __never__ be triggered from private threads that
+        you are not a member of
         - Highlights will __never__ be triggered by bots
         - You must be a member of a channel to be highlighted in it
         """
