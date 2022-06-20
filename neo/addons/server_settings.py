@@ -186,7 +186,7 @@ class ServerConfig(
 
     @app_commands.command(name="create")
     @is_owner_or_administrator()
-    async def server_settings_create(self, interaction: discord.Interaction):
+    async def server_create(self, interaction: discord.Interaction):
         """
         Creates a config entry for the server
 
@@ -208,7 +208,7 @@ class ServerConfig(
     @app_commands.command(name="delete")
     @is_owner_or_administrator()
     @is_registered_guild()
-    async def server_settings_delete(self, interaction: discord.Interaction):
+    async def server_delete(self, interaction: discord.Interaction):
         """Permanently deletes this server's config"""
         assert interaction.guild
 
@@ -232,7 +232,7 @@ class ServerConfig(
     @app_commands.describe(channel="The channel to ignore")
     @is_owner_or_administrator()
     @is_registered_guild()
-    async def server_settings_ignore_channel(
+    async def server_ignore_channel(
         self,
         interaction: discord.Interaction,
         channel: Optional[discord.TextChannel] = None,
@@ -274,7 +274,7 @@ class ServerConfig(
     @app_commands.describe(channel="The channel to unignore")
     @is_owner_or_administrator()
     @is_registered_guild()
-    async def server_settings_unignore_channel(
+    async def server_unignore_channel(
         self, interaction: discord.Interaction, channel: discord.TextChannel
     ):
         """Unignores a channel for command responses"""
@@ -294,7 +294,7 @@ class ServerConfig(
     @app_commands.describe(command="The command to disable")
     @is_owner_or_administrator()
     @is_registered_guild()
-    async def server_settings_disable_command(
+    async def server_disable_command(
         self,
         interaction: discord.Interaction,
         *,
@@ -344,7 +344,7 @@ class ServerConfig(
     @app_commands.describe(command="The command to re-enable")
     @is_owner_or_administrator()
     @is_registered_guild()
-    async def server_settings_reenable_command(
+    async def server_enable_command(
         self,
         interaction: discord.Interaction,
         *,
@@ -362,6 +362,20 @@ class ServerConfig(
 
         config.disabled_commands = [*commands]
         await send_confirmation(interaction)
+
+    @server_enable_command.autocomplete("command")
+    async def server_enable_command_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
+        if not interaction.guild or interaction.guild.id not in self.bot.configs:
+            return []
+
+        config = self.bot.configs[interaction.guild.id]
+        return [
+            app_commands.Choice(name=k, value=k)
+            for k in config.disabled_commands
+            if current in k
+        ][:25]
 
 
 async def setup(bot: neo.Neo):

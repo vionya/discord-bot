@@ -16,6 +16,7 @@
 * Invite scopes explicitly cover `bot` and `applications.commands` now
 * Autocomplete for all commands which require an index has been overhauled to now provide a preview of the content of the item, as well as to center the indices "around" the current provided value so that more information is readily available
 * Improvements to autocomplete for commands which accept commands as input (i.e. `help`, `server disable`)
+    * `server enable` only shows commands which are currently disabled
 
 ## Removals
 * All old-style text commands have been removed (and are replaced by slash command versions)
