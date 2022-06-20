@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import re
 import zoneinfo
+from operator import attrgetter
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 import discord
-from discord.app_commands import Transformer
+from discord.app_commands import Choice, Transformer
 from neo.tools import recursive_get_command
 from neo.types.commands import AnyCommand
 from typing_extensions import Self
@@ -146,3 +147,12 @@ class command_transformer(Transformer):
         if not command:
             raise NameError(f"There is no command by the identifier `{command_name}`.")
         return command
+
+    @classmethod
+    async def autocomplete(
+        cls, interaction: discord.Interaction, current: str
+    ) -> list[Choice[str]]:
+        bot: Neo = interaction.client  # type: ignore
+
+        all_commands = map(attrgetter("qualified_name"), bot.tree.walk_commands())
+        return [Choice(name=k, value=k) for k in all_commands if current in k][:25]
