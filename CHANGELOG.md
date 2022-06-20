@@ -24,6 +24,31 @@
     * The functionality of both is combined in `/remind set`
 * Removed server setting: `prefix`
 
+## Internal
+### Additions
+* Re-implement help command as a subclass of `AutoEphemeralAppCommand`
+* Implement helper function to generate autocomplete data for index-based commands
+* Implement distinct exceptions for several scenarios
+
+### Removals
+* Removed `args` module (obsolete with full slash command implementation)
+* Removed methods from bot object:
+    * `get_prefix`
+    * `add_command`
+    * `global_cooldown`
+* Removed `commands.HelpCommand` subclass implementation of help command
+* Cleaned up unused runtime patches
+
+### Changes
+* `Neo.channel_check` and `Neo.guild_disabled_check` now process only `Interaction` objects
+* `Devel` command `addon` refactored to use `Literal`s rather than the now-removed `args` module
+* Updated schema for todo and reminder tables (migration script included in `scripts/`)
+* Refactor checks, sometimes decoupling the predicate from the check decorator, allowing predicates to be verified separately
+
+### Improvements
+* Lots of typing improvements project-wide
+* Various documentation improvements
+
 # Release v0.15.4 - June 11, 2022
 ## Important
 * **All** text commands\* have been deprecated, and will generate an alert button whenever they are used
