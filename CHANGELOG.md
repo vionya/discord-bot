@@ -1,4 +1,4 @@
-# Major Release 1.0.0 - TBD
+# **Release v1.0.0** (TBD)
 ## Breaking Changes
 * With the release of major version 1.0.0, text command support has been dropped
 
@@ -17,6 +17,7 @@
 * Autocomplete for all commands which require an index has been overhauled to now provide a preview of the content of the item, as well as to center the indices "around" the current provided value so that more information is readily available
 * Improvements to autocomplete for commands which accept commands as input (i.e. `help`, `server disable`)
     * `server enable` only shows commands which are currently disabled
+* Setting names are now easier to understand (i.e. `default_ephemeral` now shows as `Private By Default`)
 
 ## Removals
 * All old-style text commands have been removed (and are replaced by slash command versions)
@@ -24,54 +25,62 @@
     * The functionality of both is combined in `/remind set`
 * Removed server setting: `prefix`
 
-## Internal
-### Additions
+## Other
+* Updated changelog style
+
+<details>
+<summary>Internal (for those who care to read it)</summary>
+
+#### Additions
 * Re-implement help command as a subclass of `AutoEphemeralAppCommand`
 * Implement helper function to generate autocomplete data for index-based commands
 * Implement distinct exceptions for several scenarios
 
-### Removals
+#### Removals
 * Removed `args` module (obsolete with full slash command implementation)
-* Removed methods from bot object:
-    * `get_prefix`
-    * `add_command`
-    * `global_cooldown`
+* Removed several obsolete methods from the `Neo` object
 * Removed `commands.HelpCommand` subclass implementation of help command
 * Cleaned up unused runtime patches
 
-### Changes
+#### Changes
 * `Neo.channel_check` and `Neo.guild_disabled_check` now process only `Interaction` objects
 * `Devel` command `addon` refactored to use `Literal`s rather than the now-removed `args` module
 * Updated schema for todo and reminder tables (migration script included in `scripts/`)
 * Refactor checks, sometimes decoupling the predicate from the check decorator, allowing predicates to be verified separately
+* Overhaul settings system
+    * `SETTINGS_MAPPING` dicts have been replaced by `SettingsMapping`s which contain `Setting` objects
+    * `SettingsMapping`s and `Setting`s are subclasses of `Mapping` and `MutableMapping`, respectively
+    * This allows the raw key names to be separated from the user-facing interfaces, by letting aliases be set and used in commands etc
+* `neo.classes.formatters` -> `neo.tools.formatters`
 
-### Improvements
+#### Improvements
 * Lots of typing improvements project-wide
 * Various documentation improvements
+</details>
 
-# Release v0.15.4 - June 11, 2022
+# **Release v0.15.4** (June 11, 2022)
 ## Important
-* **All** text commands\* have been deprecated, and will generate an alert button whenever they are used
+* **All** text commands<sup>1</sup> have been deprecated, and will generate an alert button whenever they are used
 
-\* Text commands that do not currently have a slash command counterpart will not generate alert buttons, because that would not make sense
+<sup>1</sup> Text commands that do not currently have a slash command counterpart will not generate alert buttons, because that would not make sense
 
 ## Improvements
 * Both a fix and an improvement: all application command responses are now automatically deferred before their callback is invoked, which allows long-running computations to be handled without an unhelpful user-facing error showing up
 * When used in ephemeral messages, menus will no longer have a `close` button, as the message can simply be dismissed
 
-# Release v0.15.3 - June 10, 2022
+# **Release v0.15.3** (June 10, 2022)
 ## Fixes
 * Hotfixes certain slash commands to implement `Interaction.response.defer` to allow for long-running actions to be processed without an error being shown
 
-# Release v0.15.2 - June 10, 2022
+# **Release v0.15.2** (June 10, 2022)
 ## Fixes
 * Implemented some changes in hopes of addressing issues with slash commands failing to respond
 
-# Release v0.15.1 - June 7, 2022
+# **Release v0.15.1** (June 7, 2022)
 ## Fixes
 * Group slash commands are once again properly supported in the help command
 
-# Release v0.15.0 - June 6, 2022
+# **Release v0.15.0** (June 6, 2022)
 ## Additions
 * Added several context menu commands:
     * For messages, a `Show Message Info` context command
@@ -114,7 +123,7 @@
     * `define`
 * Reminders are now checked via batch polling rather than async wait tasks for each individual reminder
 
-# Release v0.14.0 - May 21, 2022
+# **Release v0.14.0** (May 21, 2022)
 ## Initial Slash Commands
 * neo phoenix has been updated to support slash commands
     * Support is currently limited to several commands
@@ -161,7 +170,7 @@
 ## Fixes
 * Fixed a regression in query handling for the `image` shortcut command which was causing inputs to inexplicably fail to return the proper results
 
-# Release v0.13.0 - Janurary 24, 2022
+# **Release v0.13.0** (Janurary 24, 2022)
 ## Additions
 * `serversettings disable`/`serversettings reenable` system
     * Allows server administrators to disable neo phoenix's commands within their server
@@ -186,7 +195,7 @@
 * Updated startup code to have manual control over the event loop
 
 
-# Release v0.12.1 - November 1, 2021
+# **Release v0.12.1** (November 1, 2021)
 ## Improvements
 * Adjust Unicode characters used for menu paging buttons
 * Adjusted the display of command aliases in flag command help
@@ -203,7 +212,7 @@
     * Updated some syntax accordingly
 
 
-# Release v0.12.0 - October 3, 2021
+# **Release v0.12.0** (October 3, 2021)
 ## Additions
 * `roleinfo`/`ri` command
     * Displays relevant information pertaining to the given role
@@ -238,13 +247,13 @@
 * Fixed an edge case in highlights whereby, if a message event was received prior to the bot's internal cache being ready, the highlights cache would be computed incorrectly, causing all highlights to fail to be cached, thus preventing any highlights from being delivered
 
 
-# Release v0.11.1 - September 16, 2021
+# **Release v0.11.1** (September 16, 2021)
 ## Fixes
 * `avatar` now properly fetches guild members when applicable
 * Updated the description for the `remind in` command
 
 
-# Release v0.11.0 - August 26, 2021
+# **Release v0.11.0** (August 26, 2021)
 Release v0.11.0 standardizes certain interfaces, adds some new feature support, plus some various other changes.
 
 ## Improvements
@@ -272,7 +281,7 @@ Release v0.11.0 standardizes certain interfaces, adds some new feature support, 
 * Unnecessary runtime patches have been removed
 
 
-# Release v0.10.3 - July 28, 2021
+# **Release v0.10.3** (July 28, 2021)
 ## Fixes
 * Fix issues with ignoring entities from a starboard
 * Fix highlights not being compiled as case-insensitive
@@ -282,17 +291,17 @@ Release v0.11.0 standardizes certain interfaces, adds some new feature support, 
 * Implement event system separate from `discord.Client.dispatch` due to volatility of that API
 
 
-# Release v0.10.2 - July 26, 2021
+# **Release v0.10.2** (July 26, 2021)
 ## Fixes
 * Fix an AttributeError when setting a starboard channel (was caused due to residual code)
 
 
-# Release v0.10.1 - July 25, 2021
+# **Release v0.10.1** (July 25, 2021)
 ## Fixes
 * Fix an unintentionally public IndexError
 
 
-# Release v0.10.0 - July 23, 2021
+# **Release v0.10.0** (July 23, 2021)
 Release v0.10.0 implements a couple of utility commands.
 
 ## Additions
@@ -310,19 +319,19 @@ Release v0.10.0 implements a couple of utility commands.
 * Logically partitioned `requirements.txt`
 
 
-# Release v0.9.3 - July 22, 2021
+# **Release v0.9.3** (July 22, 2021)
 ## Improvements
 * Rename `eval` command to `exec`
 * Remove extraneous `Starboard` attributes
 * Change type of `Starboard.ignored`
 
 
-# Release v0.9.2 - July 21, 2021
+# **Release v0.9.2** (July 21, 2021)
 ## Fixes
 * Fixed an issue with reminders occasionally wrongly displaying "[source deleted]" when delivered in direct messages
 
 
-# Release v0.9.1 - July 20, 2021
+# **Release v0.9.1** (July 20, 2021)
 0.9.1 fixes issues found in 0.9.0 and earlier.
 
 ## Improvements
@@ -334,7 +343,7 @@ Release v0.10.0 implements a couple of utility commands.
 * Fixed mobile formatting regression with ephemeral privacy policy
 
 
-# Release v0.9.0 - July 17, 2021
+# **Release v0.9.0** (July 17, 2021)
 Release v0.9.0 cleans up and slightly enhances neo phoenix.
 
 ## Legal
@@ -351,7 +360,7 @@ Release v0.9.0 cleans up and slightly enhances neo phoenix.
 * Optimizations for profile code
 
 
-# Release v0.8.0 - July 8, 2021
+# **Release v0.8.0** (July 8, 2021)
 This release is mostly comprised of polish for existing features.
 
 ## Legal
@@ -388,7 +397,7 @@ This release is mostly comprised of polish for existing features.
     * `Pages` now supports a `template_embed` keyword-only argument, for defining a static template embed that is merged with the `Pages` object's content
 
 
-# Release v0.7.0 - July 2, 2021
+# **Release v0.7.0** (July 2, 2021)
 In large part, this release extends and improves existing features.
 
 ## Improvements
@@ -415,7 +424,7 @@ In large part, this release extends and improves existing features.
 * Updated default name for auto-generated config templates, and added a comment to the top of auto-generated files
 
 
-# Release v0.6.0 - June 25, 2021
+# **Release v0.6.0** (June 25, 2021)
 This release fleshes out neo phoenix's feature set further.
 
 ## Highlight Collection
@@ -430,7 +439,7 @@ This release fleshes out neo phoenix's feature set further.
     * Also added an accompanying decorator to simplify the creation of timers
 
 
-# Release v0.5.0 - June 24, 2021
+# **Release v0.5.0** (June 24, 2021)
 This release implements features to bring neo phoenix closer to a stable 1.0.0 release.
 
 ## Front-End Changes/Additions
@@ -449,7 +458,7 @@ This release implements features to bring neo phoenix closer to a stable 1.0.0 r
 * Resolved an issue causing starboards to behave improperly when their emoji setting was changed
 
 
-# Release v0.4.0 - June 22, 2021
+# **Release v0.4.0** (June 22, 2021)
 ## Reminders
 This release implements a full `Reminders` system.
 
@@ -487,11 +496,11 @@ Below is a comparison between the system's predecessor (legacy `neo` `Reminders`
     * Depends on new `Table` class for formatting entries into an optimally readable form
 
 
-# Release v0.3.1 - June 20, 2021
+# **Release v0.3.1** (June 20, 2021)
 * Fixed an issue with `Starboard` editing brand-new stars upon creation
 
 
-# Release v0.3.0 - June 20, 2021
+# **Release v0.3.0** (June 20, 2021)
 This release mainly targets the profile system, and improves upon it significantly.
 * Renamed `user_settings` extension to `profile`
 * Implemented command group `profile`, which shows information pertaining to the specified user's profile (provided they have a profile, otherwise exiting)
@@ -510,19 +519,19 @@ This release mainly targets the profile system, and improves upon it significant
         * Being a profile setting, this can be reset by the user at any point via the `settings reset` command
 
 
-# Release v0.2.1 - June 20, 2021
+# **Release v0.2.1** (June 20, 2021)
 * Addresses minor bugs in `Starboard`
 * Implements a command to manually initialize a server's config entry if, for some reason, it is not automatically generated (which it is not, yet)
 
 
-# Release v0.2.0 - June 19, 2021
+# **Release v0.2.0** (June 19, 2021)
 This release implements the `Starboard` feature, and its full functionality. It functions largely identically to its predecessor, with several key improvements:
 * Management of starboard settings has been consolidated to a single, extensible system, utilizing SQL comments for logical, standardized documentation
 * neo phoenix's starboard features the ability to ignore/unignore message and channel IDs, preventing them from reaching starboard
 * Code style and fluency has also been improved all-around
 
 
-# Release v0.1.0 - June 6, 2021
+# **Release v0.1.0** (June 6, 2021)
 * Includes a reasonable amount of initial features
 * Introduces various frameworks for convenience
 
