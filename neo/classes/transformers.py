@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+from typing_extensions import Self
 import zoneinfo
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import discord
 from discord.app_commands import Transform, Transformer
@@ -15,28 +16,29 @@ if TYPE_CHECKING:
 
     from neo import Neo
 
+T = TypeVar("T")
 
 CODEBLOCK_REGEX = re.compile(r"^\w*\n", re.I)
 EXTRACT_MENTION_REGEX = re.compile(r"<@!?(\d+)>")
 EXTRACT_CHANNEL_REGEX = re.compile(r"^<#(\d{15,20})>$")
 
 
-class WrapperTransformer(Transformer):
-    wrapped: Callable[[str], Any]
+class WrapperTransformer(Transformer, Generic[T]):
+    wrapped: Callable[[str], T]
+
+    @classmethod
+    def transform(cls: type[Self], interaction: discord.Interaction, value: str) -> T:
+        ...
 
 
-def wrap_transformer(func: Callable[[str], Any]) -> type[WrapperTransformer]:
+def wrap_transformer(func: Callable[[str], T]) -> type[WrapperTransformer[T]]:
     class Wrapper(WrapperTransformer):
         def __init__(self) -> None:
             super().__init__()
             self.wrapped = func
 
         @classmethod
-        def transform(
-            cls: Transform[Any, Transformer],
-            interaction: discord.Interaction,
-            value: str,
-        ) -> Any:
+        def transform(cls, interaction, value):
             return func(value)
 
     return Wrapper
