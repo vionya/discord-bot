@@ -95,17 +95,9 @@ class AppHelpCommand(AutoEphemeralAppCommand):
             return await self.send_command_help(interaction, cmd)
 
     async def actual_autocomplete(self, interaction: discord.Interaction, current: str):
-        all_commands = set(
-            [
-                *map(attrgetter("qualified_name"), self.bot.walk_commands()),
-                *map(attrgetter("qualified_name"), self.bot.tree.walk_commands()),
-            ]
-        )
+        all_commands = map(attrgetter("qualified_name"), self.bot.tree.walk_commands())
         return [
-            *map(
-                lambda k: app_commands.Choice(name=k, value=k),
-                filter(lambda k: current in k, all_commands),
-            )
+            app_commands.Choice(name=k, value=k) for k in all_commands if current in k
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
