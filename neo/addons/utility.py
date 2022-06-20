@@ -249,6 +249,13 @@ class Utility(neo.Addon):
         opt_3="option-4",
         opt_4="option-5",
     )
+    @app_commands.describe(
+        opt_0="The first choice to choose from",
+        opt_1="The second choice to choose from",
+        opt_2="The third choice to choose from (optional)",
+        opt_3="The fourth choice to choose from (optional)",
+        opt_4="The fifth choice to choose from (optional)"
+    )
     async def choose_command(
         self,
         interaction: discord.Interaction,
