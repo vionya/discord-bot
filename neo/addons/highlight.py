@@ -30,12 +30,12 @@ if TYPE_CHECKING:
 
 
 class DefaultAvatars(Enum):
-    BLURPLE = "<:_:863449882088833065>"
-    GREY = "<:_:863449883121418320>"
-    GREEN = "<:_:863449884157280307>"
-    ORANGE = "<:_:863449885088808970>"
-    RED = "<:_:863449885834739712>"
-    PINK = "<:_:863449887403147314>"
+    Blurple = "<:_:863449882088833065>"
+    Grey = "<:_:863449883121418320>"
+    Green = "<:_:863449884157280307>"
+    Orange = "<:_:863449885088808970>"
+    Red = "<:_:863449885834739712>"
+    Pink = "<:_:863449887403147314>"
 
 
 MAX_TRIGGERS = 10
@@ -61,19 +61,19 @@ def format_hl_context(message: discord.Message, is_trigger=False):
 
     match int(message.author.default_avatar.key):
         case 0:
-            enum_member = DefaultAvatars.BLURPLE
+            enum_member = DefaultAvatars.Blurple
         case 1:
-            enum_member = DefaultAvatars.GREY
+            enum_member = DefaultAvatars.Grey
         case 2:
-            enum_member = DefaultAvatars.GREEN
+            enum_member = DefaultAvatars.Green
         case 3:
-            enum_member = DefaultAvatars.ORANGE
+            enum_member = DefaultAvatars.Orange
         case 4:
-            enum_member = DefaultAvatars.RED
+            enum_member = DefaultAvatars.Red
         case 5:
-            enum_member = DefaultAvatars.PINK
+            enum_member = DefaultAvatars.Pink
         case _:
-            enum_member = DefaultAvatars.BLURPLE
+            enum_member = DefaultAvatars.Blurple
 
     return fmt.format(enum_member.value, message)
 
