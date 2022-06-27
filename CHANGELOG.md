@@ -1,3 +1,7 @@
+# **Release v1.0.1** (June 27, 2022)
+
+- End the migration period for server configs introduced prior to v1.0.0's release
+
 # **Release v1.0.0** (June 20, 2022)
 
 ## Breaking Changes

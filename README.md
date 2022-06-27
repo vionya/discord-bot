@@ -16,7 +16,7 @@ neo phoenix is an in-development rewrite of the `neo` Discord bot.
 
 * [x] Implement basic functionality
 * [x] Add large features
-* [ ] `1.0.0` stable release
+* [x] `1.0.0` stable release
 * [x] Deploy and publicize
 * [x] Deprecate legacy `neo`
 * [ ] ???
