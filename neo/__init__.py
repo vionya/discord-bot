@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from .types.config import NeoConfig
 
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
@@ -99,10 +99,8 @@ class Neo(commands.Bot):
         await self.wait_until_ready()
 
         for guild_id in self.configs.copy():
-            pass
-            # if not self.get_guild(guild_id):
-            #     await self.delete_config(guild_id)
-        # TODO: Un-comment after migration period
+            if not self.get_guild(guild_id):
+                await self.delete_config(guild_id)
 
     async def add_profile(self, user_id, *, record=None):
         if not record:
@@ -242,9 +240,7 @@ class Neo(commands.Bot):
         return user
 
     async def on_guild_remove(self, guild: discord.Guild):
-        pass
-        # await self.delete_config(guild.id)
-        # TODO: Un-comment after migration period
+        await self.delete_config(guild.id)
 
     async def tree_interaction_check(self, interaction: discord.Interaction):
         # Intercept app commands
