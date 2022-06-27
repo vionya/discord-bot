@@ -284,9 +284,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         await interaction.response.send_message(embed=embed)
 
     @remind_view.autocomplete("index")
-    async def remind_view_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ):
+    async def remind_view_autocomplete(self, interaction: discord.Interaction, current):
         if interaction.user.id not in self.bot.profiles:
             return []
 
@@ -316,7 +314,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @remind_cancel.autocomplete("index")
     async def remind_cancel_autocomplete(
-        self, interaction: discord.Interaction, current: str
+        self, interaction: discord.Interaction, current
     ):
         if interaction.user.id not in self.bot.profiles:
             return []

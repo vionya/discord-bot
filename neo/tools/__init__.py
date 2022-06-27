@@ -6,6 +6,7 @@ import re
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeGuard, TypeVar, overload
 
 from discord import app_commands, utils
+from typing_extensions import TypeVarTuple, Unpack
 
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, instantiate, with_docstring
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from discord import Interaction
+    from discord.app_commands import Choice
     from neo.classes.containers import SettingsMapping
 
 
@@ -161,6 +163,19 @@ def parse_ids(argument: str) -> tuple[int, Optional[int]]:
 ClearAllOption = "Clear all"
 
 
+@overload
+def generate_autocomplete_list(
+    container: Sequence[Any],
+    current: str,
+    *,
+    insert_wildcard: Literal[True],
+    show_previews: bool = True,
+    focus_current: bool = True,
+) -> list[Choice[str] | Choice[int]]:
+    ...
+
+
+@overload
 def generate_autocomplete_list(
     container: Sequence[Any],
     current: str,
@@ -168,7 +183,18 @@ def generate_autocomplete_list(
     insert_wildcard: bool = False,
     show_previews: bool = True,
     focus_current: bool = True,
-) -> list[app_commands.Choice[str] | app_commands.Choice[int]]:
+) -> list[Choice[int]]:
+    ...
+
+
+def generate_autocomplete_list(
+    container: Sequence[Any],
+    current: str,
+    *,
+    insert_wildcard: bool = False,
+    show_previews: bool = True,
+    focus_current: bool = True,
+):
     """
     Generate a list of choices suitable for an autocomplete function
 
@@ -188,6 +214,8 @@ def generate_autocomplete_list(
         Whether the list should adapt to show indices surrounding the current value
         Default: True
     """
+    if not isinstance(current, str):
+        return []
 
     if len(current) == 0 or focus_current is False:
         # If the field is empty or focus_current is False,
@@ -253,7 +281,7 @@ def is_clear_all(value: str) -> TypeGuard[Literal["Clear all"]]:
 
 def generate_setting_mapping_autocomplete(
     mapping: SettingsMapping, current: str
-) -> list[app_commands.Choice[str]]:
+) -> list[Choice[str]]:
     """Generate a list of choices suitable for an autocomplete function of a settings mapping"""
     setting_pairs = []
     for k, v in mapping.items():

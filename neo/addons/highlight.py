@@ -22,7 +22,7 @@ from neo.tools import (
     is_clear_all,
     is_registered_profile,
     is_valid_index,
-    send_confirmation
+    send_confirmation,
 )
 
 if TYPE_CHECKING:
@@ -389,7 +389,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
 
     @highlight_remove.autocomplete("index")
     async def highlight_remove_autocomplete(
-        self, interaction: discord.Interaction, current: str
+        self, interaction: discord.Interaction, current
     ):
         if interaction.user.id not in self.bot.profiles:
             return []

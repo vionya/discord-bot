@@ -20,7 +20,7 @@ from neo.tools import (
     is_registered_profile,
     is_valid_index,
     send_confirmation,
-    shorten
+    shorten,
 )
 from neo.tools.decorators import no_defer
 
@@ -168,9 +168,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await send_confirmation(interaction)
 
     @todo_remove.autocomplete("index")
-    async def todo_remove_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ):
+    async def todo_remove_autocomplete(self, interaction: discord.Interaction, current):
         if interaction.user.id not in self.bot.profiles:
             return []
 
@@ -220,7 +218,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     @todo_view.autocomplete("index")
     @todo_edit.autocomplete("index")
     async def todo_edit_view_autocomplete(
-        self, interaction: discord.Interaction, current: str
+        self, interaction: discord.Interaction, current
     ):
         if interaction.user.id not in self.bot.profiles:
             return []
