@@ -23,7 +23,7 @@ def format_exception(exc: BaseException | OptExcInfo) -> str:
 
 def shorten(text: str, width: int) -> str:
     if len(text) > width:
-        text = text[: width - 3] + "..."
+        text = text[: width - 1] + "…"
     return text
 
 
