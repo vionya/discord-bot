@@ -1,3 +1,26 @@
+# **Release v1.1.0** (TBD)
+
+## Additions
+
+- Repeating reminders
+  - By toggling the new `repeat` option in `/remind set`, you can mark a reminder as a repeating reminder
+  - Repeating reminders will continuously remind you of the same content ad infinitum
+  - The interval can be controlled through both relative and absolute termini
+    - Where _n_ is the given time:
+      - If relative, the reminder will be repeated once per _n_
+      - If absolute, the reminder will be repeated daily at exactly _n_
+    - Relative reminders must have an interval of at least 1 hour
+  - Repeating reminders are marked in the reminders list with a repeat symbol
+  - In the `/remind view` interface, repeating reminders will show the intervals on which they repeat
+
+## Improvements
+
+- The proper ellipsis character is now used in text shortening, so a bit more (2 characters) text will be shown when text is shortened
+
+## Fixes
+
+- Fixes a help command issue wherein whitespace was improperly stripped, causing the help command to display a difficult-to-read output on mobile devices
+
 # **Release v1.0.1** (June 27, 2022)
 
 - End the migration period for server configs introduced prior to v1.0.0's release
