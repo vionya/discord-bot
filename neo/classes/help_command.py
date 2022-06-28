@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
+import re
 from typing import TYPE_CHECKING, Any, Optional
 
 import discord
@@ -38,6 +39,9 @@ def format_command(command: AnyCommand):
         symbol = "\U00002444"
 
     return fmt.format(symbol, get_ancestral_path(command), command)
+
+
+leading_whitespace = re.compile(r"(?!$)^\s+", re.MULTILINE)
 
 
 class AppHelpCommand(AutoEphemeralAppCommand):
@@ -164,7 +168,8 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     async def send_command_help(
         self, interaction: discord.Interaction, command: AnyCommand
     ):
-        description = (
+        description = leading_whitespace.sub(
+            "",
             max(
                 command.description,
                 getattr(command.callback, "__doc__", "") or ""  # type: ignore
@@ -172,13 +177,13 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 else "",
                 key=len,
             )
-            or "No description"
+            or "No description",
         )
 
         # TODO: Generate signatures?
         embed = neo.Embed(
             title=f"/{command.qualified_name}",
-            description="{}\n".format(description),
+            description=description,
         )
 
         if isinstance(command, app_commands.Group):
