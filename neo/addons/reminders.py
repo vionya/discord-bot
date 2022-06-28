@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 import discord
@@ -22,10 +21,19 @@ from neo.tools import (
     shorten,
     try_or_none,
 )
-from neo.tools.time_parse import TimedeltaWithYears, parse_absolute, parse_relative
+from neo.tools.time_parse import (
+    TimedeltaWithYears,
+    humanize_timedelta,
+    parse_absolute,
+    parse_relative,
+)
 
+# Maximum number of reminders per user
 MAX_REMINDERS = 15
+# Max number of characters in a reminder's content
 MAX_REMINDER_LEN = 1000
+# Minimum number of total seconds in a repeating reminder
+REPEATING_MINIMUM_SECONDS = 3600
 
 
 class Reminder:
@@ -33,7 +41,9 @@ class Reminder:
         "user_id",
         "reminder_id",
         "content",
-        "end_time",
+        "epoch",
+        "delta",
+        "repeating",
         "bot",
         "_done",
     )
@@ -44,19 +54,55 @@ class Reminder:
         user_id: int,
         reminder_id: UUID,
         content: str,
-        end_time: datetime,
+        epoch: datetime,
+        delta: timedelta,
+        repeating: bool,
         bot: neo.Neo,
     ):
         self.user_id = user_id
         self.reminder_id = reminder_id
         self.content = content
-        self.end_time = end_time
+        self.epoch = epoch
+        self.delta = delta
+        self.repeating = repeating
+
         self.bot = bot
         self._done = False
 
+    @property
+    def end_time(self):
+        return self.epoch + self.delta
+
     async def poll(self, poll_time: datetime):
         if poll_time >= self.end_time:
+            await self.update_repeating()
             await self.deliver()
+
+    async def update_repeating(self) -> bool:
+        """
+        If this reminder is set to repeat, update the epoch and return True.
+
+        Otherwise, return False.
+        """
+        if self.repeating is False:
+            return False
+
+        self.epoch += self.delta
+        await self.bot.db.execute(
+            """
+            UPDATE
+                reminders
+            SET
+                epoch=$1
+            WHERE
+                user_id=$2 AND
+                reminder_id=$3
+            """,
+            self.epoch,
+            self.user_id,
+            self.reminder_id,
+        )
+        return True
 
     async def deliver(self):
         try:
@@ -68,10 +114,15 @@ class Reminder:
                 ),
             )
         except discord.HTTPException:
-            return
+            # In the event of an HTTP exception, the reminder is deleted
+            # regardless of its type
+            await self.delete()
 
         finally:
-            await self.delete()
+            if self._done is False and self.repeating is False:
+                # If the reminder is not a repeating reminder and it is not yet
+                # marked as done, delete it
+                await self.delete()
 
     async def delete(self):
         """Remove this reminder from the database"""
@@ -82,14 +133,10 @@ class Reminder:
                 reminders
             WHERE
                 user_id=$1 AND
-                reminder_id=$2 AND
-                content=$3 AND
-                end_time=$4
+                reminder_id=$2
             """,
             self.user_id,
             self.reminder_id,
-            self.content,
-            self.end_time,
         )
         self.bot.broadcast("reminder_removed", self.user_id)
 
@@ -138,7 +185,9 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         user_id: int,
         reminder_id: UUID,
         content: str,
-        end_time: datetime,
+        delta: timedelta,
+        repeating: bool,
+        epoch: datetime,
     ):
         data = await self.bot.db.fetchrow(
             """
@@ -146,15 +195,19 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
                 user_id,
                 reminder_id,
                 content,
-                end_time
+                delta,
+                repeating,
+                epoch
             ) VALUES (
-                $1, $2, $3, $4
+                $1, $2, $3, $4, $5, $6
             ) RETURNING *
             """,
             user_id,
             reminder_id,
             content,
-            end_time,
+            delta,
+            repeating,
+            epoch,
         )
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
@@ -163,10 +216,15 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     @app_commands.describe(
         when="When the reminder should be delivered. See this command's help entry for more info",
         content="The content to remind yourself about. Can be empty",
+        repeat="Whether this reminder should repeat. See this command's help entry for more info",
     )
     @is_registered_profile()
     async def reminder_set(
-        self, interaction: discord.Interaction, when: str, content: Optional[str] = None
+        self,
+        interaction: discord.Interaction,
+        when: str,
+        content: str = "…",
+        repeat: bool = False,
     ):
         """
         Schedule a reminder
@@ -181,6 +239,11 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         Ex: /remind set `when: 14:08` `content: Do something obscure`
         - `month date, year at hour:minute`
         Ex: /remind set `when: January 19, 2038 at 3:14` `content: Y2k38`
+
+        Providing a time within the current day will
+        cause the reminder to be triggered the same
+        day if the time has not passed yet, and will
+        rollover to the next day if it has passed.
 
         All times are required to be in 24-hour format.
 
@@ -200,6 +263,25 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         /remind set `when: 5 years` `content: Hey, hello!`
         /remind set `when: 4h30m` `content: Check what time it is`
         /remind set `when: 3 weeks, 2 days` `content: Do something funny`
+
+        **__Repeating Reminders__**
+        Repeating reminders let you set a reminder to
+        continuously be delivered with a set interval.
+        Absolute and relative time formats are both
+        supported in repeating reminders.
+
+        **Repeating Absolute Reminders:**
+        With repeating absolute reminders, you can
+        select a time on the clock, and you will be
+        reminded each day at this time. The interval
+        can't be changed for absolute repeat reminders.
+
+        **Repeating Relative Reminders:**
+        With repeating relative reminders, you can
+        set a custom interval for the reminder to
+        repeat in. The `when` option will control
+        how often the reminder repeats itself.
+        Note that the interval must be at least 1 hour.
         """
         profile = self.bot.profiles[interaction.user.id]
         tz = profile.timezone or timezone.utc
@@ -207,33 +289,61 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         if len(self.reminders[interaction.user.id]) >= MAX_REMINDERS:
             raise ValueError("You've used up all of your reminder slots!")
 
-        (time_data, remainder) = try_or_none(parse_relative, when) or parse_absolute(
-            when, tz=profile.timezone or timezone.utc
-        )
-
-        if len(remainder) > MAX_REMINDER_LEN:
+        if len(content) > MAX_REMINDER_LEN:
             raise ValueError(
                 f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!"
             )
 
+        (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
+            when, tz=tz
+        )
+        now = datetime.now(tz)
+
+        message = "Your reminder will be delivered <t:{0}:R> [<t:{0}>]"
         match time_data:
             case TimedeltaWithYears():
-                future_time = datetime.now(timezone.utc) + time_data
-            case datetime():
-                future_time = time_data.replace(tzinfo=tz)
-            case _:
-                raise RuntimeError("Unknown error in future_time assignment")
+                # Delta is provided, epoch time is now since it's the starting
+                # point for the reminder
+                delta = time_data
+                epoch = now
 
-        timestamp: int = int(future_time.timestamp())
+                if repeat:
+                    if delta.total_seconds() < REPEATING_MINIMUM_SECONDS:
+                        raise ValueError("Interval must be at least 1 hour")
+                    message = (
+                        "Your reminder will be delivered every "
+                        f"`{humanize_timedelta(delta)}`"
+                    )
+
+            case datetime():
+                if repeat:
+                    # Absolute repeats cycle every day
+                    delta = timedelta(days=1)
+                    # Subtracting the delta from the parsed datetime allows
+                    # times from later in the current day to be triggered once
+                    epoch = (time_data - delta).replace(second=1, microsecond=0)
+                    message = (
+                        "Your reminder will be delivered every day at "
+                        f"<t:{epoch.timestamp():.0f}:t>"
+                    )
+
+                else:
+                    delta = time_data - now
+                    epoch = now
+
+            case _:
+                raise RuntimeError("Unknown error in time parsing")
+
+        timestamp: int = int((datetime.now(timezone.utc) + delta).timestamp())
         await self.add_reminder(
             user_id=interaction.user.id,
             reminder_id=uuid4(),
-            content=content or "...",
-            end_time=future_time,
+            content=content,
+            delta=delta,
+            repeating=repeat,
+            epoch=epoch,
         )
-        await interaction.response.send_message(
-            f"Your reminder will be delivered <t:{timestamp}:R> [<t:{timestamp}>]"
-        )
+        await interaction.response.send_message(message.format(timestamp))
 
     @app_commands.command(name="list")
     @is_registered_profile()
@@ -244,8 +354,9 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         for index, reminder in enumerate(reminders, 1):
             formatted_reminders.append(
-                "`{0}` {1}\n> Triggers <t:{2}:R>".format(
+                "`{0} {1}` {2}\n> Triggers <t:{3}:R>".format(
                     index,
+                    "\U0001F501" if reminder.repeating else "\u0031\uFE0F\u20E3",
                     shorten(reminder.content, 50),
                     int(reminder.end_time.timestamp()),
                 )
@@ -276,11 +387,18 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             .add_field(
                 name="This reminder will be delivered at:",
                 value=(f"<t:{int(reminder.end_time.timestamp())}>"),
+                inline=False,
             )
             .set_author(
                 name="Viewing a reminder", icon_url=interaction.user.display_avatar
             )
         )
+
+        if reminder.repeating:
+            embed.add_field(
+                name="This reminder will repeat every:",
+                value=f"`{humanize_timedelta(reminder.delta)}`",
+            )
         await interaction.response.send_message(embed=embed)
 
     @remind_view.autocomplete("index")

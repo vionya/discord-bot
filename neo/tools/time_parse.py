@@ -5,7 +5,7 @@ Implements an extremely simple mechanism for parsing a datetime object out of
 a string of text.
 """
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from typing import NoReturn
 
 from neo.tools import try_or_none
@@ -29,6 +29,19 @@ RELATIVE_FORMATS = re.compile(
 )
 
 
+def humanize_timedelta(delta: timedelta) -> str:
+    """Humanizes the components of a timedelta"""
+    return ", ".join(
+        (
+            f"{delta.days // 365} years",
+            f"{delta.days % 365} days",
+            f"{delta.seconds // 3600} hours",
+            f"{delta.seconds % 3600 // 60} minutes",
+            f"{delta.seconds % 3600 % 60} seconds",
+        )
+    )
+
+
 class TimedeltaWithYears(timedelta):
     def __new__(
         cls,
@@ -46,9 +59,10 @@ class TimedeltaWithYears(timedelta):
         )
 
 
-def parse_absolute(string: str, *, tz) -> tuple[datetime, str] | NoReturn:
+def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str] | NoReturn:
     split = string.split(" ")
     endpoint = len(split)
+    now = datetime.now(tz)
 
     for _ in range(len(split)):  # Check for every possible chunk size
         to_parse = split[:endpoint]  # Check the string in left-to-right increments
@@ -57,11 +71,10 @@ def parse_absolute(string: str, *, tz) -> tuple[datetime, str] | NoReturn:
         for format in ABSOLUTE_FORMATS:
             parsed_datetime = try_or_none(datetime.strptime, " ".join(to_parse), format)
             if parsed_datetime:
-                if parsed_datetime.replace(tzinfo=tz) < (date := datetime.now(tz)):
-                    parsed_datetime = date.replace(
+                if parsed_datetime.replace(tzinfo=tz) < now:
+                    parsed_datetime = now.replace(
                         hour=parsed_datetime.hour,
                         minute=parsed_datetime.minute,
-                        second=parsed_datetime.second,
                     )
                 break
 
@@ -71,10 +84,17 @@ def parse_absolute(string: str, *, tz) -> tuple[datetime, str] | NoReturn:
 
     else:
         raise ValueError("An invalid date format was provided.")
-    return parsed_datetime, " ".join(string.split(" ")[endpoint:])
+
+    # If the parsed time is still earlier than now, push it forward by a day
+    if parsed_datetime < now:
+        parsed_datetime += timedelta(days=1)
+
+    return parsed_datetime.replace(second=0), " ".join(string.split(" ")[endpoint:])
 
 
-def parse_relative(string: str) -> tuple[TimedeltaWithYears, str] | NoReturn:
+def parse_relative(
+    string: str,
+) -> tuple[TimedeltaWithYears, str] | NoReturn:
     parsed = RELATIVE_FORMATS.match(string)
 
     if parsed and any(parsed.groups()):

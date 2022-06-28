@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeGuard, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    ParamSpec,
+    TypeGuard,
+    TypeVar,
+    overload,
+)
 
 from discord import app_commands, utils
 from typing_extensions import TypeVarTuple, Unpack
@@ -23,9 +32,10 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 
-def try_or_none(func: Callable[..., T], *args, **kwargs) -> T | None:
+def try_or_none(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T | None:
     try:
         return func(*args, **kwargs)
     except Exception:
