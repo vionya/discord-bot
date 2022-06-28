@@ -58,9 +58,14 @@ CREATE TABLE stars (
 );
 
 CREATE TABLE reminders (
-    user_id     BIGINT NOT NULL,
-    reminder_id UUID NOT NULL,
-    content     VARCHAR(1000) NOT NULL,
-    end_time    TIMESTAMP WITH TIME ZONE NOT NULL,
+    user_id       BIGINT NOT NULL,
+    reminder_id   UUID NOT NULL,
+    content       VARCHAR(1000) NOT NULL,
+    -- For one-time reminders, this is the time of creation
+    -- For repeating reminders, this is the rollover point for each cycle
+    epoch         TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- The amount of time until the reminder is next triggered
+    delta         INTERVAL NOT NULL,
+    repeating     BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
 );
