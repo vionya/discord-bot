@@ -85,6 +85,9 @@ def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str] | NoRetur
     else:
         raise ValueError("An invalid date format was provided.")
 
+    # modify the tz before final comparisons
+    parsed_datetime = parsed_datetime.replace(tzinfo=tz)
+
     # If the parsed time is still earlier than now, push it forward by a day
     if parsed_datetime < now:
         parsed_datetime += timedelta(days=1)
