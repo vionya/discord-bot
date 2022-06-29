@@ -334,7 +334,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             case _:
                 raise RuntimeError("Unknown error in time parsing")
 
-        timestamp: int = int((datetime.now(timezone.utc) + delta).timestamp())
+        timestamp = int((now + delta).timestamp())
         await self.add_reminder(
             user_id=interaction.user.id,
             reminder_id=uuid4(),
