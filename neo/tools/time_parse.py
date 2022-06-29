@@ -14,6 +14,8 @@ ABSOLUTE_FORMATS = {  # Use a set so %H:%M doesn't get duplicated
     "%b %d, %Y",
     "%H:%M",
     "%b %d, %Y at %H:%M",
+    "%b %d",
+    "%b %d at %H:%M",
 }  # Define a very rigid set of formats that can be passed
 ABSOLUTE_FORMATS |= {i.replace("%b", "%B") for i in ABSOLUTE_FORMATS}
 RELATIVE_FORMATS = re.compile(
@@ -66,12 +68,26 @@ def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str] | NoRetur
 
     for _ in range(len(split)):  # Check for every possible chunk size
         to_parse = split[:endpoint]  # Check the string in left-to-right increments
+        # e.g. ["May", "14", "at", "12:34", "some", "text"] removes elements from the right
+        # until the full list, when joined with a whitespace, matches one of the strptime formats
 
         parsed_datetime = None
         for format in ABSOLUTE_FORMATS:
-            parsed_datetime = try_or_none(datetime.strptime, " ".join(to_parse), format)
-            if parsed_datetime:
-                if parsed_datetime.replace(tzinfo=tz) < now:
+            raw_parsed_dt = try_or_none(datetime.strptime, " ".join(to_parse), format)
+            if raw_parsed_dt:
+                parsed_datetime = raw_parsed_dt.replace(tzinfo=tz)
+
+                # N.B. If no year is provided in the parsed timestamp, it will be
+                # set to 1900, so this bit of code resolves the year to the current
+                # year when it isn't given
+                if parsed_datetime.year < now.year:
+                    parsed_datetime = parsed_datetime.replace(year=now.year)
+
+                # If after resolving the year the timestamp is still before now,
+                # it's assumed to be a time in the current day, therefore the
+                # datetime is updated to be a copy of now, with the hour and
+                # minute adjusted
+                if parsed_datetime < now:
                     parsed_datetime = now.replace(
                         hour=parsed_datetime.hour,
                         minute=parsed_datetime.minute,
@@ -80,13 +96,10 @@ def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str] | NoRetur
 
         if parsed_datetime is not None:  # We got a hit
             break
-        endpoint -= 1  # Increase the size of the chunk by one word
+        endpoint -= 1  # Decrease the size of the chunk by one word
 
     else:
         raise ValueError("An invalid date format was provided.")
-
-    # modify the tz before final comparisons
-    parsed_datetime = parsed_datetime.replace(tzinfo=tz)
 
     # If the parsed time is still earlier than now, push it forward by a day
     if parsed_datetime < now:
