@@ -1,4 +1,16 @@
-# **Release v1.1.0** (TBD)
+# **Release v1.1.1** (June 29, 2022)
+
+## Additions
+
+- 2 new absolute time formats for reminders
+  - `%b %d` for same-year dates (like "July 5")
+  - `%b %d at %H:%M` for same-year dates at a specific time (like "July 5 at 11:34")
+
+## Fixes
+
+- Fix absolute reminders erroring due to attempts to compare datetimes with different offset awareness
+
+# **Release v1.1.0** (June 27, 2022)
 
 ## Additions
 
