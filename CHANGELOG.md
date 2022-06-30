@@ -1,3 +1,8 @@
+# **Release v1.1.2** (June 30, 2022)
+
+- Updated library version
+- Use `Interaction.app_permissions` for external emojis permission check
+
 # **Release v1.1.1** (June 29, 2022)
 
 ## Additions

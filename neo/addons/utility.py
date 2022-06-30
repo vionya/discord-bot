@@ -395,13 +395,10 @@ class Utility(neo.Addon):
         embed.description = description
 
         content = None
-        if (
-            interaction.guild
-            and not interaction.guild.default_role.permissions.external_emojis
-        ):
+        if not interaction.app_permissions.use_external_emojis:
             content = (
-                'Make sure @everyone has "Use External Emoji" permissions, otherwise'
-                " `userinfo` can't properly display icons!"
+                'Make sure neo phoenix has "Use External Emoji" permissions,'
+                " otherwise `userinfo` can't properly display icons!"
             )
 
         await interaction.response.send_message(content=content, embed=embed)
@@ -435,13 +432,10 @@ class Utility(neo.Addon):
         ).set_thumbnail(url=interaction.guild.icon)
 
         content = None
-        if (
-            interaction.guild
-            and not interaction.guild.default_role.permissions.external_emojis
-        ):
+        if not interaction.app_permissions.use_external_emojis:
             content = (
-                'Make sure @everyone has "Use External Emoji" permissions, otherwise'
-                " `serverinfo` can't properly display icons!"
+                'Make sure neo phoenix has "Use External Emoji" permissions,'
+                " otherwise `serverinfo` can't properly display icons!"
             )
 
         await interaction.response.send_message(content=content, embed=embed)
@@ -471,13 +465,10 @@ class Utility(neo.Addon):
         ).set_thumbnail(url=role.icon or "")
 
         content = None
-        if (
-            interaction.guild
-            and not interaction.guild.default_role.permissions.external_emojis
-        ):
+        if not interaction.app_permissions.use_external_emojis:
             content = (
-                'Make sure @everyone has "Use External Emoji" permissions, otherwise'
-                " `roleinfo` can't properly display icons!"
+                'Make sure neo phoenix has "Use External Emoji" permissions,'
+                " otherwise `roleinfo` can't properly display icons!"
             )
 
         await interaction.response.send_message(content=content, embed=embed)
@@ -541,9 +532,9 @@ class Utility(neo.Addon):
                 name="Associated Application",
                 value="\n".join(
                     [
-                        f"**Name** {app['name']}",
-                        f"**ID** {app['id']}",
-                        f"**Description** {shorten(app['description'], 30)}",
+                        f"**Name** {app.name}",
+                        f"**ID** {app.id}",
+                        f"**Description** {shorten(app.description, 30)}",
                     ]
                 ),
                 inline=False,

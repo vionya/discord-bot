@@ -50,6 +50,7 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
         parent: Optional[app_commands.Group] = None,
         guild_ids: Optional[list[int]] = None,
         nsfw: bool = False,
+        extras: dict[Any, Any] = {},
     ):
         super().__init__(
             name=name,
@@ -58,6 +59,7 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
             parent=parent,
             guild_ids=guild_ids,
             nsfw=nsfw,
+            extras=extras,
         )
 
         # Inject a `private` parameter to every app commmand
