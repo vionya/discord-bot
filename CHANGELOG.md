@@ -1,5 +1,10 @@
 # **Release v1.2.0** (TBD)
 
+## Additions
+
+- Reminders can now be edited just like todos
+  - For now, only content can be adjusted, this may be changed in the future
+
 ## Removals
 
 - Removed the `edited` attribute from todos, which affects nothing that was ever considered relevant

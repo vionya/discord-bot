@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 import discord
 import neo
 from discord import app_commands
+from neo.classes.app_commands import no_defer
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
 from neo.tools import (
@@ -19,14 +20,16 @@ from neo.tools import (
     is_valid_index,
     send_confirmation,
     shorten,
-    try_or_none,
+    try_or_none
 )
 from neo.tools.time_parse import (
     TimedeltaWithYears,
     humanize_timedelta,
     parse_absolute,
-    parse_relative,
+    parse_relative
 )
+
+from .auxiliary.reminders import ReminderEditModal
 
 # Maximum number of reminders per user
 MAX_REMINDERS = 15
@@ -401,8 +404,25 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             )
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="edit")
+    @app_commands.describe(index="A reminder index to edit")
+    @is_registered_profile()
+    @no_defer
+    async def remind_edit(self, interaction: discord.Interaction, index: int):
+        """Edit the content of a reminder,a ccessed by index"""
+        try:
+            reminder = self.reminders[interaction.user.id][index - 1]
+        except IndexError:
+            raise IndexError("Couldn't find that reminder.")
+
+        modal = ReminderEditModal(self, title="Editing a Reminder", reminder=reminder)
+        await interaction.response.send_modal(modal)
+
     @remind_view.autocomplete("index")
-    async def remind_view_autocomplete(self, interaction: discord.Interaction, current):
+    @remind_edit.autocomplete("index")
+    async def remind_view_edit_autocomplete(
+        self, interaction: discord.Interaction, current
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
