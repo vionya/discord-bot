@@ -16,17 +16,17 @@ from neo.modules import ButtonsMenu
 from neo.tools import (
     generate_autocomplete_list,
     is_clear_all,
-    is_registered_profile,
     is_valid_index,
     send_confirmation,
     shorten,
-    try_or_none
+    try_or_none,
 )
+from neo.tools.checks import is_registered_profile_predicate
 from neo.tools.time_parse import (
     TimedeltaWithYears,
     humanize_timedelta,
     parse_absolute,
-    parse_relative
+    parse_relative,
 )
 
 from .auxiliary.reminders import ReminderEditModal
@@ -215,13 +215,15 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
 
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+        return is_registered_profile_predicate(interaction)
+
     @app_commands.command(name="set")
     @app_commands.describe(
         when="When the reminder should be delivered. See this command's help entry for more info",
         content="The content to remind yourself about. Can be empty",
         repeat="Whether this reminder should repeat. See this command's help entry for more info",
     )
-    @is_registered_profile()
     async def reminder_set(
         self,
         interaction: discord.Interaction,
@@ -349,7 +351,6 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         await interaction.response.send_message(message.format(timestamp))
 
     @app_commands.command(name="list")
-    @is_registered_profile()
     async def remind_list(self, interaction: discord.Interaction):
         """Lists your active reminders"""
         reminders = self.reminders[interaction.user.id].copy()
@@ -377,7 +378,6 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @app_commands.command(name="view")
     @app_commands.describe(index="A reminder index to view")
-    @is_registered_profile()
     async def remind_view(self, interaction: discord.Interaction, index: int):
         """View the full content of a reminder, accessed by index"""
         try:
@@ -406,7 +406,6 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @app_commands.command(name="edit")
     @app_commands.describe(index="A reminder index to edit")
-    @is_registered_profile()
     @no_defer
     async def remind_edit(self, interaction: discord.Interaction, index: int):
         """Edit the content of a reminder,a ccessed by index"""
@@ -431,7 +430,6 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @app_commands.command(name="cancel")
     @app_commands.describe(index="A reminder index to remove")
-    @is_registered_profile()
     async def remind_cancel(self, interaction: discord.Interaction, index: str):
         """Cancel a reminder by index"""
         if is_clear_all(index):
