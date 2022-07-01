@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from .types.config import NeoConfig
 
 
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
@@ -49,7 +49,7 @@ class Neo(commands.Bot):
 
         kwargs["command_prefix"] = self.cfg["bot"]["prefix"]
         kwargs["activity"] = discord.Activity(
-            name=config["bot"]["activity_name"],
+            name=config["bot"]["activity_name"].format(version=__version__),
             type=discord.ActivityType[config["bot"]["activity_type"]],
             url="https://twitch.tv/#",  # for spoofing Discord when activity type is streaming
         )

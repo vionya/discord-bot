@@ -1,3 +1,9 @@
+# **Release v1.1.3** (June 30, 2022)
+
+## Additions
+
+- Added a `{version}` format variable to the bot activity name config entry
+
 # **Release v1.1.2** (June 30, 2022)
 
 - Updated library version
