@@ -293,11 +293,13 @@ def generate_setting_mapping_autocomplete(
     mapping: SettingsMapping, current: str
 ) -> list[Choice[str]]:
     """Generate a list of choices suitable for an autocomplete function of a settings mapping"""
-    setting_pairs = []
+    setting_pairs: list[tuple[str, str]] = []
     for k, v in mapping.items():
         setting_pairs.append((v.display_name, k))
 
-    setting_pairs = [*filter(lambda pair: current in pair[0], setting_pairs)][:25]
+    setting_pairs = [
+        *filter(lambda pair: current.casefold() in pair[0].casefold(), setting_pairs)
+    ][:25]
 
     return [
         app_commands.Choice(name=name, value=value) for name, value in setting_pairs
