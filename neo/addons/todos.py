@@ -18,11 +18,11 @@ from neo.modules import ButtonsMenu
 from neo.tools import (
     generate_autocomplete_list,
     is_clear_all,
-    is_registered_profile,
     is_valid_index,
     send_confirmation,
     shorten,
 )
+from neo.tools.checks import is_registered_profile_predicate
 
 MAX_TODOS = 100
 
@@ -70,8 +70,10 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     async def handle_deleted_profile(self, user_id: int):
         self.todos.pop(user_id, None)
 
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+        return is_registered_profile_predicate(interaction)
+
     @app_commands.command(name="list")
-    @is_registered_profile()
     async def todo_list(self, interaction: discord.Interaction):
         """List your todos"""
         formatted_todos = []
@@ -96,7 +98,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The content of the new todo")
-    @is_registered_profile()
     async def todo_add(self, interaction: discord.Interaction, content: str):
         """Add a new todo"""
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
@@ -132,7 +133,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     @app_commands.command(name="remove")
     @app_commands.describe(index="A todo index to remove")
     @app_commands.rename(index="index")
-    @is_registered_profile()
     async def todo_remove(
         self,
         interaction: discord.Interaction,
@@ -173,7 +173,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="view")
     @app_commands.describe(index="A todo index to view")
-    @is_registered_profile()
     async def todo_view(self, interaction: discord.Interaction, index: int):
         """View a todo by its listed index"""
         try:
@@ -197,7 +196,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="edit")
     @app_commands.describe(index="A todo index to edit")
-    @is_registered_profile()
     @no_defer
     async def todo_edit(self, interaction: discord.Interaction, index: int):
         """Edit the content of a todo"""
