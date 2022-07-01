@@ -20,10 +20,10 @@ from neo.modules import ButtonsMenu
 from neo.tools import (
     generate_autocomplete_list,
     is_clear_all,
-    is_registered_profile,
     is_valid_index,
     send_confirmation,
 )
+from neo.tools.checks import is_registered_profile_predicate
 
 if TYPE_CHECKING:
     from neo.classes.containers import NeoUser
@@ -289,8 +289,10 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+        return is_registered_profile_predicate(interaction)
+
     @app_commands.command(name="list")
-    @is_registered_profile()
     async def highlight_list(self, interaction: discord.Interaction):
         """List your highlights"""
         description = ""
@@ -312,7 +314,6 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The word or phrase to be highlighted by")
-    @is_registered_profile()
     async def highlight_add(self, interaction: discord.Interaction, content: str):
         """
         Add a new highlight
@@ -357,7 +358,6 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
 
     @app_commands.command(name="remove")
     @app_commands.describe(index="A highlight index to remove")
-    @is_registered_profile()
     async def highlight_remove(self, interaction: discord.Interaction, index: str):
         """Remove a highlight by index"""
         if is_clear_all(index):
@@ -422,7 +422,6 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         user="A user to block",
         channel="A channel to block",
     )
-    @is_registered_profile()
     async def highlight_block(
         self,
         interaction: discord.Interaction,
@@ -449,7 +448,6 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         await send_confirmation(interaction)
 
     @app_commands.command(name="blocklist")
-    @is_registered_profile()
     async def highlight_block_list(self, interaction: discord.Interaction):
         """
         Manage a blocklist for highlights.
@@ -481,7 +479,6 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         user="A user to unblock",
         channel="A channel to unblock",
     )
-    @is_registered_profile()
     async def highlight_unblock(
         self,
         interaction: discord.Interaction,
