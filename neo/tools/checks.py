@@ -11,23 +11,24 @@ if TYPE_CHECKING:
     from neo import Neo
 
 
+async def owner_or_admin_predicate(interaction: discord.Interaction):
+    assert interaction.command and isinstance(interaction.user, discord.Member)
+
+    bot: Neo = interaction.client  # type: ignore
+
+    if not any(
+        [
+            interaction.user.guild_permissions.administrator,
+            await bot.is_owner(interaction.user),
+        ]
+    ):
+        raise app_commands.MissingPermissions(["administrator"])
+
+    return True
+
+
 def is_owner_or_administrator():
-    async def predicate(interaction: discord.Interaction):
-        assert interaction.command and isinstance(interaction.user, discord.Member)
-
-        bot: Neo = interaction.client  # type: ignore
-
-        if not any(
-            [
-                interaction.user.guild_permissions.administrator,
-                await bot.is_owner(interaction.user),
-            ]
-        ):
-            raise app_commands.MissingPermissions(["administrator"])
-
-        return True
-
-    return app_commands.check(predicate)
+    return app_commands.check(owner_or_admin_predicate)
 
 
 def is_registered_profile_predicate(interaction: discord.Interaction):

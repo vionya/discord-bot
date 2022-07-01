@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from discord.app_commands.commands import CommandCallback
-    from neo import Neo
+    from neo import Addon, Neo
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -51,6 +51,8 @@ def no_defer(callback: Callable[..., Any]) -> Callable[..., Any]:
 
 
 class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
+    addon: Optional[Addon]
+
     def __init__(
         self,
         *,
@@ -71,6 +73,7 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
             nsfw=nsfw,
             extras=extras,
         )
+        self.addon = None
 
         # Inject a `private` parameter to every app commmand
         self._params["private"] = app_commands.transformers.CommandParameter(
@@ -80,6 +83,19 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
             default=None,
             type=AppCommandOptionType.boolean,
         )
+
+    async def _check_can_run(self, interaction: Interaction) -> bool:
+        # This could be ignored and just rely on an `interaction_check`
+        # method in `self.binding`, but I'm not sure if the modifications
+        # I've done would mess with it so I'm just not touching it
+        if hasattr(self, "addon") and self.addon is not None:
+            # If the addon interaction check fails, the error is
+            # propogated up to the tree error handler
+            ret = await self.addon.addon_interaction_check(interaction)
+            if ret is False:
+                return False
+
+        return await super()._check_can_run(interaction)
 
     async def _invoke_with_namespace(
         self,

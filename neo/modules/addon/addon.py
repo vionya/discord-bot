@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from itertools import chain
 from types import MethodType
-from typing import Any, Protocol, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
-from discord import app_commands
+from discord import Interaction, app_commands
 from discord.ext import commands
 from typing_extensions import Self
 
@@ -51,11 +51,33 @@ class AddonMeta(commands.CogMeta):
 class Addon(commands.Cog, metaclass=AddonMeta):
     __receivers__: dict[str, Receiver]
 
+    @staticmethod
+    def _inject_to_group(
+        target: app_commands.Command | app_commands.Group, *, name: str, attribute: Any
+    ) -> app_commands.Command | app_commands.Group:
+        setattr(target, name, attribute)
+        if isinstance(target, app_commands.Command):
+            return target
+
+        for child in target._children.values():
+            if isinstance(child, app_commands.Group):
+                Addon._inject_to_group(child, name=name, attribute=attribute)
+        return target
+
     def __new__(cls, *args, **kwargs) -> Self:
-        instance = super().__new__(cls, *args, **kwargs)
+        if TYPE_CHECKING:
+            instance = cast(Self, super().__new__(cls, *args, **kwargs))
+        else:
+            instance = super().__new__(cls, *args, **kwargs)
 
         for cmd in instance.__cog_app_commands__:
             setattr(cmd, "addon", instance)
+            if isinstance(cmd, app_commands.Group):
+                Addon._inject_to_group(
+                    cmd,
+                    name="interaction_check",
+                    attribute=instance.addon_interaction_check,
+                )
 
         if grp := instance.__cog_app_commands_group__:
             setattr(grp, "addon", instance)
@@ -137,8 +159,17 @@ class Addon(commands.Cog, metaclass=AddonMeta):
         self._merge_addon(other)
         return self
 
+    async def addon_interaction_check(self, interaction: Interaction) -> bool:
+        """Define an addon-wide interaction check"""
+        ...
+
     @staticmethod
     def recv(event: str):
+        """
+        Register the decorated method as a receiver for the
+        parent addon, under the event name `event`
+        """
+
         def inner(func: Callable[..., ReceiverRet]) -> Receiver:
             receiver = func
             receiver.__receiver__ = True
