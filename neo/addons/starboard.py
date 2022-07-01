@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional
 import discord
 import neo
 from discord import app_commands
-from neo.classes.containers import TimedCache, SettingsMapping, Setting
+from neo.classes.containers import Setting, SettingsMapping, TimedCache
 from neo.classes.transformers import max_days_transformer, text_channel_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import (
@@ -18,7 +18,7 @@ from neo.tools import (
     instantiate,
     shorten,
 )
-from neo.tools.checks import valid_starboard_env
+from neo.tools.checks import is_valid_starboard_env
 
 from .auxiliary.starboard import ChangeSettingButton
 
@@ -450,6 +450,9 @@ class StarboardAddon(
     # /Sect: Event Handling
     # Sect: Commands
 
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+        return is_valid_starboard_env(interaction)
+
     @instantiate
     class StarboardSettings(app_commands.Group, name="settings"):
         """Commands for managing your starboard"""
@@ -458,7 +461,6 @@ class StarboardAddon(
 
         @app_commands.command(name="list")
         @app_commands.checks.has_permissions(manage_channels=True)
-        @valid_starboard_env()
         async def starboard_list(self, interaction: discord.Interaction):
             """Lists starboard settings"""
             # Guaranteed by the global check
@@ -499,7 +501,6 @@ class StarboardAddon(
             " can be found in the settings list",
         )
         @app_commands.rename(new_value="new-value")
-        @valid_starboard_env()
         async def starboard_set(
             self, interaction: discord.Interaction, setting: str, new_value: str
         ):
@@ -553,7 +554,6 @@ class StarboardAddon(
         channel="The channel to ignore, can be a channel mention or ID",
         message="The message to ignore, must be a message ID",
     )
-    @valid_starboard_env()
     async def starboard_ignore(
         self,
         interaction: discord.Interaction,
@@ -622,7 +622,6 @@ class StarboardAddon(
         channel="The channel to unignore, can be a channel mention or ID",
         message="The message to unignore, must be a message ID",
     )
-    @valid_starboard_env()
     async def starboard_unignore(
         self,
         interaction: discord.Interaction,
@@ -676,7 +675,6 @@ class StarboardAddon(
 
     @app_commands.command(name="ignored")
     @app_commands.checks.has_permissions(manage_messages=True)
-    @valid_starboard_env()
     async def starboard_ignored(self, interaction: discord.Interaction):
         """Displays a list of all ignored items"""
         assert interaction.guild

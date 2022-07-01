@@ -74,20 +74,15 @@ def is_registered_guild():
     return app_commands.check(is_registered_guild_predicate)
 
 
-def valid_starboard_env():
-    """Verify if an interaction environment is valid for a starboard"""
+def is_valid_starboard_env(interaction: discord.Interaction):
+    assert interaction.command and interaction.guild
 
-    def predicate(interaction: discord.Interaction):
-        assert interaction.command and interaction.guild
+    bot: Neo = interaction.client  # type: ignore
+    config = bot.configs.get(interaction.guild.id)
+    if not getattr(config, "starboard", False):
+        raise app_commands.CommandInvokeError(
+            interaction.command,
+            AttributeError("Starboard is not enabled for this server!"),
+        )
 
-        bot: Neo = interaction.client  # type: ignore
-        config = bot.configs.get(interaction.guild.id)
-        if not getattr(config, "starboard", False):
-            raise app_commands.CommandInvokeError(
-                interaction.command,
-                AttributeError("Starboard is not enabled for this server!"),
-            )
-
-        return True
-
-    return app_commands.check(predicate)
+    return True
