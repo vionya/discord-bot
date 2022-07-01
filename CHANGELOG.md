@@ -1,3 +1,9 @@
+# **Release v1.1.4** (July 1, 2022)
+
+## Fixes
+
+- Use caseless comparisons when filtering certain autocomplete lists
+
 # **Release v1.1.3** (June 30, 2022)
 
 ## Additions
