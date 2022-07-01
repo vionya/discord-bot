@@ -1,3 +1,9 @@
+# **Release v1.2.0** (TBD)
+
+## Removals
+
+- Removed the `edited` attribute from todos, which affects nothing that was ever considered relevant
+
 # **Release v1.1.4** (July 1, 2022)
 
 ## Fixes

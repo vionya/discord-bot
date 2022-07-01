@@ -29,7 +29,6 @@ CREATE TABLE todos (
     content    TEXT NOT NULL,
     todo_id    UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    edited     BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
 );
 

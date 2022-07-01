@@ -37,13 +37,11 @@ class TodoEditModal(discord.ui.Modal):
         assert self.content.value
 
         self.todo.content = self.content.value
-        self.todo.edited = True
         await self.addon.bot.db.execute(
             """
             UPDATE todos
             SET
-                content=$1,
-                edited=TRUE
+                content=$1
             WHERE
                 todo_id=$2 AND
                 user_id=$3

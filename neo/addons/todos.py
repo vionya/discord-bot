@@ -28,7 +28,7 @@ MAX_TODOS = 100
 
 
 class TodoItem:
-    __slots__ = ("user_id", "content", "todo_id", "created_at", "edited")
+    __slots__ = ("user_id", "content", "todo_id", "created_at")
 
     def __init__(
         self,
@@ -37,13 +37,11 @@ class TodoItem:
         content: str,
         todo_id: UUID,
         created_at: datetime,
-        edited: bool,
     ):
         self.user_id = user_id
         self.content = content
         self.todo_id = todo_id
         self.created_at = created_at
-        self.edited = edited
 
     def __repr__(self):
         return (
@@ -112,7 +110,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             "content": content,
             "todo_id": uuid4(),
             "created_at": datetime.now(timezone.utc),
-            "edited": False,
         }
 
         await self.bot.db.execute(
@@ -121,10 +118,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
                 user_id,
                 content,
                 todo_id,
-                created_at,
-                edited
+                created_at
             ) VALUES (
-                $1, $2, $3, $4, $5
+                $1, $2, $3, $4
             )
             """,
             *data.values(),
@@ -188,10 +184,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         embed = (
             neo.Embed(description=todo.content)
             .add_field(
-                name=f"Created on <t:{int(todo.created_at.timestamp())}>",
-                value="This todo has{}been edited".format(
-                    " not " if not todo.edited else " "
-                ),
+                name="Created at:",
+                value=f"<t:{int(todo.created_at.timestamp())}>",
             )
             .set_author(
                 name="Viewing a todo",
