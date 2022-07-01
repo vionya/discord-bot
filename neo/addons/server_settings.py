@@ -19,7 +19,7 @@ from neo.tools import (
     prompt_user,
     send_confirmation,
 )
-from neo.tools.checks import is_owner_or_administrator, is_registered_guild_predicate
+from neo.tools.checks import owner_or_admin_predicate
 from neo.types.commands import AnyCommand
 
 from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
@@ -79,6 +79,9 @@ class ServerConfig(
         await config.reset_attribute(setting)
         self.bot.broadcast("config_update", interaction.guild, config)
 
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+        return await owner_or_admin_predicate(interaction)
+
     @instantiate
     class ServerSettings(app_commands.Group, name="settings"):
         """Commands for managing server settings"""
@@ -86,13 +89,12 @@ class ServerConfig(
         addon: ServerConfig
 
         @app_commands.command(name="list")
-        @is_owner_or_administrator()
+        @is_registered_guild()
         async def server_settings_list(self, interaction: discord.Interaction):
             """Lists server settings"""
-            # Guaranteed by cog check
+            # Guaranteed by addon check
             assert interaction.guild
 
-            is_registered_guild_predicate(interaction)
             config = self.addon.bot.configs[interaction.guild.id]
             embeds = []
 
@@ -136,7 +138,6 @@ class ServerConfig(
             " can be found in the settings list",
         )
         @app_commands.rename(new_value="new-value")
-        @is_owner_or_administrator()
         @is_registered_guild()
         async def server_settings_set(
             self, interaction: discord.Interaction, setting: str, *, new_value: str
@@ -152,7 +153,6 @@ class ServerConfig(
 
         @app_commands.command(name="reset")
         @app_commands.describe(setting="The setting to reset")
-        @is_owner_or_administrator()
         @is_registered_guild()
         async def server_settings_reset(
             self, interaction: discord.Interaction, setting: str
@@ -173,7 +173,6 @@ class ServerConfig(
             return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
 
     @app_commands.command(name="create")
-    @is_owner_or_administrator()
     async def server_create(self, interaction: discord.Interaction):
         """
         Creates a config entry for the server
@@ -194,7 +193,6 @@ class ServerConfig(
         )
 
     @app_commands.command(name="delete")
-    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_delete(self, interaction: discord.Interaction):
         """Permanently deletes this server's config"""
@@ -218,7 +216,6 @@ class ServerConfig(
 
     @app_commands.command(name="ignore")
     @app_commands.describe(channel="The channel to ignore")
-    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_ignore_channel(
         self,
@@ -260,7 +257,6 @@ class ServerConfig(
 
     @app_commands.command(name="unignore")
     @app_commands.describe(channel="The channel to unignore")
-    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_unignore_channel(
         self, interaction: discord.Interaction, channel: discord.TextChannel
@@ -280,7 +276,6 @@ class ServerConfig(
 
     @app_commands.command(name="disable")
     @app_commands.describe(command="The command to disable")
-    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_disable_command(
         self,
@@ -330,7 +325,6 @@ class ServerConfig(
 
     @app_commands.command(name="enable")
     @app_commands.describe(command="The command to re-enable")
-    @is_owner_or_administrator()
     @is_registered_guild()
     async def server_enable_command(
         self,
