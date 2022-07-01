@@ -13,6 +13,7 @@ import neo
 from discord import app_commands
 from discord.utils import escape_markdown
 from neo.addons.auxiliary.todos import TodoEditModal
+from neo.classes.app_commands import no_defer
 from neo.modules import ButtonsMenu
 from neo.tools import (
     generate_autocomplete_list,
@@ -22,7 +23,6 @@ from neo.tools import (
     send_confirmation,
     shorten,
 )
-from neo.tools.decorators import no_defer
 
 MAX_TODOS = 100
 

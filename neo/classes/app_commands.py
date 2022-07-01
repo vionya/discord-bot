@@ -8,6 +8,8 @@ from discord import AppCommandOptionType, Interaction, app_commands
 from discord.ext.commands import Cog
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from discord.app_commands.commands import CommandCallback
     from neo import Neo
 
@@ -38,6 +40,14 @@ def get_ephemeral(
         passed_option = namespace.pop("private", None)
     ephemeral = default if passed_option is None else passed_option
     return ephemeral
+
+
+# This functionality could just be patched into app commands as a parameter, but
+# doing it this way stops the type checker from being angry about it
+def no_defer(callback: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorates a callback, preventing the app command from being automatically deferred"""
+    setattr(callback, "no_defer", True)
+    return callback
 
 
 class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):

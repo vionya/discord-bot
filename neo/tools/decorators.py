@@ -59,11 +59,3 @@ def with_docstring(docstring: str) -> Callable[[Callable[..., Any]], Any]:
         return func
 
     return inner
-
-
-# This functionality could just be patched into app commands as a parameter, but
-# doing it this way stops the type checker from being angry about it
-def no_defer(callback: Callable[..., Any]) -> Callable[..., Any]:
-    """Decorates a callback, preventing the app command from being automatically deferred"""
-    setattr(callback, "no_defer", True)
-    return callback
