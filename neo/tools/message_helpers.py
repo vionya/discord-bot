@@ -45,8 +45,8 @@ class PromptActions(discord.ui.View):
         super().__init__()
         self.user = interaction.user
         for content, value, style, label in [
-            (content_confirmed, True, discord.ButtonStyle.green, label_confirm),
-            (content_cancelled, False, discord.ButtonStyle.red, label_cancel),
+            (content_confirmed, True, discord.ButtonStyle.grey, label_confirm),
+            (content_cancelled, False, discord.ButtonStyle.grey, label_cancel),
         ]:
             self.add_item(PromptButton(content, value, style=style, label=label))
         self.value = None
