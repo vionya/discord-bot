@@ -64,7 +64,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     people to see what you're doing.
 
     With a configured profile, you can even change whether responses are ephemeral
-    by default! By changing the `default_ephemeral` option, you can choose to
+    by default! By changing the `Private By Default` option, you can choose to
     have responses be public or private without you having to do anything.
 
     Of course, the `private` parameter will override the default setting if you

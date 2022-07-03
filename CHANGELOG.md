@@ -5,9 +5,17 @@
 - Reminders can now be edited just like todos
   - For now, only content can be adjusted, this may be changed in the future
 
+## Improvements
+
+- Updated the help message for `/help` to refer to the `default_ephemeral` field as `Private By Default`
+
 ## Removals
 
 - Removed the `edited` attribute from todos, which affects nothing that was ever considered relevant
+
+## Other
+
+- Addons now support an addon-wide interaction check, which propogates itself recursively through child groups
 
 # **Release v1.1.4** (July 1, 2022)
 
