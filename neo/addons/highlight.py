@@ -202,16 +202,19 @@ class Highlight:
         return self.pattern.search(other)
 
 
+QueuedHighlightsType = defaultdict[
+    int, dict[int, tuple[Highlight, discord.Message, set[discord.Message]]]
+]
+
+
 class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     """Commands for managing highlights"""
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot
         self.highlights: defaultdict[int, list[Highlight]] = defaultdict(list)
-        self.grace_periods: dict[int, TimedSet] = {}
-        self.queued_highlights: defaultdict[
-            int, dict[int, tuple[Highlight, discord.Message, set[discord.Message]]]
-        ] = defaultdict(dict)
+        self.grace_periods: dict[int, TimedSet[int]] = {}
+        self.queued_highlights: QueuedHighlightsType = defaultdict(dict)
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):

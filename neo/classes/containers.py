@@ -7,7 +7,7 @@ import zoneinfo
 from abc import ABCMeta, abstractmethod
 from collections.abc import Mapping, MutableMapping, MutableSet
 from functools import cache
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 from neo.tools import humanize_snake_case
 
@@ -223,102 +223,105 @@ class NeoGuildConfig(RecordContainer):
         super().__setattr__(attribute, value)
 
 
-class TimedSet(MutableSet):
-    __slots__ = ("__underlying_set__", "__running_store__", "loop", "timeout")
+T = TypeVar("T")
+
+
+class TimedSet(MutableSet, Generic[T]):
+    __slots__ = ("__underlying_set", "__running_store", "loop", "timeout")
 
     def __init__(
-        self, *args, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        *args: T,
+        timeout: int = 60,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 
-        self.__underlying_set__ = set()
-        self.__running_store__: dict[str, asyncio.tasks.Task] = {}
+        self.__underlying_set: set[T] = set()
+        self.__running_store: dict[T, asyncio.tasks.Task[None]] = {}
 
         for element in args:
             self.add(element)
 
-    async def invalidate(self, element):
+    async def invalidate(self, element: T):
         await asyncio.sleep(self.timeout)
         self.discard(element)
 
-    def add(self, element):
+    def add(self, element: T):
         if element in self:
-            active = self.__running_store__.pop(element)
+            active = self.__running_store.pop(element)
             active.cancel()
 
-        self.__underlying_set__.add(element)
-        self.__running_store__[element] = self.loop.create_task(
-            self.invalidate(element)
-        )
+        self.__underlying_set.add(element)
+        self.__running_store[element] = self.loop.create_task(self.invalidate(element))
 
-    def discard(self, element):
-        self.__running_store__[element].cancel()
-        del self.__running_store__[element]
-        self.__underlying_set__.discard(element)
+    def discard(self, element: T):
+        self.__running_store[element].cancel()
+        del self.__running_store[element]
+        self.__underlying_set.discard(element)
 
     def clear(self):
-        for task in self.__running_store__.values():
+        for task in self.__running_store.values():
             task.cancel()
-        self.__underlying_set__.clear()
+        self.__underlying_set.clear()
 
-    def __contains__(self, o: object) -> bool:
-        return self.__underlying_set__.__contains__(o)
+    def __contains__(self, o: T) -> bool:
+        return self.__underlying_set.__contains__(o)
 
     def __iter__(self):
-        return iter(self.__underlying_set__)
+        return iter(self.__underlying_set)
 
     def __len__(self):
-        return len(self.__underlying_set__)
+        return len(self.__underlying_set)
 
 
-class TimedCache(MutableMapping):
-    __slots__ = ("__dict__", "__running_store__", "loop", "timeout")
+KT = TypeVar("KT")
+VT = TypeVar("VT")
+
+
+class TimedCache(MutableMapping, Generic[KT, VT]):
+    __slots__ = ("__underlying_dict", "__running_store", "loop", "timeout")
 
     def __init__(
-        self,
-        timeout: int = 60,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs,
+        self, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None
     ):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 
-        self.__running_store__: dict[str, asyncio.tasks.Task] = {}
+        self.__underlying_dict: dict[KT, VT] = {}
+        self.__running_store: dict[KT, asyncio.tasks.Task[None]] = {}
 
-        for k, v in kwargs.items():
-            self[k] = v
-
-    async def invalidate(self, key):
+    async def invalidate(self, key: KT):
         await asyncio.sleep(self.timeout)
         del self[key]
 
     def clear(self):
-        for task in self.__running_store__.values():
+        for task in self.__running_store.values():
             task.cancel()
-        self.__dict__.clear()
+        self.__underlying_dict.clear()
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: KT, value: VT):
         if key in self:
-            active = self.__running_store__.pop(key)
+            active = self.__running_store.pop(key)
             active.cancel()
 
-        self.__dict__[key] = value
-        self.__running_store__[key] = self.loop.create_task(self.invalidate(key))
+        self.__underlying_dict[key] = value
+        self.__running_store[key] = self.loop.create_task(self.invalidate(key))
 
-    def __getitem__(self, key):
-        return self.__dict__[key]
+    def __getitem__(self, key: KT):
+        return self.__underlying_dict[key]
 
-    def __delitem__(self, key):
-        self.__running_store__[key].cancel()
-        del self.__running_store__[key]
-        del self.__dict__[key]
+    def __delitem__(self, key: KT):
+        self.__running_store[key].cancel()
+        del self.__running_store[key]
+        del self.__underlying_dict[key]
 
     def __iter__(self):
-        return iter(self.__dict__)
+        return iter(self.__underlying_dict)
 
     def __len__(self):
-        return len(self.__dict__)
+        return len(self.__underlying_dict)
 
 
 class Setting(MutableMapping):

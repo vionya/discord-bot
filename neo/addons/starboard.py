@@ -96,7 +96,7 @@ class Starboard:
 
         # Use timed cache so that stars are not persisting for
         # longer than they reasonably should be
-        self.cached_stars = TimedCache(300)
+        self.cached_stars = TimedCache[int, Star](300)
         self.lock = asyncio.Lock()
         self.pool = pool
 
