@@ -2,12 +2,18 @@
 
 ## Additions
 
+- New server setting, `Allow Highlights`
+  - _Currently_ `True` by default
+  - If `False`, user highlights will not be triggered by messages in the server
 - Reminders can now be edited just like todos
   - For now, only content can be adjusted, this may be changed in the future
 
 ## Improvements
 
 - Updated the help message for `/help` to refer to the `default_ephemeral` field as `Private By Default`
+- Rename `index` parameter to numerous commands to be more intuitive with regard to context
+- Updated the unicode characters used in menu arrow buttons
+- Updated button color for prompts
 
 ## Removals
 
