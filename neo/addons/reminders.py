@@ -416,7 +416,12 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         except IndexError:
             raise IndexError("Couldn't find that reminder.")
 
-        modal = ReminderEditModal(self, title="Editing a Reminder", reminder=reminder)
+        modal = ReminderEditModal(
+            self,
+            title="Editing a Reminder",
+            reminder=reminder,
+            max_len=MAX_REMINDER_LEN,
+        )
         await interaction.response.send_modal(modal)
 
     @remind_view.autocomplete("index")

@@ -1,3 +1,9 @@
+# **Release v1.2.1** (July 3, 2022)
+
+## Fixes
+
+- `/remind edit`'s modal now respects the maximum length of reminder content
+
 # **Release v1.2.0** (July 3, 2022)
 
 ## Additions

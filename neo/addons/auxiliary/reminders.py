@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
-
 from neo.tools.message_helpers import send_confirmation
 
 if TYPE_CHECKING:
@@ -17,7 +16,9 @@ if TYPE_CHECKING:
 
 
 class ReminderEditModal(discord.ui.Modal):
-    def __init__(self, addon: Reminders, *, title: str, reminder: Reminder):
+    def __init__(
+        self, addon: Reminders, *, title: str, reminder: Reminder, max_len: int
+    ):
         self.addon = addon
         self.reminder = reminder
         self.content: discord.ui.TextInput[Self] = discord.ui.TextInput(
@@ -25,7 +26,7 @@ class ReminderEditModal(discord.ui.Modal):
             style=discord.TextStyle.paragraph,
             default=self.reminder.content,
             min_length=1,
-            max_length=1500,
+            max_length=max_len,
         )
 
         super().__init__(title=title, timeout=300)
