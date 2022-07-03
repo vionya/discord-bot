@@ -93,10 +93,6 @@ class Highlight:
         ).format(self)
 
     async def predicate(self, message: discord.Message) -> bool:
-        # Highlights cannot trigger outside of guilds
-        if not message.guild:
-            return False
-
         # The bot and the highlight user cannot trigger a highlight
         if any([message.author.id == self.user_id, message.author.bot]):
             return False
@@ -213,7 +209,9 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         self.bot = bot
         self.highlights: defaultdict[int, list[Highlight]] = defaultdict(list)
         self.grace_periods: dict[int, TimedSet] = {}
-        self.queued_highlights: defaultdict[int, dict] = defaultdict(dict)
+        self.queued_highlights: defaultdict[
+            int, dict[int, tuple[Highlight, discord.Message, set[discord.Message]]]
+        ] = defaultdict(dict)
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
@@ -246,17 +244,36 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         if not self.bot.is_ready():
             return  # Return if bot is not ready, so flat_highlights is computed correctly
 
+        # DMs may never trigger highlights
+        if message.guild is None:
+            return
+
+        # If the server has disallowed highlights, then quit processing
+        if message.guild.id in self.bot.configs:
+            guild_config = self.bot.configs[message.guild.id]
+            if guild_config.allow_highlights is False:
+                return
+
+        # If the message was sent by someone with highlights, add the
+        # current channel ID to the set of grace periods
         if message.author.id in {hl.user_id for hl in self.flat_highlights}:
             self.grace_periods[message.author.id].add(message.channel.id)
 
+        # Loop over every highlight that matches the message content
         for hl in filter(lambda hl: hl.matches(message.content), self.flat_highlights):
+            # If the channel is in a grace period, ignore
             if message.channel.id in self.grace_periods[hl.user_id]:
                 continue
+            # If the highlight's predicate fails, ignore
             if not await hl.predicate(message):
                 continue
             channel_queue = self.queued_highlights[message.channel.id]
+            # If the user has no highlights queued for the message's channel,
+            # set their value in the channel to a tuple of the relevant data
             if hl.user_id not in self.queued_highlights[message.channel.id]:
                 channel_queue[hl.user_id] = (hl, message, set())
+            # If they *are* in the queue, add the message as a "context"
+            # message in the tuple's extras set
             else:
                 channel_queue[hl.user_id][2].add(message)
 
