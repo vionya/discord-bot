@@ -1,4 +1,4 @@
-# **Release v1.2.0** (TBD)
+# **Release v1.2.0** (July 3, 2022)
 
 ## Additions
 
