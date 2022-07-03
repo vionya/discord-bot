@@ -13,6 +13,7 @@ CREATE TABLE profiles (
 CREATE TABLE guild_configs (
     guild_id          BIGINT PRIMARY KEY,
     starboard         BOOLEAN DEFAULT FALSE,
+    allow_highlights  BOOLEAN DEFAULT TRUE,
     disabled_channels BIGINT[] DEFAULT ARRAY[]::BIGINT[],
     disabled_commands TEXT[] DEFAULT ARRAY[]::TEXT[]
 );

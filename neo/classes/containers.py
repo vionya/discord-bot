@@ -181,6 +181,7 @@ class NeoGuildConfig(RecordContainer):
         "starboard",
         "disabled_channels",
         "disabled_commands",
+        "allow_highlights",
     )
 
     def __repr__(self):

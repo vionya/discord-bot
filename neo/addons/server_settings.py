@@ -25,7 +25,10 @@ from neo.types.commands import AnyCommand
 from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 
 SETTINGS_MAPPING = SettingsMapping(
-    Setting("starboard", transformer=bool_transformer, name_override="Enable Starboard")
+    Setting(
+        "starboard", transformer=bool_transformer, name_override="Enable Starboard"
+    ),
+    Setting("allow_highlights", transformer=bool_transformer),
 )
 
 

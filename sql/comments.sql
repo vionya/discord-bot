@@ -56,6 +56,15 @@ Default Value: `False`
 **Current Value:** `{}`
 ';
 
+COMMENT ON COLUMN guild_configs.allow_highlights IS
+'Controls whether messages in this server can trigger user highlights.
+
+Expected Value Type: A boolean-like (`yes`/`no`) value
+Default Value: `True`
+
+**Current Value:** `{}`
+';
+
 -- Table: starboards | Documentation for settings --
 COMMENT ON COLUMN starboards.channel IS
 'Sets the channel that starred messages will be sent to when they exceed the configured star threshold.
