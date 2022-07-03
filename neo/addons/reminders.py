@@ -377,6 +377,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         await menu.start(interaction)
 
     @app_commands.command(name="view")
+    @app_commands.rename(index="reminder")
     @app_commands.describe(index="A reminder index to view")
     async def remind_view(self, interaction: discord.Interaction, index: int):
         """View the full content of a reminder, accessed by index"""
@@ -405,6 +406,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="edit")
+    @app_commands.rename(index="reminder")
     @app_commands.describe(index="A reminder index to edit")
     @no_defer
     async def remind_edit(self, interaction: discord.Interaction, index: int):
@@ -429,6 +431,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         return generate_autocomplete_list(reminders, current)
 
     @app_commands.command(name="cancel")
+    @app_commands.rename(index="reminder")
     @app_commands.describe(index="A reminder index to remove")
     async def remind_cancel(self, interaction: discord.Interaction, index: str):
         """Cancel a reminder by index"""

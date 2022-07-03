@@ -377,6 +377,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         await send_confirmation(interaction)
 
     @app_commands.command(name="remove")
+    @app_commands.rename(index="highlight")
     @app_commands.describe(index="A highlight index to remove")
     async def highlight_remove(self, interaction: discord.Interaction, index: str):
         """Remove a highlight by index"""

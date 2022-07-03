@@ -131,8 +131,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await send_confirmation(interaction)
 
     @app_commands.command(name="remove")
+    @app_commands.rename(index="todo")
     @app_commands.describe(index="A todo index to remove")
-    @app_commands.rename(index="index")
     async def todo_remove(
         self,
         interaction: discord.Interaction,
@@ -172,6 +172,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         return generate_autocomplete_list(todos, current, insert_wildcard=True)
 
     @app_commands.command(name="view")
+    @app_commands.rename(index="todo")
     @app_commands.describe(index="A todo index to view")
     async def todo_view(self, interaction: discord.Interaction, index: int):
         """View a todo by its listed index"""
@@ -195,6 +196,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="edit")
+    @app_commands.rename(index="todo")
     @app_commands.describe(index="A todo index to edit")
     @no_defer
     async def todo_edit(self, interaction: discord.Interaction, index: int):
