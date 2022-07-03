@@ -239,7 +239,7 @@ class ButtonsMenu(BaseMenu, Generic[T]):
 
         await super().start(origin, as_reply=as_reply)  # type: ignore
 
-    @discord.ui.button(label="≪", row=4)
+    @discord.ui.button(label="ᐊ", row=4)
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -254,7 +254,7 @@ class ButtonsMenu(BaseMenu, Generic[T]):
         self.stop()
         await self.close(interaction=interaction, manual=True)
 
-    @discord.ui.button(label="≫", row=4)
+    @discord.ui.button(label="ᐅ", row=4)
     async def next_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
