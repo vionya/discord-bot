@@ -1,3 +1,14 @@
+# **Release v1.3.0** (July 4, 2022)
+
+## Improvements
+
+- `/clear` now requires the `limit` parameter
+- Updated visuals for `/remind list` output
+
+## Fixes
+
+- Truncation of reminder content in `/remind list` is now consistent with trunction in `/todo list`
+
 # **Release v1.2.1** (July 3, 2022)
 
 ## Fixes
