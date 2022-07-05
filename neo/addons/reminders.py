@@ -7,9 +7,10 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
-import discord
 import neo
-from discord import app_commands
+from discord import AllowedMentions, HTTPException, Interaction
+from discord import Object as DiscordObject
+from discord import app_commands, utils
 from neo.classes.app_commands import no_defer
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
@@ -112,11 +113,9 @@ class Reminder:
             dest = self.bot.get_user(self.user_id, as_partial=True)
             await dest.send(
                 "<@{0}> **Reminder**:\n> {1}".format(self.user_id, self.content),
-                allowed_mentions=discord.AllowedMentions(
-                    users=[discord.Object(self.user_id)]
-                ),
+                allowed_mentions=AllowedMentions(users=[DiscordObject(self.user_id)]),
             )
-        except discord.HTTPException:
+        except HTTPException:
             # In the event of an HTTP exception, the reminder is deleted
             # regardless of its type
             await self.delete()
@@ -215,7 +214,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
 
-    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def addon_interaction_check(self, interaction: Interaction) -> bool:
         return is_registered_profile_predicate(interaction)
 
     @app_commands.command(name="set")
@@ -226,7 +225,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     )
     async def reminder_set(
         self,
-        interaction: discord.Interaction,
+        interaction: Interaction,
         when: str,
         content: str = "…",
         repeat: bool = False,
@@ -351,17 +350,17 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         await interaction.response.send_message(message.format(timestamp))
 
     @app_commands.command(name="list")
-    async def remind_list(self, interaction: discord.Interaction):
+    async def remind_list(self, interaction: Interaction):
         """Lists your active reminders"""
         reminders = self.reminders[interaction.user.id].copy()
         formatted_reminders: list[str] = []
 
         for index, reminder in enumerate(reminders, 1):
             formatted_reminders.append(
-                "`{0} {1}` {2}\n> Triggers <t:{3}:R>".format(
+                "`{0} {1}` {2}\n➥ Triggers <t:{3}:R>".format(
                     index,
                     "\U0001F501" if reminder.repeating else "\u0031\uFE0F\u20E3",
-                    shorten(reminder.content, 50),
+                    utils.escape_markdown(shorten(reminder.content, 75)),
                     int(reminder.end_time.timestamp()),
                 )
             )
@@ -379,7 +378,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     @app_commands.command(name="view")
     @app_commands.rename(index="reminder")
     @app_commands.describe(index="A reminder index to view")
-    async def remind_view(self, interaction: discord.Interaction, index: int):
+    async def remind_view(self, interaction: Interaction, index: int):
         """View the full content of a reminder, accessed by index"""
         try:
             reminder = self.reminders[interaction.user.id][index - 1]
@@ -409,8 +408,8 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     @app_commands.rename(index="reminder")
     @app_commands.describe(index="A reminder index to edit")
     @no_defer
-    async def remind_edit(self, interaction: discord.Interaction, index: int):
-        """Edit the content of a reminder,a ccessed by index"""
+    async def remind_edit(self, interaction: Interaction, index: int):
+        """Edit the content of a reminder, accessed by index"""
         try:
             reminder = self.reminders[interaction.user.id][index - 1]
         except IndexError:
@@ -426,9 +425,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @remind_view.autocomplete("index")
     @remind_edit.autocomplete("index")
-    async def remind_view_edit_autocomplete(
-        self, interaction: discord.Interaction, current
-    ):
+    async def remind_view_edit_autocomplete(self, interaction: Interaction, current):
         if interaction.user.id not in self.bot.profiles:
             return []
 
@@ -438,7 +435,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     @app_commands.command(name="cancel")
     @app_commands.rename(index="reminder")
     @app_commands.describe(index="A reminder index to remove")
-    async def remind_cancel(self, interaction: discord.Interaction, index: str):
+    async def remind_cancel(self, interaction: Interaction, index: str):
         """Cancel a reminder by index"""
         if is_clear_all(index):
             reminders = self.reminders[interaction.user.id].copy()
@@ -457,9 +454,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         await send_confirmation(interaction)
 
     @remind_cancel.autocomplete("index")
-    async def remind_cancel_autocomplete(
-        self, interaction: discord.Interaction, current
-    ):
+    async def remind_cancel_autocomplete(self, interaction: Interaction, current):
         if interaction.user.id not in self.bot.profiles:
             return []
 
