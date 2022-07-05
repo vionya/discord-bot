@@ -206,20 +206,20 @@ class Utility(neo.Addon):
     @app_commands.command(name="clear")
     @app_commands.guild_only()
     @app_commands.describe(
+        limit="The number of messages to delete",
         before="Delete only messages sent before this message ID or URL",
         after="Delete only messages sent after this message ID or URL",
         user="Delete only messages sent by this user",
-        limit="The number of messages to delete",
     )
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def clear_app_command(
         self,
         interaction: discord.Interaction,
+        limit: discord.app_commands.Range[int, 0, 2000],
         before: Optional[str],
         after: Optional[str],
         user: Optional[discord.Member],
-        limit: Optional[discord.app_commands.Range[int, 0, 2000]] = 5,
     ):
         """Clear messages from the current channel"""
         if not hasattr(interaction.channel, "purge"):
