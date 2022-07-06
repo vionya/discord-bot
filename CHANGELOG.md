@@ -1,3 +1,9 @@
+# **Release v1.3.1** (July 5, 2022)
+
+## Fixes
+
+- Fix a check error in some subcommands
+
 # **Release v1.3.0** (July 4, 2022)
 
 ## Improvements
