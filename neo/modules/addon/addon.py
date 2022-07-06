@@ -161,7 +161,7 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
     async def addon_interaction_check(self, interaction: Interaction) -> bool:
         """Define an addon-wide interaction check"""
-        ...
+        return True
 
     @staticmethod
     def recv(event: str):
