@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-from functools import cache
 from typing import TYPE_CHECKING, Optional
 
 import discord
@@ -54,7 +53,6 @@ def get_translation_kwargs(content: str) -> tuple[str, dict[str, str]]:
     return content.casefold().strip(), kwargs
 
 
-@cache  # Prevent repeated requests when possible
 def do_translate(
     translator: Translator, content: str, *, dest: Optional[str], src: Optional[str]
 ):
@@ -87,7 +85,10 @@ class InviteDropdown(discord.ui.Select["InviteMenu"]):
 
         url = discord.utils.oauth_url(
             self.view.application_id,
-            scopes=('bot', 'applications.commands'),  # extra assurance in case the default changes
+            scopes=(
+                "bot",
+                "applications.commands",
+            ),  # extra assurance in case the default changes
             permissions=discord.Permissions(int(self.values[0])),
         )
         await interaction.response.send_message(
