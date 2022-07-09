@@ -236,7 +236,10 @@ def generate_autocomplete_list(
         # If the field has a value, then the autocomplete will start with
         # the current value, and then show a range of indices surrounding
         # the current value
-        user_index = int(current)
+
+        # Also, clamp it to 1 to prevent negative index oddities (though
+        # they are still sometimes useful and can be used w/o autocomplete)
+        user_index = max(int(current), 1)
 
         if user_index < 0 or user_index > len(container):
             return []
