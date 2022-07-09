@@ -10,8 +10,8 @@ from discord import app_commands, utils
 # Module exports
 from .autocomplete_helpers import (
     ClearAllOption,
+    add_setting_autocomplete,
     generate_autocomplete_list,
-    generate_setting_mapping_autocomplete,
     is_clear_all,
     is_valid_index,
 )

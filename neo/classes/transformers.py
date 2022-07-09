@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import zoneinfo
 from operator import attrgetter
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, Iterable, TypeVar
 
 import discord
 from discord.app_commands import Choice, Transformer
@@ -27,26 +27,32 @@ EXTRACT_CHANNEL_REGEX = re.compile(r"^<#(\d{15,20})>$")
 
 class WrapperTransformer(Transformer, Generic[T]):
     wrapped: Callable[[str], T]
+    options: Iterable[str]
 
     @classmethod
     def transform(cls: type[Self], interaction: discord.Interaction, value: str) -> T:
         ...
 
 
-def wrap_transformer(func: Callable[[str], T]) -> type[WrapperTransformer[T]]:
-    class Wrapper(WrapperTransformer):
-        def __init__(self) -> None:
-            super().__init__()
-            self.wrapped = func
+def wrap_transformer(_options: Iterable[str] = []):
+    def inner(func: Callable[[str], T]) -> type[WrapperTransformer[T]]:
+        class Wrapper(WrapperTransformer):
+            options = _options
 
-        @classmethod
-        def transform(cls, interaction, value):
-            return func(value)
+            def __init__(self) -> None:
+                super().__init__()
+                self.wrapped = func
 
-    return Wrapper
+            @classmethod
+            def transform(cls, interaction, value):
+                return func(value)
+
+        return Wrapper
+
+    return inner
 
 
-@wrap_transformer
+@wrap_transformer(("True", "False"))
 def bool_transformer(maybe_bool: str) -> bool:
     normalized = maybe_bool.casefold()
     if normalized in ("yes", "y", "true", "t", "1", "enable", "on"):
@@ -56,7 +62,7 @@ def bool_transformer(maybe_bool: str) -> bool:
     raise ValueError("Value must be interpretable as a boolean.")
 
 
-@wrap_transformer
+@wrap_transformer()
 def codeblock_transformer(codeblock: str) -> str:
     new = None
     if codeblock.startswith("`") and codeblock.endswith("`"):
@@ -65,7 +71,7 @@ def codeblock_transformer(codeblock: str) -> str:
     return codeblock
 
 
-@wrap_transformer
+@wrap_transformer(zoneinfo.available_timezones())
 def timezone_transformer(timezone: str) -> str:
     try:
         zone = zoneinfo.ZoneInfo(timezone)
@@ -74,7 +80,7 @@ def timezone_transformer(timezone: str) -> str:
     return str(zone)
 
 
-@wrap_transformer
+@wrap_transformer()
 def mention_transformer(mention: str) -> int:
     match = EXTRACT_MENTION_REGEX.match(mention)
     if not match:
@@ -83,7 +89,7 @@ def mention_transformer(mention: str) -> int:
     return int(match[1])
 
 
-@wrap_transformer
+@wrap_transformer([str(i) for i in range(1, 6)])
 def timeout_transformer(provided_timeout: str) -> int:
     if not provided_timeout.isnumeric():
         raise ValueError("`timeout` must be a number.")
@@ -94,7 +100,7 @@ def timeout_transformer(provided_timeout: str) -> int:
     return timeout
 
 
-@wrap_transformer
+@wrap_transformer()
 def max_days_transformer(provided_max_days: str) -> int:
     if not provided_max_days.isnumeric():
         raise ValueError("`max_days` must be a number.")

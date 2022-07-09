@@ -17,8 +17,8 @@ from neo.classes.transformers import (
 )
 from neo.modules import ButtonsMenu
 from neo.tools import (
+    add_setting_autocomplete,
     convert_setting,
-    generate_setting_mapping_autocomplete,
     instantiate,
     is_registered_profile,
     prompt_user,
@@ -128,6 +128,9 @@ class Profile(neo.Addon, app_group=True):
 
             await menu.start(interaction)
 
+        @add_setting_autocomplete(
+            SETTINGS_MAPPING, setting_param="setting", value_param="new_value"
+        )
         @app_commands.command(name="set")
         @app_commands.describe(
             setting="The setting to set. More information can be found in the settings list",
@@ -149,6 +152,7 @@ class Profile(neo.Addon, app_group=True):
                 f"Setting `{setting}` has been changed!"
             )
 
+        @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
         @app_commands.command(name="reset")
         @app_commands.describe(setting="The setting to reset")
         @is_registered_profile()
@@ -165,12 +169,12 @@ class Profile(neo.Addon, app_group=True):
                 f"Setting `{setting}` has been reset!"
             )
 
-        @profile_settings_set.autocomplete("setting")
-        @profile_settings_reset.autocomplete("setting")
-        async def profile_settings_set_reset_autocomplete(
-            self, interaction: discord.Interaction, current: str
-        ):
-            return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
+        # @profile_settings_set.autocomplete("setting")
+        # @profile_settings_reset.autocomplete("setting")
+        # async def profile_settings_set_reset_autocomplete(
+        #     self, interaction: discord.Interaction, current: str
+        # ):
+        #     return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
 
     @app_commands.command(name="show")
     @discord.app_commands.describe(

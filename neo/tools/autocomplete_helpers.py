@@ -2,7 +2,7 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Optional, TypeGuard, overload
 
 from discord import app_commands
 
@@ -11,6 +11,7 @@ from .formatters import shorten
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from discord import Interaction
     from discord.app_commands import Choice
     from neo.classes.containers import SettingsMapping
 
@@ -136,18 +137,109 @@ def is_clear_all(value: str) -> TypeGuard[Literal["Clear all"]]:
     return value == ClearAllOption
 
 
-def generate_setting_mapping_autocomplete(
-    mapping: SettingsMapping, current: str
-) -> list[Choice[str]]:
-    """Generate a list of choices suitable for an autocomplete function of a settings mapping"""
-    setting_pairs: list[tuple[str, str]] = []
-    for k, v in mapping.items():
-        setting_pairs.append((v.display_name, k))
+def add_setting_autocomplete(
+    mapping: SettingsMapping, *, setting_param: str, value_param: Optional[str] = None
+):
+    """
+    Decorates a Command and automatically implements a settings-based autocomplete
+    on it.
 
-    setting_pairs = [
-        *filter(lambda pair: current.casefold() in pair[0].casefold(), setting_pairs)
-    ][:25]
+    Provided parameter names and a settings mapping, autocomplete callbacks
+    are generated to provide options that are valid for each setting.
 
-    return [
-        app_commands.Choice(name=name, value=value) for name, value in setting_pairs
-    ]
+    Parameters
+    ----------
+    mapping: SettingsMapping
+        The settings mapping from which autocompletes will be generated
+    setting_param: str
+        The name of the parameter which specifies the setting key
+    value_param: Optional[str]
+        The name of the parameter which specifies the new setting value
+    """
+
+    def inner(command: app_commands.Command):
+        async def setting_param_autocomplete(
+            interaction: Interaction, current: str
+        ) -> list[Choice[str]]:
+            setting_pairs: list[tuple[str, str]] = []
+            for k, v in mapping.items():
+                setting_pairs.append((v.display_name, k))
+
+            # Filter to the first 25 entries which match the current input
+            setting_pairs = [
+                *filter(
+                    lambda pair: current.casefold() in pair[0].casefold(), setting_pairs
+                )
+            ][:25]
+            return [
+                app_commands.Choice(name=name, value=value)
+                for name, value in setting_pairs
+            ]
+
+        command.autocomplete(setting_param)(setting_param_autocomplete)
+
+        if value_param is not None:
+
+            async def value_param_autocomplete(
+                interaction: Interaction, current: str
+            ) -> list[Choice]:
+                # If the setting param hasn't been filled in yet, return
+                # an empty list
+                if setting_param not in interaction.namespace:
+                    return []
+
+                # If the value in the namespace isn't a string due to
+                # Discord resolution weirdness, return an empty list
+                setting_param_value: str = interaction.namespace[setting_param]
+                if not isinstance(setting_param_value, str):
+                    return []
+
+                setting = mapping[setting_param_value]
+                values: Iterable[tuple[str, str] | str]
+
+                # If an autocomplete function was provided for a single setting,
+                # use its return value
+                if "autocomplete_func" in setting:
+                    values = setting["autocomplete_func"](interaction, current)
+                # If an autocomplete values iterable was provided, use it
+                elif "autocomplete_values" in setting:
+                    values = setting["autocomplete_values"]
+                # If the transformer has an `options` property, then it's
+                # a WrapperTransformer, so we can try and use the options
+                # as autocomplete values
+                elif hasattr(setting["transformer"], "options"):
+                    values = setting["transformer"].options
+                # Otherwise, give up and return an empty list
+                else:
+                    return []
+
+                options: list[tuple[str, str]] = []
+                for item in values:
+                    # If the item is a tuple, then it is representing the
+                    # name and value as separate from each other
+                    if isinstance(item, tuple):
+                        options.append(item)
+                    # If the item is a single string, then the name and value
+                    # should be the same
+                    elif isinstance(item, str):
+                        options.append((item, item))
+                    # Otherwise, a bad type was provided
+                    else:
+                        raise TypeError(
+                            "Autocomplete must be a Sequence[tuple[str, str] | str]"
+                        )
+
+                # Return a list of choices, filtered to only values which contain the
+                # current parameter input (and limited to 25 in length)
+                return [
+                    app_commands.Choice(name=name, value=value)
+                    for name, value in filter(
+                        lambda opt: current.casefold() in opt[0].casefold(), options
+                    )
+                ][:25]
+
+            command.autocomplete(value_param)(value_param_autocomplete)
+
+        return command
+
+    return inner

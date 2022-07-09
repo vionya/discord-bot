@@ -12,12 +12,7 @@ from discord import app_commands
 from neo.classes.containers import Setting, SettingsMapping, TimedCache
 from neo.classes.transformers import max_days_transformer, text_channel_transformer
 from neo.modules import ButtonsMenu
-from neo.tools import (
-    convert_setting,
-    generate_setting_mapping_autocomplete,
-    instantiate,
-    shorten,
-)
+from neo.tools import add_setting_autocomplete, convert_setting, instantiate, shorten
 from neo.tools.checks import is_valid_starboard_env
 
 from .auxiliary.starboard import ChangeSettingButton
@@ -30,6 +25,10 @@ SETTINGS_MAPPING = SettingsMapping(
         "channel",
         transformer=text_channel_transformer,
         name_override="Starboard Channel",
+        autocomplete_func=lambda interaction, _: [
+            (f"#{channel}", channel.mention)
+            for channel in interaction.guild.text_channels  # type: ignore  # guild_only
+        ],
     ),
     Setting("threshold", transformer=int, name_override="Minimum Stars Required"),
     Setting("format", transformer=str, name_override="Starred Message Format"),
@@ -493,6 +492,9 @@ class StarboardAddon(
 
             await menu.start(interaction)
 
+        @add_setting_autocomplete(
+            SETTINGS_MAPPING, setting_param="setting", value_param="new_value"
+        )
         @app_commands.command(name="set")
         @app_commands.checks.has_permissions(manage_channels=True)
         @app_commands.describe(
@@ -511,12 +513,6 @@ class StarboardAddon(
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message("Your settings have been updated!")
-
-        @starboard_set.autocomplete("setting")
-        async def starboard_set_autocomplete(
-            self, interaction: discord.Interaction, current: str
-        ):
-            return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
 
     async def set_option(
         self, interaction: discord.Interaction, setting: str, new_value: str
