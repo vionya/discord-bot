@@ -228,7 +228,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         self,
         interaction: discord.Interaction,
         when: str,
-        content: str = "…",
+        content: app_commands.Range[str, 1, MAX_REMINDER_LEN] = "…",
         repeat: bool = False,
     ):
         """
@@ -293,11 +293,6 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         if len(self.reminders[interaction.user.id]) >= MAX_REMINDERS:
             raise ValueError("You've used up all of your reminder slots!")
-
-        if len(content) > MAX_REMINDER_LEN:
-            raise ValueError(
-                f"Reminders cannot be longer than {MAX_REMINDER_LEN:,} characters!"
-            )
 
         (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
             when, tz=tz

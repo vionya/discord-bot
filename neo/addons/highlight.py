@@ -334,7 +334,11 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The word or phrase to be highlighted by")
-    async def highlight_add(self, interaction: discord.Interaction, content: str):
+    async def highlight_add(
+        self,
+        interaction: discord.Interaction,
+        content: app_commands.Range[str, 1, MAX_TRIGGER_LEN],
+    ):
         """
         Add a new highlight
 
@@ -346,13 +350,6 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         - Highlights will __never__ be triggered by bots
         - You must be a member of a channel to be highlighted in it
         """
-        if len(content) <= 1:
-            raise ValueError("Highlights must contain more than 1 character.")
-        elif len(content) >= MAX_TRIGGER_LEN:
-            raise ValueError(
-                f"Highlights cannot be longer than {MAX_TRIGGER_LEN:,} characters!"
-            )
-
         if len(self.highlights.get(interaction.user.id, [])) >= MAX_TRIGGERS:
             raise ValueError("You've used up all of your highlight slots!")
 
