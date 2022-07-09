@@ -1,3 +1,14 @@
+# **Release v1.4.0** (July 9, 2022)
+
+## Improvements
+
+- `settings` commands now dynamically generate autocompletions based on the setting being modified
+- Content length for reminders and highlights is now validated by the Discord client, rather than the bot client
+
+## Fixes
+
+- Autocomplete current value for index-based commands is now clamped such that values can no longer go below 0
+
 # **Release v1.3.1** (July 5, 2022)
 
 ## Fixes
