@@ -60,8 +60,6 @@ def format_hl_context(message: discord.Message, is_trigger=False):
         message.content += " *[Sticker x{}]*".format(len(message.stickers))
 
     match int(message.author.default_avatar.key):
-        case 0:
-            enum_member = DefaultAvatars.Blurple
         case 1:
             enum_member = DefaultAvatars.Grey
         case 2:
@@ -109,7 +107,7 @@ class Highlight:
         # are in the user's ignored list, fail the check
         blacklist = self.bot.profiles[self.user_id].hl_blocks
         if any(
-            attrgetter(attr)(message) in blacklist
+            getattr(message, attr) in blacklist
             for attr in ("id", "guild.id", "channel.id", "author.id")
         ):
             return False
