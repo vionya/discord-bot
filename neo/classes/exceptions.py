@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2022 sardonicism-04
 class NeoException(Exception):
     """The base class that all neo-related exceptions derive from"""
 
