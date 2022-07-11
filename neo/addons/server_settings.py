@@ -35,6 +35,7 @@ SETTINGS_MAPPING = SettingsMapping(
 @app_commands.guild_only()
 class ServerConfig(
     neo.Addon,
+    name="Server Settings",
     app_group=True,
     group_name="server",
     group_description="Server configuration commands",
