@@ -3,11 +3,14 @@
 CREATE TABLE profiles (
     user_id            BIGINT PRIMARY KEY,
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC'),
-    hl_blocks          BIGINT[] DEFAULT ARRAY[]::BIGINT[],
+    -- Public settings, directly modified by user
     receive_highlights BOOLEAN DEFAULT TRUE,
     timezone           TEXT DEFAULT NULL,
     hl_timeout         BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1,
-    default_ephemeral  BOOLEAN DEFAULT TRUE
+    default_ephemeral  BOOLEAN DEFAULT TRUE,
+    -- Private settings, indirectly modified
+    hl_blocks          BIGINT[] DEFAULT ARRAY[]::BIGINT[],
+    todo_categories    VARCHAR(100)[] DEFAULT ARRAY[]::VARCHAR(100)[]
 );
 
 CREATE TABLE guild_configs (

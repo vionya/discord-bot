@@ -122,6 +122,7 @@ class NeoUser(RecordContainer):
         "timezone",
         "hl_timeout",
         "default_ephemeral",
+        "todo_categories",
     )
 
     def __repr__(self):
