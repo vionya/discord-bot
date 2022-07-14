@@ -33,6 +33,11 @@ CREATE TABLE todos (
     content    TEXT NOT NULL,
     todo_id    UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    category   VARCHAR(100),
+    -- Add a constraint that calls a check function which validates
+    -- that the inserted category name is present in the array of
+    -- todo categories associated with the user_id
+    CONSTRAINT valid_category CHECK (is_valid_todo_category(user_id, category)),
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
 );
 
