@@ -43,7 +43,7 @@ def generate_autocomplete_list(
 
 
 def generate_autocomplete_list(
-    container: Sequence[Any],
+    container: Sequence[str],
     current: str,
     *,
     insert_wildcard: bool = False,
@@ -106,7 +106,7 @@ def generate_autocomplete_list(
                 break
 
     else:
-        return []
+        valid_range = [idx for idx, val in enumerate(container, 1) if current in val]
 
     opts: list[str | int] = (
         [ClearAllOption, *valid_range] if insert_wildcard else [*valid_range]
