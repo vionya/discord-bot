@@ -1,3 +1,17 @@
+# **Release v1.5.0** (July 13, 2022)
+
+## Additions
+
+- Implemented todo categories
+  - The `/todo category` subgroup has been added with commands for managing categories
+  - When categories exist, new todos may optionally be added to a category upon creation (todos do not currently support being moved between categories)
+  - Categories can be deleted, and users can choose to have the associated todos deleted completely, or become uncategorized
+  - `/todo list` now supports an optional `category` parameter that will show only the todos that belong to a certain category
+
+## Improvements
+
+- Changed `ServerConfig` group display name
+
 # **Release v1.4.0** (July 9, 2022)
 
 ## Improvements
