@@ -107,7 +107,7 @@ class Highlight:
         # are in the user's ignored list, fail the check
         blacklist = self.bot.profiles[self.user_id].hl_blocks
         if any(
-            getattr(message, attr) in blacklist
+            attrgetter(attr)(message) in blacklist
             for attr in ("id", "guild.id", "channel.id", "author.id")
         ):
             return False
