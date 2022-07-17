@@ -1,3 +1,9 @@
+# **Release v1.5.1** (July 17, 2022)
+
+## Fixes
+
+- Highlights now trigger properly once again
+
 # **Release v1.5.0** (July 13, 2022)
 
 ## Additions
