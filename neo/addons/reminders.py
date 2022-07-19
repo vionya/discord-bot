@@ -110,8 +110,22 @@ class Reminder:
     async def deliver(self):
         try:
             dest = self.bot.get_user(self.user_id, as_partial=True)
+
+            embed = neo.Embed(title="Reminder Triggered", description=self.content)
+            if self.repeating is True:
+                embed.add_field(
+                    name="Repeats at:",
+                    value=f"<t:{self.end_time.timestamp():.0f}>",
+                    inline=False,
+                ).add_field(
+                    name="Repeats every:",
+                    value=f"`{humanize_timedelta(self.delta)}`",
+                    inline=False,
+                )
+
             await dest.send(
-                "<@{0}> **Reminder**:\n> {1}".format(self.user_id, self.content),
+                content=self.content,
+                embed=embed,
                 allowed_mentions=discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
                 ),

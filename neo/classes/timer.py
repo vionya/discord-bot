@@ -13,7 +13,15 @@ if TYPE_CHECKING:
 
 
 class PeriodicTimer:
-    """Implements simple async periodicity with a coroutine callback"""
+    """
+    Implements simple async periodicity with a coroutine callback
+
+    Note on execution order:
+    ```txt
+    self.start() called -> ↱   callback called once    ⮧
+                           ⮤ wait for interval seconds ↲
+    ```
+    """
 
     __slots__ = ("callback", "interval", "instance", "is_stopped", "logger", "task")
 
@@ -44,7 +52,6 @@ class PeriodicTimer:
 
     async def runner(self):
         while True:
-            await asyncio.sleep(self.interval)
             try:
                 if self.instance:
                     await self.callback(self.instance)
@@ -54,9 +61,11 @@ class PeriodicTimer:
                 self.logger.error(format_exception(e))
             if self.is_stopped:
                 self.cancel()
+            await asyncio.sleep(self.interval)
 
 
 def periodic(interval: int = 60):
+    """Creates a `PeriodicTimer` that wraps the decorated function"""
     def inner(func: Callable[..., Awaitable[None]]) -> PeriodicTimer:
         return PeriodicTimer(func, interval)
 
