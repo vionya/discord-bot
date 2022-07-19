@@ -11,8 +11,9 @@ from operator import attrgetter
 from typing import TYPE_CHECKING, Optional
 
 import discord
-import neo
 from discord import app_commands
+
+import neo
 from neo.classes.containers import TimedSet
 from neo.classes.partials import PartialUser
 from neo.classes.timer import periodic

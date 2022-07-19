@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import discord
+
 import neo
 
 if TYPE_CHECKING:

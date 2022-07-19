@@ -14,6 +14,7 @@ from typing import (
 )
 
 from discord import Embed as BaseEmbed
+
 from neo.classes import Embed
 
 if TYPE_CHECKING:

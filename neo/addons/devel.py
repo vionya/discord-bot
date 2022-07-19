@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
-import neo
 from discord.ext import commands
+
+import neo
 from neo.classes.transformers import codeblock_transformer
 from neo.modules import ButtonsMenu, Pages
 from neo.modules.exec import ExecWrapper, env_from_context

@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 import discord
-import neo
 from discord.ext import commands
 
+import neo
 from neo.tools import recursive_get_command
 
 if TYPE_CHECKING:

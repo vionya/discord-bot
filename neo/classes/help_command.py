@@ -2,13 +2,14 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from operator import attrgetter
 import re
+from operator import attrgetter
 from typing import TYPE_CHECKING, Any, Optional
 
 import discord
-import neo
 from discord import app_commands
+
+import neo
 from neo.classes.app_commands import AutoEphemeralAppCommand
 from neo.modules import DropdownMenu, EmbedPages
 from neo.tools import recursive_get_command

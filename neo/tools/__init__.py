@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from discord import Interaction
+
     from neo.classes.containers import SettingsMapping
 
 

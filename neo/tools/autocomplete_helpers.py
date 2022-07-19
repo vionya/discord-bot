@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     from discord import Interaction
     from discord.app_commands import Choice
+
     from neo.classes.containers import SettingsMapping
 
 ClearAllOption = "Clear all"

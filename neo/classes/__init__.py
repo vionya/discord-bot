@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING, Optional
 import discord
 
 if TYPE_CHECKING:
-    from discord import Colour
     import datetime
+
+    from discord import Colour
 
 
 class Embed(discord.Embed):

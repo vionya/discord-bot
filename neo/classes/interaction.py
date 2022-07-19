@@ -3,6 +3,7 @@
 from typing import Optional
 
 import discord
+
 from neo.classes.app_commands import get_ephemeral
 
 

@@ -12,8 +12,9 @@ import discord
 from neo.tools.message_helpers import send_confirmation
 
 if TYPE_CHECKING:
-    from neo.addons.todos import TodoItem, Todos
     from typing_extensions import Self
+
+    from neo.addons.todos import TodoItem, Todos
 
 
 class TodoEditModal(discord.ui.Modal):

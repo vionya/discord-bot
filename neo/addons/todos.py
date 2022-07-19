@@ -10,9 +10,10 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 import discord
-import neo
 from discord import app_commands
 from discord.utils import escape_markdown
+
+import neo
 from neo.addons.auxiliary.todos import TodoEditModal
 from neo.classes.app_commands import no_defer
 from neo.modules import ButtonsMenu
@@ -23,7 +24,7 @@ from neo.tools import (
     is_valid_index,
     send_confirmation,
     shorten,
-    with_docstring
+    with_docstring,
 )
 from neo.tools.checks import is_registered_profile_predicate
 

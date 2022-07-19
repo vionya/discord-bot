@@ -8,11 +8,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
+
 from neo.tools.message_helpers import send_confirmation
 
 if TYPE_CHECKING:
-    from neo.addons.reminders import Reminder, Reminders
     from typing_extensions import Self
+
+    from neo.addons.reminders import Reminder, Reminders
 
 
 class ReminderEditModal(discord.ui.Modal):

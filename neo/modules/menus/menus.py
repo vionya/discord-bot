@@ -16,6 +16,7 @@ from typing import (
 )
 
 import discord
+
 from neo.classes.app_commands import get_ephemeral
 from neo.classes.context import NeoContext
 from neo.tools import shorten

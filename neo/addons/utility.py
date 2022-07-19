@@ -10,9 +10,10 @@ from sys import version as py_version
 from typing import Optional
 
 import discord
-import neo
 from discord import app_commands
 from googletrans import LANGUAGES, Translator
+
+import neo
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
 from neo.tools import parse_ids, shorten
 from neo.tools.formatters import Table

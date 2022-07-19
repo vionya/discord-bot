@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from discord.app_commands.commands import CommandCallback
+
     from neo import Addon, Neo
 
 T = TypeVar("T")

@@ -10,6 +10,7 @@ import re
 from typing import TYPE_CHECKING, Optional
 
 import discord
+
 import neo
 
 if TYPE_CHECKING:

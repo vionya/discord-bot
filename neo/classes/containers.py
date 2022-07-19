@@ -14,8 +14,9 @@ from neo.tools import humanize_snake_case
 if TYPE_CHECKING:
     import datetime
 
-    from neo.types.settings_mapping import SettingData
     from typing_extensions import Never, Unpack
+
+    from neo.types.settings_mapping import SettingData
 
 
 def add_hook(attr_name: str):

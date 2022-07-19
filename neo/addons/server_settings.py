@@ -6,8 +6,9 @@ import asyncio
 from typing import Optional
 
 import discord
-import neo
 from discord import app_commands
+
+import neo
 from neo.classes.containers import Setting, SettingsMapping
 from neo.classes.transformers import bool_transformer, command_transformer
 from neo.modules import ButtonsMenu

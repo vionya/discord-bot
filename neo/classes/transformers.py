@@ -9,9 +9,10 @@ from typing import TYPE_CHECKING, Generic, Iterable, TypeVar
 
 import discord
 from discord.app_commands import Choice, Transformer
+from typing_extensions import Self
+
 from neo.tools import recursive_get_command
 from neo.types.commands import AnyCommand
-from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Callable
