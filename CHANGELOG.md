@@ -1,3 +1,17 @@
+# **Release v1.6.0** (July 21, 2022)
+
+## Additions
+
+- Todos can now be moved between categories via the `/todo edit` modal (not supported on mobile yet)
+
+## Improvements
+
+- Updated the appearance of reminder deliveries
+
+## Other
+
+- Code formatting
+
 # **Release v1.5.1** (July 17, 2022)
 
 ## Fixes
