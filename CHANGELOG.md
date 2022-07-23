@@ -1,3 +1,7 @@
+# **Release v1.6.1** (July 23, 2022)
+
+- Changes the `/info` command slightly
+
 # **Release v1.6.0** (July 21, 2022)
 
 ## Additions

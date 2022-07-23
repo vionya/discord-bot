@@ -495,10 +495,6 @@ class Utility(neo.Addon):
 
         if self.bot.user:
             embed.set_thumbnail(url=self.bot.user.display_avatar)
-        embed.set_author(
-            name=f"Developed by {self.appinfo.owner}",
-            icon_url=self.appinfo.owner.display_avatar,
-        )
         await interaction.response.send_message(embed=embed, view=self.info_buttons())
 
     async def message_info_context_command(
