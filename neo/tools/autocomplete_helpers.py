@@ -107,7 +107,13 @@ def generate_autocomplete_list(
                 break
 
     else:
-        valid_range = [idx for idx, val in enumerate(container, 1) if current in val]
+        # Otherwise, try to find a match against the text content of the
+        # items in the container
+        valid_range = [
+            idx
+            for idx, val in enumerate(container, 1)
+            if current.casefold() in val.casefold()
+        ]
 
     opts: list[str | int] = (
         [ClearAllOption, *valid_range] if insert_wildcard else [*valid_range]
