@@ -56,7 +56,7 @@ def generate_autocomplete_list(
 
     Parameters
     ----------
-    container: Sequence[Any]
+    container: Sequence[str]
         The items from which the autocomplete list will be generated
     current: str
         The current value that the user has input

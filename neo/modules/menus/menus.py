@@ -141,7 +141,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         if isinstance(self.origin, discord.Interaction):
             if not self.origin.response.is_done():
                 await self.origin.response.defer()
-            await self.origin.edit_original_message(**kwargs)
+            await self.origin.edit_original_response(**kwargs)
 
         elif self.message:
             await self.message.edit(**kwargs)
@@ -164,7 +164,7 @@ class BaseMenu(Generic[T], discord.ui.View):
                 if isinstance(self.origin, discord.Interaction) and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
-                    await interaction.delete_original_message()
+                    await interaction.delete_original_response()
 
                 elif self.message:
                     await self.message.delete()
@@ -179,7 +179,7 @@ class BaseMenu(Generic[T], discord.ui.View):
                 if isinstance(self.origin, discord.Interaction) and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
-                    await interaction.edit_original_message(view=self)
+                    await interaction.edit_original_response(view=self)
 
                 elif self.message:
                     await self.message.edit(view=self)
