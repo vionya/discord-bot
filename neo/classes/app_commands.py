@@ -64,6 +64,7 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
         guild_ids: Optional[list[int]] = None,
         nsfw: bool = False,
         extras: dict[Any, Any] = {},
+        **rest,  # handle any new arguments that may be implemented upstream
     ):
         super().__init__(
             name=name,
@@ -73,6 +74,7 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
             guild_ids=guild_ids,
             nsfw=nsfw,
             extras=extras,
+            **rest,
         )
         self.addon = None
 
