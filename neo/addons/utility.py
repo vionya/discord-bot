@@ -26,24 +26,6 @@ from .auxiliary.utility import (
     translate,
 )
 
-BADGE_MAPPING = {
-    "staff": "<:_:863197443386900541>",
-    "discord_certified_moderator": "<:_:863197442996305960>",
-    "partner": "<:_:863197443311403008>",
-    "hypesquad": "<:_:863197443281911808>",
-    "hypesquad_balance": "<:_:863197443244294164>",
-    "hypesquad_bravery": "<:_:863197443238920242>",
-    "hypesquad_brilliance": "<:_:863197443268673567>",
-    "bug_hunter": "<:_:863197442983067678>",
-    "bug_hunter_level_2": "<:_:863197443083730955>",
-    "early_verified_bot_developer": "<:_:863197443083730958>",
-    "early_supporter": "<:_:863197442840068117>",
-}
-ICON_MAPPING = {
-    "guild_owner": "<:_:863197442996305941>",
-    "bot_tag": "<:_:863197442937061416>",
-    "verified_bot_tag": "<:_:863197443083730959><:_:863197443565813780>",
-}
 PREMIUM_ICON_MAPPING = {
     0: "",
     1: "<:_:868138562690875452>",
