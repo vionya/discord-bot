@@ -31,22 +31,23 @@ class TodoEditModal(discord.ui.Modal):
             max_length=1500,
         )
 
-        self.category: discord.ui.Select[Self] = discord.ui.Select(
-            placeholder="Change Todo Category",
-            options=[
-                discord.SelectOption(
-                    label=category.title(),
-                    value=category.casefold(),
-                    default=category == (todo.category or "Uncategorized").casefold(),
-                )
-                for category in map(str.casefold, [*categories, "Uncategorized"])
-            ],
-        )
+        # TODO: Uncomment when officially supported
+        # self.category: discord.ui.Select[Self] = discord.ui.Select(
+        #     placeholder="Change Todo Category",
+        #     options=[
+        #         discord.SelectOption(
+        #             label=category.title(),
+        #             value=category.casefold(),
+        #             default=category == (todo.category or "Uncategorized").casefold(),
+        #         )
+        #         for category in map(str.casefold, [*categories, "Uncategorized"])
+        #     ],
+        # )
 
         super().__init__(title=title, timeout=300)
 
         self.add_item(self.content)
-        self.add_item(self.category)
+        # self.add_item(self.category)  TODO: Uncomment when supported
 
     async def on_submit(self, interaction: discord.Interaction):
         # Guaranteed by the min length and required-ness of the field
@@ -54,41 +55,42 @@ class TodoEditModal(discord.ui.Modal):
 
         self.todo.content = self.content.value
 
-        if len(self.category.values) == 1:
-            new_category = self.category.values[0]
-            if new_category == "uncategorized":
-                new_category = None
+        # TODO: Uncomment when supported
+        # if len(self.category.values) == 1:
+        #     new_category = self.category.values[0]
+        #     if new_category == "uncategorized":
+        #         new_category = None
 
-            self.todo.category = new_category
+        #     self.todo.category = new_category
 
-            await self.addon.bot.db.execute(
-                """
-                UPDATE todos
-                SET
-                    content=$1,
-                    category=$2
-                WHERE
-                    todo_id=$3 AND
-                    user_id=$4
-                """,
-                self.content.value,
-                new_category,
-                self.todo.todo_id,
-                self.todo.user_id,
-            )
-        else:
-            await self.addon.bot.db.execute(
-                """
-                UPDATE todos
-                SET
-                    content=$1
-                WHERE
-                    todo_id=$2 AND
-                    user_id=$3
-                """,
-                self.content.value,
-                self.todo.todo_id,
-                self.todo.user_id,
-            )
+        #     await self.addon.bot.db.execute(
+        #         """
+        #         UPDATE todos
+        #         SET
+        #             content=$1,
+        #             category=$2
+        #         WHERE
+        #             todo_id=$3 AND
+        #             user_id=$4
+        #         """,
+        #         self.content.value,
+        #         new_category,
+        #         self.todo.todo_id,
+        #         self.todo.user_id,
+        #     )
+        # else:
+        await self.addon.bot.db.execute(
+            """
+            UPDATE todos
+            SET
+                content=$1
+            WHERE
+                todo_id=$2 AND
+                user_id=$3
+            """,
+            self.content.value,
+            self.todo.todo_id,
+            self.todo.user_id,
+        )
 
         await send_confirmation(interaction, ephemeral=True)
