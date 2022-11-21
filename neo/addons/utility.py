@@ -340,6 +340,7 @@ class Utility(neo.Addon):
     async def avatar_context_command(
         self, interaction: discord.Interaction, user: discord.Member | discord.User
     ):
+        setattr(interaction.namespace, "private", True)
         await self.avatar_command.callback(self, interaction, user)  # type: ignore
 
     @app_commands.command(name="userinfo")
