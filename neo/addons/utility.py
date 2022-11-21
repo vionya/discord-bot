@@ -76,14 +76,15 @@ class Utility(neo.Addon):
         with open(bot.cfg["privacy_policy_path"]) as policy:
             header, body = policy.read().split("\n", 1)
             header = header.lstrip("# ")
-            body = body.replace("  \n", "\n")  # Ensure proper formatting on mobile
+            body = body.replace(
+                "  \n", "\n"
+            )  # Ensure proper formatting on mobile
         self.privacy_embed = neo.Embed(title=header, description=body)
         self.translator = Translator(raise_exception=True)
 
-        self.bot.tree.context_menu(name="Show User Info")(
-            self.user_info_context_command
+        self.bot.tree.context_menu(name="View Avatar")(
+            self.avatar_context_command
         )
-        self.bot.tree.context_menu(name="View Avatar")(self.avatar_context_command)
         self.bot.tree.context_menu(name="Show Message Info")(
             self.message_info_context_command
         )
@@ -95,7 +96,9 @@ class Utility(neo.Addon):
 
         # Since we wait for bot ready, this has to be true
         if not self.bot.user:
-            raise RuntimeError("`self.bot.user` did not exist when it should have")
+            raise RuntimeError(
+                "`self.bot.user` did not exist when it should have"
+            )
 
         # These both take a ClientSession, so we wait until ready so we can use the bot's
         self.google = cse.Search(
@@ -127,13 +130,17 @@ class Utility(neo.Addon):
 
     @app_commands.command(name="google")
     @app_commands.describe(query="The query to search for")
-    async def google_command(self, interaction: discord.Interaction, query: str):
+    async def google_command(
+        self, interaction: discord.Interaction, query: str
+    ):
         """Search Google for a query"""
         await self.google_command_callback(interaction, query)
 
     @app_commands.command(name="image")
     @app_commands.describe(query="The query to search for")
-    async def google_image_command(self, interaction: discord.Interaction, query: str):
+    async def google_image_command(
+        self, interaction: discord.Interaction, query: str
+    ):
         """Search Google Images for a query"""
         await self.google_command_callback(interaction, query, True)
 
@@ -154,7 +161,9 @@ class Utility(neo.Addon):
 
     @app_commands.command(name="define")
     @app_commands.describe(term="The term to search the dictionary for")
-    async def dictionary_app_command(self, interaction: discord.Interaction, term: str):
+    async def dictionary_app_command(
+        self, interaction: discord.Interaction, term: str
+    ):
         """Search for a term's dictionary definition"""
         try:
             resp = await self.dictionary.define(term)
@@ -267,7 +276,9 @@ class Utility(neo.Addon):
         opt_4: Optional[str] = None,
     ):
         """Make a (pseudo-)random choice from up to 5 different options"""
-        options = [opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt]
+        options = [
+            opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt
+        ]
 
         data = Counter(random.choice(options) for _ in range(1000))
 
@@ -280,7 +291,8 @@ class Utility(neo.Addon):
         embed = (
             neo.Embed(description="```\n" + rendered + "\n```")
             .add_field(
-                name="Selection", value=f"`{shorten(data.most_common(1)[0][0], 250)}`"
+                name="Selection",
+                value=f"`{shorten(data.most_common(1)[0][0], 250)}`",
             )
             .set_author(
                 name=f"{interaction.user}'s choice results",
@@ -292,7 +304,9 @@ class Utility(neo.Addon):
     # Information commands below
 
     @app_commands.command(name="avatar")
-    @app_commands.describe(user="The user to get the avatar of. Yourself if empty")
+    @app_commands.describe(
+        user="The user to get the avatar of. Yourself if empty"
+    )
     async def avatar_command(
         self,
         interaction: discord.Interaction,
@@ -329,8 +343,8 @@ class Utility(neo.Addon):
 
         avatar = user_object.avatar or user_object.default_avatar
 
-        embed.description += "**View user avatar in browser**\n" + get_browser_links(
-            avatar
+        embed.description += (
+            "**View user avatar in browser**\n" + get_browser_links(avatar)
         )
         embed = embed.set_image(url=avatar).set_author(name=user_object)
 
@@ -338,78 +352,12 @@ class Utility(neo.Addon):
 
     # Context menu command added in __init__
     async def avatar_context_command(
-        self, interaction: discord.Interaction, user: discord.Member | discord.User
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | discord.User,
     ):
         setattr(interaction.namespace, "private", True)
         await self.avatar_command.callback(self, interaction, user)  # type: ignore
-
-    @app_commands.command(name="userinfo")
-    @app_commands.describe(user="The user to get info about. Yourself if empty")
-    async def user_info_command(
-        self,
-        interaction: discord.Interaction,
-        user: Optional[discord.Member | discord.User] = None,
-    ):
-        """Retrieves information of yourself, or a specified user"""
-        if isinstance(user, neo.partials.PartialUser) or user is None:
-            id = (user or interaction.user).id
-            try:
-                user_object = await interaction.guild.fetch_member(id)  # type: ignore
-            except (discord.HTTPException, AttributeError):
-                user_object = await self.bot.fetch_user(id)
-
-        else:
-            user_object = user
-
-        embed = neo.Embed().set_thumbnail(url=user_object.display_avatar)
-        flags = [
-            v
-            for k, v in BADGE_MAPPING.items()
-            if k in {flag.name for flag in user_object.public_flags.all()}
-        ]
-        title = str(user_object)
-        description = " ".join(flags) + ("\n" * bool(flags))
-        description += (
-            f"**Created Account** <t:{int(user_object.created_at.timestamp())}:D>"
-        )
-
-        if user_object.bot:
-            title = (
-                (
-                    ICON_MAPPING["verified_bot_tag"]
-                    if user_object.public_flags.verified_bot
-                    else ICON_MAPPING["bot_tag"]
-                )
-                + " "
-                + title
-            )
-
-        if isinstance(user_object, discord.Member) and interaction.guild:
-            description += (
-                f"\n**Joined Server** <t:{int(user_object.joined_at.timestamp())}:D>"
-                if user_object.joined_at
-                else ""
-            )
-            if user_object.id == interaction.guild.owner_id:
-                title = "{0} {1}".format(ICON_MAPPING["guild_owner"], title)
-
-        embed.title = title
-        embed.description = description
-
-        content = None
-        if not interaction.app_permissions.use_external_emojis:
-            content = (
-                'Make sure neo phoenix has "Use External Emoji" permissions,'
-                " otherwise `userinfo` can't properly display icons!"
-            )
-
-        await interaction.response.send_message(content=content, embed=embed)
-
-    # Context menu command added in __init__
-    async def user_info_context_command(
-        self, interaction: discord.Interaction, user: discord.Member | discord.User
-    ):
-        await self.user_info_command.callback(self, interaction, user)  # type: ignore
 
     @app_commands.guild_only()
     @app_commands.command(name="serverinfo")
@@ -418,7 +366,9 @@ class Utility(neo.Addon):
         # The guild_only check guarantees that this will always work
         assert interaction.guild
 
-        animated_emotes = len([e for e in interaction.guild.emojis if e.animated])
+        animated_emotes = len(
+            [e for e in interaction.guild.emojis if e.animated]
+        )
         static_emotes = len(interaction.guild.emojis) - animated_emotes
 
         embed = neo.Embed(
@@ -459,7 +409,8 @@ class Utility(neo.Addon):
         embed = neo.Embed(
             title=role.name,
             description=f"**Created** <t:{int(role.created_at.timestamp())}:D>"
-            + f"\n**Associations** {', '.join(associations)}" * bool(associations)
+            + f"\n**Associations** {', '.join(associations)}"
+            * bool(associations)
             + f"\n\n**Color** {str(role.colour).upper()}"
             f"\n**Mentionable** {role.mentionable}"
             f"\n**Hoisted** {role.hoist}"
@@ -496,7 +447,9 @@ class Utility(neo.Addon):
 
         if self.bot.user:
             embed.set_thumbnail(url=self.bot.user.display_avatar)
-        await interaction.response.send_message(embed=embed, view=self.info_buttons())
+        await interaction.response.send_message(
+            embed=embed, view=self.info_buttons()
+        )
 
     async def message_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message
