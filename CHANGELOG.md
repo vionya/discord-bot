@@ -1,3 +1,17 @@
+# **Release v.1.6.2** (November 21, 2022)
+
+## Improvements
+
+- Responses to the `View Avatar` context menu command are now always ephemeral
+
+## Removals
+
+- Removed the `/userinfo` command due to being unnecessary
+
+## Fixes
+
+- Disabled broken code in the `/todo edit` modal
+
 # **Release v1.6.1** (July 23, 2022)
 
 - Changes the `/info` command slightly
