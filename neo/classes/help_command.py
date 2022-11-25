@@ -24,6 +24,18 @@ if TYPE_CHECKING:
 else:
     HelpMapping = dict[Optional[Any], list[AnyCommand]]
 
+PARAM_TYPE_MAPPING = {
+    discord.AppCommandOptionType.string: "Text",
+    discord.AppCommandOptionType.integer: "An integer",
+    discord.AppCommandOptionType.boolean: "A boolean (yes/no)",
+    discord.AppCommandOptionType.user: "A Discord user",
+    discord.AppCommandOptionType.channel: "A server channel",
+    discord.AppCommandOptionType.role: "A server role",
+    discord.AppCommandOptionType.mentionable: "A ping-able target",
+    discord.AppCommandOptionType.number: "A number",
+    discord.AppCommandOptionType.attachment: "A file",
+}
+
 # Generate the ancestral path (the qualified name up to
 # the second to last index)
 def get_ancestral_path(command: AnyCommand) -> str:
@@ -44,6 +56,62 @@ def format_command(command: AnyCommand):
         symbol = "\U00002444"
 
     return fmt.format(symbol, get_ancestral_path(command), command)
+
+
+def generate_signature(command: app_commands.Command) -> str:
+    """Generates a signature for a command.
+
+    A signature consists of the command's qualified name, and its available
+    parameters. Required parameters are surrounded in angle (<>) brackets, and
+    optional parameters in square ([]) brackets.
+
+    :param command: The command to generate a signature for
+    :type command: ``discord.app_commands.Command``
+
+    :return: A signature for the command
+    :rtype: ``str``
+    """
+    signature = [f"/{command.qualified_name}"]
+    for param in command.parameters:
+        if param.required:
+            signature.append(f"<{param.display_name}>")
+        else:
+            signature.append(f"[{param.display_name}]")
+    return " ".join(signature)
+
+
+def generate_param_help(command: app_commands.Command) -> str:
+    """Generates a string with help for all parameters for a command.
+
+    A help string consists of the parameter's name, whether it's required,
+    its required input type, default value (if applicable), and input value
+    range (if applicable).
+
+    :param command: The command to generate a help string for
+    :type command: ``discord.app_commands.Command``
+
+    :return: A help string for the command's parameters
+    :rtype: ``str``
+    """
+    descriptions = []
+    for param in command.parameters:
+        desc = f"`{param.display_name}`: {param.description}"
+
+        if param.required:
+            desc += "\n↳ This is a required parameter"
+        desc += f"\n↳ **Input Type**: {PARAM_TYPE_MAPPING.get(param.type, param.type.value)}"
+        if param.default:
+            desc += f"\n↳ **Default**: `{param.default}`"
+
+        mi, ma = param.min_value, param.max_value
+        if mi and ma:
+            desc += f"\n↳ **Value Range**: `{mi}..{ma}`"
+        elif mi:
+            desc += f"\n↳ **Min Value**: `{mi}`"
+        elif ma:
+            desc += f"\n↳ **Max Value**: `{ma}`"
+        descriptions.append(desc)
+    return "\n\n".join(descriptions)
 
 
 leading_whitespace = re.compile(r"(?!$)^\s+", re.MULTILINE)
@@ -99,7 +167,6 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         cmd = recursive_get_command(self.bot.tree, command)
         if not cmd:
             raise NameError(f"Command `{command}` does not exist")
-
         else:
             return await self.send_command_help(interaction, cmd)
 
@@ -116,33 +183,28 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
-        mapping = {}
-        mapping.update(
-            {addon: addon.get_commands() for addon in self.bot.cogs.values()}
-        )
-        mapping.update(
-            {
-                None: [
-                    command
-                    for command in self.bot.tree.get_commands(
-                        type=discord.AppCommandType.chat_input
-                    )
-                    if getattr(command, "addon", None) is None
-                ]
-            }
-        )
+        mapping: HelpMapping = {
+            addon: addon.get_commands() for addon in self.bot.cogs.values()
+        }
+        mapping[None] = [
+            command
+            for command in self.bot.tree.get_commands(
+                type=discord.AppCommandType.chat_input
+            )
+            if getattr(command, "addon", None) is None
+        ]
         return mapping
 
-    def filter_commands(self, _commands: Iterable[AnyCommand]):
-        if isinstance(_commands, app_commands.Group):
-            return _commands.commands
+    def filter_commands(self, commands: Iterable[AnyCommand]):
+        if isinstance(commands, app_commands.Group):
+            return commands.commands
 
         return list(
             filter(
                 lambda cmd: isinstance(
                     cmd, app_commands.Command | app_commands.Group
                 ),
-                _commands,
+                commands,
             )
         )
 
@@ -151,10 +213,10 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     ):
         embeds = []
 
-        for cog, _commands in mapping.items():
+        for cog, commands in mapping.items():
             # Everything is handled by `filter_commands` here, so
             # app commands will behave as normal
-            if not (cog_commands := self.filter_commands(_commands)):
+            if not (cog_commands := self.filter_commands(commands)):
                 continue
 
             cog_name = getattr(cog, "qualified_name", "Uncategorized")
@@ -195,11 +257,21 @@ class AppHelpCommand(AutoEphemeralAppCommand):
             or "No description",
         )
 
-        # TODO: Generate signatures?
+        signature = f"/{command.qualified_name}"
+        if isinstance(command, app_commands.Command):
+            signature = generate_signature(command)
+
         embed = neo.Embed(
-            title=f"/{command.qualified_name}",
+            title=signature,
             description=description,
         )
+
+        if isinstance(command, app_commands.Command):
+            embed.add_field(
+                name="Parameters",
+                value=generate_param_help(command),
+                inline=False,
+            )
 
         if isinstance(command, app_commands.Group):
             embed.add_field(
@@ -214,7 +286,9 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 inline=False,
             )
 
-        if hasattr(command, "callback") and (deprecation := getattr(command.callback, "_deprecated", None)):  # type: ignore
+        if hasattr(command, "callback") and (
+            deprecation := getattr(command.callback, "_deprecated", None)  # type: ignore
+        ):
             embed.description = (
                 "**==DEPRECATION NOTICE==**\nThis command is deprecated and "
                 "will be removed in the future.{0}\n\n{1}".format(
