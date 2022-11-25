@@ -23,13 +23,17 @@ TRANSLATION_DIRECTIVE = re.compile(
 
 
 def result_to_embed(result):
-    embed = neo.Embed(title=result.title, description=result.snippet, url=result.url)
+    embed = neo.Embed(
+        title=result.title, description=result.snippet, url=result.url
+    )
     embed.set_image(url=result.image_url or "")
     return embed
 
 
 def definitions_to_embed(word):
-    for meaning in word.meanings[:25]:  # Slice at 25 to fit within dropdown limits
+    for meaning in word.meanings[
+        :25
+    ]:  # Slice at 25 to fit within dropdown limits
         for definition in meaning.definitions:
             embed = neo.Embed(
                 description=definition.definition,
@@ -55,7 +59,11 @@ def get_translation_kwargs(content: str) -> tuple[str, dict[str, str]]:
 
 
 def do_translate(
-    translator: Translator, content: str, *, dest: Optional[str], src: Optional[str]
+    translator: Translator,
+    content: str,
+    *,
+    dest: Optional[str],
+    src: Optional[str],
 ):
     try:
         translation = translator.translate(
@@ -104,7 +112,9 @@ class InviteMenu(discord.ui.View):
         dropdown = InviteDropdown(placeholder="Choose Invite Preset")
         for preset in presets:
             dropdown.add_option(
-                label=preset["name"], description=preset["desc"], value=preset["value"]
+                label=preset["name"],
+                description=preset["desc"],
+                value=preset["value"],
             )
         self.add_item(dropdown)
 
@@ -143,7 +153,9 @@ class InfoButtons(discord.ui.View):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
         self.add_item(
-            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
+            InviteButton(
+                view_kwargs=invite_menu_kwargs, disabled=invite_disabled
+            )
         )
         for button in buttons:
             self.add_item(button)

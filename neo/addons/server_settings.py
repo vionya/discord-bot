@@ -27,7 +27,9 @@ from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
 
 SETTINGS_MAPPING = SettingsMapping(
     Setting(
-        "starboard", transformer=bool_transformer, name_override="Enable Starboard"
+        "starboard",
+        transformer=bool_transformer,
+        name_override="Enable Starboard",
     ),
     Setting("allow_highlights", transformer=bool_transformer),
 )
@@ -68,23 +70,30 @@ class ServerConfig(
     ):
         assert interaction.guild
 
-        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
+        value = await convert_setting(
+            interaction, SETTINGS_MAPPING, setting, new_value
+        )
         config = self.bot.configs[interaction.guild.id]
         setattr(config, setting, value)
         self.bot.broadcast("config_update", interaction.guild, config)
 
-    async def reset_option(self, interaction: discord.Interaction, setting: str):
+    async def reset_option(
+        self, interaction: discord.Interaction, setting: str
+    ):
         assert interaction.guild
 
         if not SETTINGS_MAPPING.get(setting):
             raise NameError(
-                "That's not a valid setting! " "Try `server` for a list of settings!"
+                "That's not a valid setting! "
+                "Try `server` for a list of settings!"
             )
         config = self.bot.configs[interaction.guild.id]
         await config.reset_attribute(setting)
         self.bot.broadcast("config_update", interaction.guild, config)
 
-    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def addon_interaction_check(
+        self, interaction: discord.Interaction
+    ) -> bool:
         return await owner_or_admin_predicate(interaction)
 
     @instantiate
@@ -148,7 +157,11 @@ class ServerConfig(
         @app_commands.rename(new_value="new-value")
         @is_registered_guild()
         async def server_settings_set(
-            self, interaction: discord.Interaction, setting: str, *, new_value: str
+            self,
+            interaction: discord.Interaction,
+            setting: str,
+            *,
+            new_value: str,
         ):
             """
             Updates the value of a server setting
@@ -157,7 +170,9 @@ class ServerConfig(
             their functions is in the `server` command
             """
             await self.addon.set_option(interaction, setting, new_value)
-            await interaction.response.send_message("Your settings have been updated!")
+            await interaction.response.send_message(
+                "Your settings have been updated!"
+            )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
         @app_commands.command(name="reset")
@@ -172,7 +187,9 @@ class ServerConfig(
             Defaults can be found in the `server` command
             """
             await self.addon.reset_option(interaction, setting)
-            await interaction.response.send_message("Your settings have been updated!")
+            await interaction.response.send_message(
+                "Your settings have been updated!"
+            )
 
     @app_commands.command(name="create")
     async def server_create(self, interaction: discord.Interaction):
@@ -283,7 +300,9 @@ class ServerConfig(
         self,
         interaction: discord.Interaction,
         *,
-        command: Optional[app_commands.Transform[AnyCommand, command_transformer]],
+        command: Optional[
+            app_commands.Transform[AnyCommand, command_transformer]
+        ],
     ):
         """
         Disables a command in the server. Run without arguments to view
@@ -351,7 +370,10 @@ class ServerConfig(
     async def server_enable_command_autocomplete(
         self, interaction: discord.Interaction, current: str
     ):
-        if not interaction.guild or interaction.guild.id not in self.bot.configs:
+        if (
+            not interaction.guild
+            or interaction.guild.id not in self.bot.configs
+        ):
             return []
 
         config = self.bot.configs[interaction.guild.id]

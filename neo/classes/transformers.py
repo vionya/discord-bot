@@ -31,7 +31,9 @@ class WrapperTransformer(Transformer, Generic[T]):
     options: Iterable[str]
 
     @classmethod
-    def transform(cls: type[Self], interaction: discord.Interaction, value: str) -> T:
+    def transform(
+        cls: type[Self], interaction: discord.Interaction, value: str
+    ) -> T:
         ...
 
 
@@ -152,7 +154,9 @@ class command_transformer(Transformer):
 
         command = recursive_get_command(bot.tree, command_name)
         if not command:
-            raise NameError(f"There is no command by the identifier `{command_name}`.")
+            raise NameError(
+                f"There is no command by the identifier `{command_name}`."
+            )
         return command
 
     @classmethod
@@ -161,5 +165,9 @@ class command_transformer(Transformer):
     ) -> list[Choice[str]]:
         bot: Neo = interaction.client  # type: ignore
 
-        all_commands = map(attrgetter("qualified_name"), bot.tree.walk_commands())
-        return [Choice(name=k, value=k) for k in all_commands if current in k][:25]
+        all_commands = map(
+            attrgetter("qualified_name"), bot.tree.walk_commands()
+        )
+        return [Choice(name=k, value=k) for k in all_commands if current in k][
+            :25
+        ]

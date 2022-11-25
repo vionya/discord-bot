@@ -33,7 +33,9 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-def try_or_none(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T | None:
+def try_or_none(
+    func: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+) -> T | None:
     try:
         return func(*args, **kwargs)
     except Exception:
@@ -41,7 +43,10 @@ def try_or_none(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T | 
 
 
 async def convert_setting(
-    interaction: Interaction, mapping: SettingsMapping, setting: str, new_value: str
+    interaction: Interaction,
+    mapping: SettingsMapping,
+    setting: str,
+    new_value: str,
 ):
     # Use try/except here because, if the __getitem__ succeeds,
     # it's roughly 30% faster than using dict.get. Because of the
@@ -53,7 +58,8 @@ async def convert_setting(
         valid_setting = mapping[setting]
     except KeyError:
         raise NameError(
-            "That's not a valid setting! " "Try `settings` for a list of settings!"
+            "That's not a valid setting! "
+            "Try `settings` for a list of settings!"
         )
 
     value = None
@@ -141,7 +147,9 @@ def recursive_get_command(
         return new_container
 
     # If there's another layer of tree/group, recurse
-    elif isinstance(new_container, app_commands.Group | app_commands.CommandTree):
+    elif isinstance(
+        new_container, app_commands.Group | app_commands.CommandTree
+    ):
         return recursive_get_command(new_container, " ".join(command_path))
 
     # If all else fails, return None

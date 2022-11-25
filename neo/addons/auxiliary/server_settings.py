@@ -37,7 +37,9 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
 
         outer_self = self
 
-        class ChangeSettingModal(discord.ui.Modal, title="Edit server settings"):
+        class ChangeSettingModal(
+            discord.ui.Modal, title="Edit server settings"
+        ):
             new_value = discord.ui.TextInput(
                 label=f"Changing {current_setting.display_name}",
                 placeholder="New value",
@@ -52,7 +54,9 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                 try:
                     if self.new_value.value:
                         await outer_self.addon.set_option(
-                            interaction, current_setting.key, self.new_value.value
+                            interaction,
+                            current_setting.key,
+                            self.new_value.value,
                         )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
@@ -107,7 +111,10 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
         )
 
         description = self.settings[current_setting.key]["description"].format(
-            getattr(self.addon.bot.configs[interaction.guild.id], current_setting.key)
+            getattr(
+                self.addon.bot.configs[interaction.guild.id],
+                current_setting.key,
+            )
         )
         self.view.pages.items[index].description = (
             f"**Setting: `{current_setting.display_name}`**\n\n" + description

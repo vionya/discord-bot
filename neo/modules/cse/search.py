@@ -20,7 +20,11 @@ class Search:
     __slots__ = ("key", "engine_id", "session")
 
     def __init__(
-        self, *, key: str | list[str], engine_id: str, session: Optional[ClientSession] = None
+        self,
+        *,
+        key: str | list[str],
+        engine_id: str,
+        session: Optional[ClientSession] = None,
     ):
         self.key = key
         self.engine_id = engine_id
@@ -29,7 +33,9 @@ class Search:
     async def _perform_search(self, query, *, safesearch=True, image=False):
 
         key = self._get_key()
-        params = dict(q=query, key=key, cx=self.engine_id, safe=_safe(safesearch))
+        params = dict(
+            q=query, key=key, cx=self.engine_id, safe=_safe(safesearch)
+        )
 
         if image is True:
             params.update(searchType="image")
@@ -38,7 +44,10 @@ class Search:
 
             _data = await resp.json()
             if isinstance((error := _data.get("error")), dict):
-                if error["code"] == 429 and error["status"] == "RESOURCE_EXHAUSTED":
+                if (
+                    error["code"] == 429
+                    and error["status"] == "RESOURCE_EXHAUSTED"
+                ):
                     if isinstance(self.key, list):
                         self.key.remove(key)
                         return await self._perform_search(

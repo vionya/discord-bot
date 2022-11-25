@@ -29,6 +29,8 @@ class PartialUser(abc.Messageable, Object):
         data = await self._state.http.get_user(self.id)
         return User(state=self._state, data=data)
 
-    _get_channel: Callable[..., Coroutine[Any, Any, DMChannel]] = User._get_channel
+    _get_channel: Callable[
+        ..., Coroutine[Any, Any, DMChannel]
+    ] = User._get_channel
     dm_channel = User.dm_channel
     create_dm = User.create_dm

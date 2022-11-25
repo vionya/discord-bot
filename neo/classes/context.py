@@ -48,13 +48,19 @@ class PromptActions(discord.ui.View):
             (content_confirmed, True, discord.ButtonStyle.green, label_confirm),
             (content_cancelled, False, discord.ButtonStyle.red, label_cancel),
         ]:
-            self.add_item(PromptButton(content, value, style=style, label=label))
+            self.add_item(
+                PromptButton(content, value, style=style, label=label)
+            )
         self.value = None
 
     async def interaction_check(self, interaction):
         (predicates := []).append(
             interaction.user.id
-            in (self.ctx.author.id, *self.ctx.bot.owner_ids, self.ctx.bot.owner_id)
+            in (
+                self.ctx.author.id,
+                *self.ctx.bot.owner_ids,
+                self.ctx.bot.owner_id,
+            )
         )
         return all(predicates)
 
@@ -112,13 +118,21 @@ class NeoContext(commands.Context["Neo"]):
                     is not None
                     and (deprecation := "Use the slash command variant")
                 )
-                or (deprecation := getattr(self.command.callback, "_deprecated", None))
+                or (
+                    deprecation := getattr(
+                        self.command.callback, "_deprecated", None
+                    )
+                )
             ):
                 if "view" in kwargs:
-                    kwargs["view"].add_item(DeprecationAlertButton(reason=deprecation))
+                    kwargs["view"].add_item(
+                        DeprecationAlertButton(reason=deprecation)
+                    )
                 else:
                     kwargs["view"] = discord.ui.View()
-                    kwargs["view"].add_item(DeprecationAlertButton(reason=deprecation))
+                    kwargs["view"].add_item(
+                        DeprecationAlertButton(reason=deprecation)
+                    )
 
             return await super().send(*args, **kwargs)
 

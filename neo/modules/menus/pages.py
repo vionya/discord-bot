@@ -100,7 +100,9 @@ class Pages:
             self.template_embed = template_embed.to_dict()
 
     def __repr__(self):
-        return "<{0.__class__.__name__} pages={1}>".format(self, len(self.pages))
+        return "<{0.__class__.__name__} pages={1}>".format(
+            self, len(self.pages)
+        )
 
     @final
     def link(self, menu: BaseMenu):

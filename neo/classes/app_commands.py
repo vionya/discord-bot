@@ -113,7 +113,9 @@ class AutoEphemeralAppCommand(app_commands.Command[GroupT, P, T]):
                 f"The check functions for command {self.name!r} failed."
             )
 
-        transformed_values = await self._transform_arguments(interaction, namespace)
+        transformed_values = await self._transform_arguments(
+            interaction, namespace
+        )
         interaction.namespace.ephemeral = get_ephemeral(interaction, namespace)  # type: ignore
 
         transformed_values.pop("private", None)

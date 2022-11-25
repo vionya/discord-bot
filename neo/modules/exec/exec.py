@@ -26,7 +26,11 @@ class ExecWrapper:
         self.locals_ = locals_
 
     def __aiter__(self):
-        exec(compile(self.compiled, "<exec>", "exec"), self.globals_, exec_locals := {})
+        exec(
+            compile(self.compiled, "<exec>", "exec"),
+            self.globals_,
+            exec_locals := {},
+        )
         _aexec = exec_locals["__aexec__"]
         return self.walk_results(_aexec, self.locals_)
 

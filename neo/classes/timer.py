@@ -23,7 +23,14 @@ class PeriodicTimer:
     ```
     """
 
-    __slots__ = ("callback", "interval", "instance", "is_stopped", "logger", "task")
+    __slots__ = (
+        "callback",
+        "interval",
+        "instance",
+        "is_stopped",
+        "logger",
+        "task",
+    )
 
     def __init__(self, callback: Callable[..., Awaitable[None]], interval: int):
         self.callback = callback
@@ -66,6 +73,7 @@ class PeriodicTimer:
 
 def periodic(interval: int = 60):
     """Creates a `PeriodicTimer` that wraps the decorated function"""
+
     def inner(func: Callable[..., Awaitable[None]]) -> PeriodicTimer:
         return PeriodicTimer(func, interval)
 

@@ -17,7 +17,11 @@ if TYPE_CHECKING:
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
-        self, *, settings: neo.containers.SettingsMapping, addon: Profile, **kwargs
+        self,
+        *,
+        settings: neo.containers.SettingsMapping,
+        addon: Profile,
+        **kwargs,
     ):
         self.addon = addon
         self.settings = settings
@@ -33,7 +37,9 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
 
         outer_self = self
 
-        class ChangeSettingModal(discord.ui.Modal, title="Edit profile settings"):
+        class ChangeSettingModal(
+            discord.ui.Modal, title="Edit profile settings"
+        ):
             new_value = discord.ui.TextInput(
                 label=f"Changing {current_setting.display_name}",
                 placeholder="New value",
@@ -48,7 +54,9 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                 try:
                     if self.new_value.value:
                         await outer_self.addon.set_option(
-                            interaction, current_setting.key, self.new_value.value
+                            interaction,
+                            current_setting.key,
+                            self.new_value.value,
                         )
                 except Exception as e:
                     await interaction.response.send_message(e, ephemeral=True)
@@ -66,7 +74,8 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                         )
                     )
                     outer_self.view.pages.items[index].description = (
-                        f"**Setting: `{current_setting.display_name}`**\n\n" + description
+                        f"**Setting: `{current_setting.display_name}`**\n\n"
+                        + description
                     )
                     await outer_self.view.refresh_page()
 
@@ -77,7 +86,11 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
 
 class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
     def __init__(
-        self, *, settings: neo.containers.SettingsMapping, addon: Profile, **kwargs
+        self,
+        *,
+        settings: neo.containers.SettingsMapping,
+        addon: Profile,
+        **kwargs,
     ):
         self.addon = addon
         self.settings = settings
@@ -98,7 +111,10 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
         )
 
         description = self.settings[current_setting.key]["description"].format(
-            getattr(self.addon.bot.profiles[interaction.user.id], current_setting.key)
+            getattr(
+                self.addon.bot.profiles[interaction.user.id],
+                current_setting.key,
+            )
         )
         self.view.pages.items[index].description = (
             f"**Setting: `{current_setting.display_name}`**\n\n" + description

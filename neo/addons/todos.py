@@ -77,10 +77,14 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     async def handle_deleted_profile(self, user_id: int):
         self.todos.pop(user_id, None)
 
-    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def addon_interaction_check(
+        self, interaction: discord.Interaction
+    ) -> bool:
         return is_registered_profile_predicate(interaction)
 
-    def _category_autocomplete(self, interaction: discord.Interaction, current: str):
+    def _category_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
@@ -124,7 +128,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
                 continue
 
             cat_name = f"**{(cat or 'Uncategorized').title()}**:"
-            output.append("{0}\n{1}".format(cat_name, "\n".join(cat_fmted_todos)))
+            output.append(
+                "{0}\n{1}".format(cat_name, "\n".join(cat_fmted_todos))
+            )
 
         menu = ButtonsMenu.from_iterable(
             "\n\n".join(output).splitlines(keepends=True) or ["No todos"],
@@ -154,7 +160,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             raise ValueError("You've used up all your todo slots!")
 
         if len(content) > 1500:
-            raise ValueError("Todo content may be no more than 1500 characters long")
+            raise ValueError(
+                "Todo content may be no more than 1500 characters long"
+            )
 
         data = {
             "user_id": interaction.user.id,
@@ -206,7 +214,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             try:
                 todos = [self.todos[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
-                raise IndexError("One or more of the provided indices is invalid.")
+                raise IndexError(
+                    "One or more of the provided indices is invalid."
+                )
 
         else:
             raise TypeError("Invalid input provided.")
@@ -223,7 +233,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await send_confirmation(interaction)
 
     @todo_remove.autocomplete("index")
-    async def todo_remove_autocomplete(self, interaction: discord.Interaction, current):
+    async def todo_remove_autocomplete(
+        self, interaction: discord.Interaction, current
+    ):
         if interaction.user.id not in self.bot.profiles:
             return []
 
@@ -254,7 +266,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         )
 
         if todo.category is not None:
-            embed.add_field(name="Category:", value=todo.category.title(), inline=False)
+            embed.add_field(
+                name="Category:", value=todo.category.title(), inline=False
+            )
 
         await interaction.response.send_message(embed=embed)
 
@@ -298,7 +312,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         @app_commands.command(name="list")
         async def todo_category_list(self, interaction: discord.Interaction):
             """List your todo categories"""
-            categories = self.addon.bot.profiles[interaction.user.id].todo_categories
+            categories = self.addon.bot.profiles[
+                interaction.user.id
+            ].todo_categories
 
             embed = neo.Embed(
                 description="\n".join(f"• {cat.title()}" for cat in categories)
@@ -313,7 +329,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         @app_commands.command(name="create")
         @app_commands.rename(category_name="category-name")
         @app_commands.describe(category_name="The name of the new category")
-        @with_docstring(f"Create a new todo category ({MAX_TODO_CATEGORIES} maximum)")
+        @with_docstring(
+            f"Create a new todo category ({MAX_TODO_CATEGORIES} maximum)"
+        )
         async def todo_category_create(
             self,
             interaction: discord.Interaction,

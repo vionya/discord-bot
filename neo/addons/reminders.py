@@ -112,7 +112,9 @@ class Reminder:
         try:
             dest = self.bot.get_user(self.user_id, as_partial=True)
 
-            embed = neo.Embed(title="Reminder Triggered", description=self.content)
+            embed = neo.Embed(
+                title="Reminder Triggered", description=self.content
+            )
             if self.repeating is True:
                 embed.add_field(
                     name="Repeats at:",
@@ -230,7 +232,9 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
 
-    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def addon_interaction_check(
+        self, interaction: discord.Interaction
+    ) -> bool:
         return is_registered_profile_predicate(interaction)
 
     @app_commands.command(name="set")
@@ -370,7 +374,9 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             formatted_reminders.append(
                 "`{0} {1}` {2}\n➥ Triggers <t:{3}:R>".format(
                     index,
-                    "\U0001F501" if reminder.repeating else "\u0031\uFE0F\u20E3",
+                    "\U0001F501"
+                    if reminder.repeating
+                    else "\u0031\uFE0F\u20E3",
                     utils.escape_markdown(shorten(reminder.content, 75)),
                     int(reminder.end_time.timestamp()),
                 )
@@ -404,7 +410,8 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
                 inline=False,
             )
             .set_author(
-                name="Viewing a reminder", icon_url=interaction.user.display_avatar
+                name="Viewing a reminder",
+                icon_url=interaction.user.display_avatar,
             )
         )
 
@@ -455,9 +462,13 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         elif is_valid_index(index):
             try:
-                reminders = [self.reminders[interaction.user.id].pop(int(index) - 1)]
+                reminders = [
+                    self.reminders[interaction.user.id].pop(int(index) - 1)
+                ]
             except IndexError:
-                raise IndexError("One or more of the provided indices is invalid.")
+                raise IndexError(
+                    "One or more of the provided indices is invalid."
+                )
 
         else:
             raise TypeError("Invalid input provided.")
@@ -474,7 +485,9 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             return []
 
         reminders = [rem.content for rem in self.reminders[interaction.user.id]]
-        return generate_autocomplete_list(reminders, current, insert_wildcard=True)
+        return generate_autocomplete_list(
+            reminders, current, insert_wildcard=True
+        )
 
 
 async def setup(bot: neo.Neo):

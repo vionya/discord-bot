@@ -57,23 +57,34 @@ class TimedeltaWithYears(timedelta):
     ):
         days = days + (years * 365)
         return super().__new__(
-            cls, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds
+            cls,
+            weeks=weeks,
+            days=days,
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
         )
 
 
-def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str] | NoReturn:
+def parse_absolute(
+    string: str, *, tz: tzinfo
+) -> tuple[datetime, str] | NoReturn:
     split = string.split(" ")
     endpoint = len(split)
     now = datetime.now(tz)
 
     for _ in range(len(split)):  # Check for every possible chunk size
-        to_parse = split[:endpoint]  # Check the string in left-to-right increments
+        to_parse = split[
+            :endpoint
+        ]  # Check the string in left-to-right increments
         # e.g. ["May", "14", "at", "12:34", "some", "text"] removes elements from the right
         # until the full list, when joined with a whitespace, matches one of the strptime formats
 
         parsed_datetime = None
         for format in ABSOLUTE_FORMATS:
-            raw_parsed_dt = try_or_none(datetime.strptime, " ".join(to_parse), format)
+            raw_parsed_dt = try_or_none(
+                datetime.strptime, " ".join(to_parse), format
+            )
             if raw_parsed_dt:
                 parsed_datetime = raw_parsed_dt.replace(tzinfo=tz)
 
@@ -105,7 +116,9 @@ def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str] | NoRetur
     if parsed_datetime < now:
         parsed_datetime += timedelta(days=1)
 
-    return parsed_datetime.replace(second=0), " ".join(string.split(" ")[endpoint:])
+    return parsed_datetime.replace(second=0), " ".join(
+        string.split(" ")[endpoint:]
+    )
 
 
 def parse_relative(
@@ -115,7 +128,10 @@ def parse_relative(
 
     if parsed and any(parsed.groups()):
         data = {k: float(v) for k, v in parsed.groupdict().items() if v}
-        return TimedeltaWithYears(**data), string.removeprefix(parsed[0]).strip()
+        return (
+            TimedeltaWithYears(**data),
+            string.removeprefix(parsed[0]).strip(),
+        )
 
     else:  # Nothing matched
         raise ValueError("Failed to find a valid offset.")

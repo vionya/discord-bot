@@ -26,7 +26,9 @@ def instantiate(cls: type[T]) -> T:
 
 
 @overload
-def deprecate(*, reason: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def deprecate(
+    *, reason: str
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     ...
 
 

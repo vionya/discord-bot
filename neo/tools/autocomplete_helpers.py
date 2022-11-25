@@ -2,7 +2,15 @@
 # Copyright (C) 2022 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Optional, TypeGuard, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Literal,
+    Optional,
+    TypeGuard,
+    overload,
+)
 
 from discord import app_commands
 
@@ -76,7 +84,9 @@ def generate_autocomplete_list(
     if len(current) == 0 or focus_current is False:
         # If the field is empty or focus_current is False,
         # the range simply goes from (1..min(container length + 1, 26 [or 25 if wildcard is enabled]))
-        valid_range = range(1, min(len(container) + 1, 26 - int(insert_wildcard)))
+        valid_range = range(
+            1, min(len(container) + 1, 26 - int(insert_wildcard))
+        )
 
     elif current.isnumeric():
         # If the field has a value, then the autocomplete will start with
@@ -145,7 +155,10 @@ def is_clear_all(value: str) -> TypeGuard[Literal["Clear all"]]:
 
 
 def add_setting_autocomplete(
-    mapping: SettingsMapping, *, setting_param: str, value_param: Optional[str] = None
+    mapping: SettingsMapping,
+    *,
+    setting_param: str,
+    value_param: Optional[str] = None,
 ):
     """
     Decorates a Command and automatically implements a settings-based autocomplete
@@ -175,7 +188,8 @@ def add_setting_autocomplete(
             # Filter to the first 25 entries which match the current input
             setting_pairs = [
                 *filter(
-                    lambda pair: current.casefold() in pair[0].casefold(), setting_pairs
+                    lambda pair: current.casefold() in pair[0].casefold(),
+                    setting_pairs,
                 )
             ][:25]
             return [
@@ -241,7 +255,8 @@ def add_setting_autocomplete(
                 return [
                     app_commands.Choice(name=name, value=value)
                     for name, value in filter(
-                        lambda opt: current.casefold() in opt[0].casefold(), options
+                        lambda opt: current.casefold() in opt[0].casefold(),
+                        options,
                     )
                 ][:25]
 

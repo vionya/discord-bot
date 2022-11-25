@@ -33,7 +33,10 @@ formatter = NeoLoggingFormatter(
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 
-[(logger.setLevel(logging.INFO), logger.addHandler(handler)) for logger in loggers]
+[
+    (logger.setLevel(logging.INFO), logger.addHandler(handler))
+    for logger in loggers
+]
 
 # /Sect: Logging
 

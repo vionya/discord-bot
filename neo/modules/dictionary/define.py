@@ -24,7 +24,9 @@ class Define:
 
             _data = await resp.json()
             if resp.status != 200:
-                raise DefinitionError(f"Error fetching definition ({resp.status})")
+                raise DefinitionError(
+                    f"Error fetching definition ({resp.status})"
+                )
 
         return DictionaryResponse(_data)
 

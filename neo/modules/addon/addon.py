@@ -53,7 +53,10 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
     @staticmethod
     def _inject_to_group(
-        target: app_commands.Command | app_commands.Group, *, name: str, attribute: Any
+        target: app_commands.Command | app_commands.Group,
+        *,
+        name: str,
+        attribute: Any,
     ) -> app_commands.Command | app_commands.Group:
         setattr(target, name, attribute)
         if isinstance(target, app_commands.Command):
@@ -110,7 +113,9 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
         if isinstance(_original_command, commands.Group):
             for subcmd in command.walk_commands():
-                if isinstance(subcmd, commands.Group):  # Recursively add sub-groups
+                if isinstance(
+                    subcmd, commands.Group
+                ):  # Recursively add sub-groups
                     self.add_command(subcmd)
                 subcmd.cog = self  # Update the subcmds
 
@@ -133,7 +138,9 @@ class Addon(commands.Cog, metaclass=AddonMeta):
         )  # Add it to the list
 
         for name, method_name in self.__cog_listeners__:
-            self.bot.remove_listener(getattr(self, method_name))  # Just in case I guess
+            self.bot.remove_listener(
+                getattr(self, method_name)
+            )  # Just in case I guess
             self.bot.add_listener(
                 getattr(self, method_name), name
             )  # Register it as a listener
@@ -146,7 +153,10 @@ class Addon(commands.Cog, metaclass=AddonMeta):
         self.bot.remove_cog(other.qualified_name)  # Consume the other addon
         for _cmd in other.__cog_commands__:  # Add all commands over
             self.add_command(_cmd)
-        for name, method_name in other.__cog_listeners__:  # Add all listeners over
+        for (
+            name,
+            method_name,
+        ) in other.__cog_listeners__:  # Add all listeners over
             self.add_listener(getattr(other, method_name), name)
 
     def __or__(self, other):

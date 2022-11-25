@@ -52,7 +52,9 @@ class Devel(neo.Addon):
                 )
             return message.author == ctx.me
 
-        purged = await ctx.channel.purge(limit=amount, bulk=can_manage, check=check)
+        purged = await ctx.channel.purge(
+            limit=amount, bulk=can_manage, check=check
+        )
         await ctx.send(f"Cleaned {len(purged)} message(s).", delete_after=5)
 
     @commands.command(name="exec", aliases=["e"])
@@ -60,12 +62,21 @@ class Devel(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        code: str = commands.parameter(converter=codeblock_transformer().wrapped),
+        code: str = commands.parameter(
+            converter=codeblock_transformer().wrapped
+        ),
     ):
         """Executes some code, retaining the result"""
-        (globals_ := env_from_context(ctx)).update(**(self._exec_scope | globals()))
+        (globals_ := env_from_context(ctx)).update(
+            **(self._exec_scope | globals())
+        )
         pages = Pages(
-            "\r", 1500, joiner="", prefix="```py\n", suffix="\n```", use_embed=True
+            "\r",
+            1500,
+            joiner="",
+            prefix="```py\n",
+            suffix="\n```",
+            use_embed=True,
         )
         menu = ButtonsMenu(pages)
 
@@ -91,7 +102,9 @@ class Devel(neo.Addon):
         self,
         ctx: NeoContext,
         *,
-        query: str = commands.parameter(converter=codeblock_transformer().wrapped),
+        query: str = commands.parameter(
+            converter=codeblock_transformer().wrapped
+        ),
     ):
         """Perform an SQL query"""
         data = await self.bot.db.fetch(query)

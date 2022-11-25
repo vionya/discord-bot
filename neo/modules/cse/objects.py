@@ -1,7 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2022 sardonicism-04
 class SearchResult:
-    __slots__ = ("title", "title_html", "url", "snippet", "snippet_html", "image_url")
+    __slots__ = (
+        "title",
+        "title_html",
+        "url",
+        "snippet",
+        "snippet_html",
+        "image_url",
+    )
 
     def __init__(self, result_data):
         self.title = result_data.get("title")
@@ -18,7 +25,11 @@ class SearchResult:
         self.snippet_html = result_data.get("htmlSnippet")
 
     def __repr__(self):
-        return "<{0.__class__.__name__} title={0.title!r} url={0.url!r}>".format(self)
+        return (
+            "<{0.__class__.__name__} title={0.title!r} url={0.url!r}>".format(
+                self
+            )
+        )
 
 
 class GoogleResponse:

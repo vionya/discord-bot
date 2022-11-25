@@ -32,7 +32,9 @@ SETTINGS_MAPPING = SettingsMapping(
     Setting("receive_highlights", transformer=bool_transformer),
     Setting("timezone", transformer=timezone_transformer),
     Setting(
-        "hl_timeout", transformer=timeout_transformer, name_override="Highlight Timeout"
+        "hl_timeout",
+        transformer=timeout_transformer,
+        name_override="Highlight Timeout",
     ),
     Setting(
         "default_ephemeral",
@@ -68,15 +70,20 @@ class Profile(neo.Addon, app_group=True):
     async def set_option(
         self, interaction: discord.Interaction, setting: str, new_value: str
     ):
-        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
+        value = await convert_setting(
+            interaction, SETTINGS_MAPPING, setting, new_value
+        )
         profile = self.bot.profiles[interaction.user.id]
         setattr(profile, setting, value)
         self.bot.broadcast("user_settings_update", interaction.user, profile)
 
-    async def reset_option(self, interaction: discord.Interaction, setting: str):
+    async def reset_option(
+        self, interaction: discord.Interaction, setting: str
+    ):
         if not SETTINGS_MAPPING.get(setting):
             raise NameError(
-                "That's not a valid setting! " "Try `settings` for a list of settings!"
+                "That's not a valid setting! "
+                "Try `settings` for a list of settings!"
             )
         profile = self.bot.profiles[interaction.user.id]
         await profile.reset_attribute(setting)

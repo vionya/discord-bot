@@ -9,7 +9,9 @@ import discord
 import neo
 
 
-async def send_confirmation(interaction: discord.Interaction, *, ephemeral=None):
+async def send_confirmation(
+    interaction: discord.Interaction, *, ephemeral=None
+):
     await interaction.response.send_message(
         "\U00002611", **{"ephemeral": True} if ephemeral is not None else {}
     )
@@ -49,7 +51,9 @@ class PromptActions(discord.ui.View):
             (content_confirmed, True, discord.ButtonStyle.grey, label_confirm),
             (content_cancelled, False, discord.ButtonStyle.grey, label_cancel),
         ]:
-            self.add_item(PromptButton(content, value, style=style, label=label))
+            self.add_item(
+                PromptButton(content, value, style=style, label=label)
+            )
         self.value = None
 
     async def interaction_check(self, interaction):

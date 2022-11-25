@@ -28,7 +28,9 @@ class AutoEphemeralInteractionResponse(discord.InteractionResponse):
             if not self.is_done():
                 await self.defer(ephemeral=is_ephemeral)
 
-            await self._parent.followup.send(*args, ephemeral=is_ephemeral, **kwargs)
+            await self._parent.followup.send(
+                *args, ephemeral=is_ephemeral, **kwargs
+            )
             return
 
         return await super().send_message(*args, **kwargs)

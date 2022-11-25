@@ -9,7 +9,9 @@ class Definition:
         self.synonyms = definition_data.pop("synonyms", None)
 
     def __repr__(self):
-        return "<{0.__class__.__name__} definition={0.definition!r}>".format(self)
+        return "<{0.__class__.__name__} definition={0.definition!r}>".format(
+            self
+        )
 
 
 class Meaning:

@@ -14,7 +14,14 @@ from aiohttp import ClientSession
 from asyncpg import create_pool
 from discord.ext import commands
 
-from .classes import Embed, containers, context, exceptions, help_command, partials
+from .classes import (
+    Embed,
+    containers,
+    context,
+    exceptions,
+    help_command,
+    partials,
+)
 from .modules import *  # noqa: F403
 from .tools import *  # noqa: F403
 from .tools import formatters, recursive_getattr
@@ -32,7 +39,9 @@ __version__ = "1.6.2"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
-    **dict.fromkeys(["messages", "guilds", "guild_reactions", "message_content"], True)
+    **dict.fromkeys(
+        ["messages", "guilds", "guild_reactions", "message_content"], True
+    )
 )
 
 
@@ -179,7 +188,9 @@ class Neo(commands.Bot):
             await self.tree.sync()
             log.info("Synchronized command tree")
 
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    async def on_message_edit(
+        self, before: discord.Message, after: discord.Message
+    ):
         if after.content != before.content:
             await self.process_commands(after)
 
@@ -205,7 +216,9 @@ class Neo(commands.Bot):
         try:
             if isinstance(original_error, AssertionError):
                 level = logging.ERROR
-                return await send("Something weird happened. Please report this!")
+                return await send(
+                    "Something weird happened. Please report this!"
+                )
 
             if (
                 original_error.__class__.__name__
@@ -229,7 +242,10 @@ class Neo(commands.Bot):
             )
 
     async def get_context(
-        self, message: discord.Message | discord.Interaction, *, cls=context.NeoContext
+        self,
+        message: discord.Message | discord.Interaction,
+        *,
+        cls=context.NeoContext,
     ):
         return await super().get_context(message, cls=cls)
 
@@ -264,7 +280,9 @@ class Neo(commands.Bot):
     # TODO: Remove this in favor of Discord's built-in permissions system?
     async def channel_check(self, interaction: discord.Interaction):
         # Only relevant in guilds
-        if not interaction.guild or not isinstance(interaction.user, discord.Member):
+        if not interaction.guild or not isinstance(
+            interaction.user, discord.Member
+        ):
             return True
 
         predicates = [

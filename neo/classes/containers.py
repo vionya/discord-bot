@@ -132,7 +132,9 @@ class NeoUser(RecordContainer):
 
     @add_hook("timezone")
     @cache
-    def cast_timezone(self, timezone: str | None = None) -> zoneinfo.ZoneInfo | None:
+    def cast_timezone(
+        self, timezone: str | None = None
+    ) -> zoneinfo.ZoneInfo | None:
         if timezone is not None:
             return zoneinfo.ZoneInfo(timezone)
         return None
@@ -257,7 +259,9 @@ class TimedSet(MutableSet, Generic[T]):
             active.cancel()
 
         self.__underlying_set.add(element)
-        self.__running_store[element] = self.loop.create_task(self.invalidate(element))
+        self.__running_store[element] = self.loop.create_task(
+            self.invalidate(element)
+        )
 
     def discard(self, element: T):
         self.__running_store[element].cancel()
@@ -287,7 +291,9 @@ class TimedCache(MutableMapping, Generic[KT, VT]):
     __slots__ = ("__underlying_dict", "__running_store", "loop", "timeout")
 
     def __init__(
-        self, timeout: int = 60, loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        timeout: int = 60,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()

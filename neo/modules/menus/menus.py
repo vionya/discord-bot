@@ -82,7 +82,9 @@ class BaseMenu(Generic[T], discord.ui.View):
     async def start(self, origin: NeoContext, *, as_reply=False):
         ...
 
-    async def start(self, origin: NeoContext | discord.Interaction, *, as_reply=False):
+    async def start(
+        self, origin: NeoContext | discord.Interaction, *, as_reply=False
+    ):
         self.origin = origin
 
         send_kwargs = self._get_msg_kwargs(self.pages[0])
@@ -111,7 +113,9 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         # If the item is an embed, put the page number in the footer
         if isinstance(item, discord.Embed):
-            item.set_footer(text=f"Page {self.current_page + 1}/{len(self.pages)}")
+            item.set_footer(
+                text=f"Page {self.current_page + 1}/{len(self.pages)}"
+            )
             kwargs["embed"] = item
 
         # If the item is a string, put the page number at the end of the string
@@ -223,7 +227,9 @@ class BaseMenu(Generic[T], discord.ui.View):
 
 
 class ButtonsMenu(BaseMenu, Generic[T]):
-    async def start(self, origin: NeoContext | discord.Interaction, *, as_reply=False):
+    async def start(
+        self, origin: NeoContext | discord.Interaction, *, as_reply=False
+    ):
         interaction = (
             origin
             if isinstance(origin, discord.Interaction)
@@ -233,7 +239,10 @@ class ButtonsMenu(BaseMenu, Generic[T]):
         # If the menu was initiated by an interaction and the interaction is
         # intended to be ephemeral, remove the close button since it's useless
         # (and because it doesn't work in ephemeral contexts)
-        if interaction and get_ephemeral(interaction, interaction.namespace) is True:
+        if (
+            interaction
+            and get_ephemeral(interaction, interaction.namespace) is True
+        ):
             self.remove_item(self.close_button)
             await super().start(origin)
             return

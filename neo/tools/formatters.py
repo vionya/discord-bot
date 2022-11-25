@@ -36,7 +36,14 @@ class Table:
     built_columns: str
     built_rows: str
 
-    __slots__ = ("columns", "rows", "widths", "border", "built_columns", "built_rows")
+    __slots__ = (
+        "columns",
+        "rows",
+        "widths",
+        "border",
+        "built_columns",
+        "built_rows",
+    )
 
     def __init__(self):
         self.columns: list[str] = []
