@@ -1,4 +1,15 @@
-# **Release v.1.6.2** (November 21, 2022)
+# **Release v1.6.3** (November 25, 2022)
+
+## Improvements
+
+- Added new parameter help to help command output
+- Added slash command signatures to help command
+
+## Other
+
+- Formatting & style improvements
+
+# **Release v1.6.2** (November 21, 2022)
 
 ## Improvements
 
