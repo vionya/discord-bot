@@ -32,7 +32,11 @@ def get_ancestral_path(command: AnyCommand) -> str:
 
 
 def format_command(command: AnyCommand):
-    fmt = "[{0}] {1} **{2.name}**" if command.parent is not None else "[{0}] {2.name}"
+    fmt = (
+        "[{0}] {1} **{2.name}**"
+        if command.parent is not None
+        else "[{0}] {2.name}"
+    )
 
     if isinstance(command, app_commands.Group):
         symbol = "\U00002443"
@@ -76,17 +80,17 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         self.bot = bot
 
         # Copy the __doc__ from the class to the actual callback
-        self.actual_callback.__func__.__doc__ = self.__class__.__doc__
+        self._callback_impl.__func__.__doc__ = self.__class__.__doc__
         super().__init__(
             name="help",
             description=(self.__class__.__doc__ or "").splitlines()[0],
-            callback=self.actual_callback,  # type: ignore
+            callback=self._callback_impl,  # type: ignore
         )
         self.binding = self
-        self.autocomplete("command")(self.actual_autocomplete)
+        self.autocomplete("command")(self._autocomplete_impl)
 
     @app_commands.describe(command="The command to get help for")
-    async def actual_callback(
+    async def _callback_impl(
         self, interaction: discord.Interaction, command: Optional[str] = None
     ):
         if command is None:
@@ -99,10 +103,16 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         else:
             return await self.send_command_help(interaction, cmd)
 
-    async def actual_autocomplete(self, interaction: discord.Interaction, current: str):
-        all_commands = map(attrgetter("qualified_name"), self.bot.tree.walk_commands())
+    async def _autocomplete_impl(
+        self, interaction: discord.Interaction, current: str
+    ):
+        all_commands = map(
+            attrgetter("qualified_name"), self.bot.tree.walk_commands()
+        )
         return [
-            app_commands.Choice(name=k, value=k) for k in all_commands if current in k
+            app_commands.Choice(name=k, value=k)
+            for k in all_commands
+            if current in k
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
@@ -129,7 +139,9 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
         return list(
             filter(
-                lambda cmd: isinstance(cmd, app_commands.Command | app_commands.Group),
+                lambda cmd: isinstance(
+                    cmd, app_commands.Command | app_commands.Group
+                ),
                 _commands,
             )
         )
@@ -147,7 +159,9 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
             cog_name = getattr(cog, "qualified_name", "Uncategorized")
             embeds.append(
-                neo.Embed(title=cog_name, description=getattr(cog, "description", ""))
+                neo.Embed(
+                    title=cog_name, description=getattr(cog, "description", "")
+                )
                 .add_field(
                     name="Commands",
                     value="\n".join(map(format_command, cog_commands)),
@@ -188,7 +202,6 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         )
 
         if isinstance(command, app_commands.Group):
-
             embed.add_field(
                 name="Subcommands",
                 value="\n".join(
