@@ -41,12 +41,12 @@ ASSOCIATION_FILTER = [
 
 
 def get_browser_links(avatar: discord.Asset):
-    formats = ["PNG", "JPG", "WEBP"]
+    formats = ["png", "jpg", "webp"]
     if avatar.is_animated():
-        formats.append("GIF")
+        formats.append("gif")
 
     return " • ".join(
-        f"[{fmt}]({avatar.with_format(fmt.lower())})" for fmt in formats  # type: ignore
+        f"[{fmt}]({avatar.with_format(fmt)})" for fmt in formats  # type: ignore
     )
 
 
@@ -217,10 +217,15 @@ class Utility(neo.Addon):
         if not hasattr(interaction.channel, "purge"):
             raise RuntimeError("`clear` command called in invalid context")
 
+        before_o = (
+            discord.Object(interaction.channel.last_message_id)  # type: ignore
+            if interaction.channel.last_message_id  # type: ignore
+            else None
+        )
         purged = await interaction.channel.purge(  # type: ignore
             limit=limit,
             check=(lambda m: m.author == user if user else True),
-            before=discord.Object(parse_ids(before)[0]) if before else None,
+            before=discord.Object(parse_ids(before)[0]) if before else before_o,
             after=discord.Object(parse_ids(after)[0]) if after else None,
         )
 
