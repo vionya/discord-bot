@@ -1,3 +1,13 @@
+# **Release v.1.6.4** (February 13, 2023)
+
+## Fixes
+
+- Fixed clear command stuff
+
+## Other
+
+- Bump copyright year
+
 # **Release v1.6.3** (November 25, 2022)
 
 ## Improvements
