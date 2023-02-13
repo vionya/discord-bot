@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2022 sardonicism-04
+# Copyright (C) 2023 sardonicism-04
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, cast

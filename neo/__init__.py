@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2022 sardonicism-04
+# Copyright (C) 2023 sardonicism-04
 from __future__ import annotations
 
 import asyncio
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from .types.config import NeoConfig
 
 
-__version__ = "1.6.3"
+__version__ = "1.6.4"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
