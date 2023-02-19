@@ -1,4 +1,15 @@
-# **Release v.1.6.4** (February 13, 2023)
+# **Release v1.7.0** (February 19, 2023)
+
+## Additions
+
+- New user setting `Deliver Highlights Silently`
+  - Makes use of the new notification-suppressed messages to allow highlights to configurably not send notifications (but still be delivered)
+
+## Fixes
+
+- Fixed clear command again such that it now works regardless of if the command was called ephemerally or not
+
+# **Release v1.6.4** (February 13, 2023)
 
 ## Fixes
 
