@@ -46,6 +46,19 @@ Default Value: `True`
 **Current Value:** `{}`
 ';
 
+COMMENT ON COLUMN profiles.silence_hl IS
+'Dictates whether highlight messages will be sent as silent messages.
+
+Silent messages will behave like normal messages, with the exception that they will **not** trigger mobile or desktop notifications.
+
+Useful for when you want to have highlights while avoiding notifcation spam.
+
+Expected Value Type: A boolean-like (`yes`/`no`) value
+Default Value: `False`
+
+**Current Value:** `{}`
+';
+
 -- Table: guild_configs | Documentation for settings --
 COMMENT ON COLUMN guild_configs.starboard IS
 'Controls whether the server''s starboard is enabled.

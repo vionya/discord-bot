@@ -200,6 +200,7 @@ class Highlight:
             "content": "{0.author}: {0.content}".format(message)[:1500],
             "embed": embed,
             "view": view,
+            "silent": self.bot.profiles[self.user_id].silence_hl
         }
 
     def matches(self, other: str):

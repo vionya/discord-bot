@@ -41,6 +41,11 @@ SETTINGS_MAPPING = SettingsMapping(
         transformer=bool_transformer,
         name_override="Private By Default",
     ),
+    Setting(
+        "silence_hl",
+        transformer=bool_transformer,
+        name_override="Deliver Highlights Silently"
+    )
 )
 
 

@@ -115,6 +115,7 @@ class NeoUser(RecordContainer):
     hl_timeout: int
     default_ephemeral: bool
     todo_categories: list[str]
+    silence_hl: bool
 
     __slots__ = (
         "user_id",
@@ -125,6 +126,7 @@ class NeoUser(RecordContainer):
         "hl_timeout",
         "default_ephemeral",
         "todo_categories",
+        "silence_hl",
     )
 
     def __repr__(self):
