@@ -14,6 +14,7 @@ from discord import app_commands
 from googletrans import LANGUAGES, Translator
 
 import neo
+from neo.classes.app_commands import get_ephemeral
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
 from neo.tools import parse_ids, shorten
 from neo.tools.formatters import Table
@@ -216,13 +217,17 @@ class Utility(neo.Addon):
         """Clear messages from the current channel"""
         if not hasattr(interaction.channel, "purge"):
             raise RuntimeError("`clear` command called in invalid context")
+        assert isinstance(  # guaranteed by check above
+            interaction.channel, discord.TextChannel | discord.VoiceChannel
+        )
 
+        ephemeral = get_ephemeral(interaction, interaction.namespace)
         before_o = (
-            discord.Object(interaction.channel.last_message_id)  # type: ignore
-            if interaction.channel.last_message_id  # type: ignore
+            discord.Object(interaction.channel.last_message_id)
+            if interaction.channel.last_message_id and not ephemeral
             else None
         )
-        purged = await interaction.channel.purge(  # type: ignore
+        purged = await interaction.channel.purge(
             limit=limit,
             check=(lambda m: m.author == user if user else True),
             before=discord.Object(parse_ids(before)[0]) if before else before_o,
