@@ -1,3 +1,14 @@
+# **Release v1.7.1** (February 19, 2023)
+
+## Improvements
+
+- Ephemeral menus can now be closed manually (and will self-delete)
+
+## Fixes
+
+- (Internal) If an attempt to deliver a highlight to a user errors with a 403 status, that user profile's `receive_highlights` setting will automatically be set to `False` to avoid future errors
+  - Also update the description of the setting to reflect this
+
 # **Release v1.7.0** (February 19, 2023)
 
 ## Additions
