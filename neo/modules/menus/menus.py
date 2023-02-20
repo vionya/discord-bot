@@ -12,12 +12,10 @@ from typing import (
     TypeVar,
     cast,
     final,
-    overload,
 )
 
 import discord
 
-from neo.classes.app_commands import get_ephemeral
 from neo.classes.context import NeoContext
 from neo.tools import shorten
 
@@ -42,12 +40,10 @@ class BaseMenu(Generic[T], discord.ui.View):
     __slots__ = (
         "pages",
         "message",
-        "interaction",
-        "ctx",
         "current_page",
         "running",
         "update_lock",
-        "buttons",
+        "origin",
         "bot",
         "author",
     )
@@ -73,14 +69,6 @@ class BaseMenu(Generic[T], discord.ui.View):
     def from_embeds(cls, iterable, **kwargs):
         _pages = EmbedPages(iterable)
         return cls(_pages, **kwargs)
-
-    @overload
-    async def start(self, origin: discord.Interaction):
-        ...
-
-    @overload
-    async def start(self, origin: NeoContext, *, as_reply=False):
-        ...
 
     async def start(
         self, origin: NeoContext | discord.Interaction, *, as_reply=False
@@ -157,14 +145,8 @@ class BaseMenu(Generic[T], discord.ui.View):
         self.stop()
         self.running = False
         try:
-            ephemeral = False
-            # Determine whether the menu is being closed in an ephemeral context
-            if isinstance(self.origin, discord.Interaction):
-                ephemeral = getattr(self.origin.namespace, "ephemeral", False)
-
-            # If closed manually and the message is either a text command or a
-            # non-ephemeral slash command, the message can be deleted
-            if manual is True and ephemeral is False:
+            # If closed manually, delete the message
+            if manual is True:
                 if isinstance(self.origin, discord.Interaction) and interaction:
                     if not interaction.response.is_done():
                         await interaction.response.defer()
@@ -173,8 +155,8 @@ class BaseMenu(Generic[T], discord.ui.View):
                 elif self.message:
                     await self.message.delete()
 
-            # Otherwise, if closed automatically or in an ephemeral
-            # context, disable the buttons instead of deleting the message
+            # Otherwise, if closed automatically disable the buttons instead
+            # of deleting the message
             else:
                 for item in self.children:
                     if isinstance(item, discord.ui.Button | discord.ui.Select):
@@ -200,7 +182,6 @@ class BaseMenu(Generic[T], discord.ui.View):
             async with self.update_lock:
                 if self.update_lock.locked():
                     await asyncio.sleep(1)
-
                 self.bot.loop.create_task(self.refresh_page())
 
         self.bot.loop.create_task(inner())
@@ -230,24 +211,7 @@ class ButtonsMenu(BaseMenu, Generic[T]):
     async def start(
         self, origin: NeoContext | discord.Interaction, *, as_reply=False
     ):
-        interaction = (
-            origin
-            if isinstance(origin, discord.Interaction)
-            else getattr(origin, "interaction", None)
-        )
-
-        # If the menu was initiated by an interaction and the interaction is
-        # intended to be ephemeral, remove the close button since it's useless
-        # (and because it doesn't work in ephemeral contexts)
-        if (
-            interaction
-            and get_ephemeral(interaction, interaction.namespace) is True
-        ):
-            self.remove_item(self.close_button)
-            await super().start(origin)
-            return
-
-        await super().start(origin, as_reply=as_reply)  # type: ignore
+        await super().start(origin, as_reply=as_reply)
 
     @discord.ui.button(label="ᐊ", row=4)
     async def previous_button(
