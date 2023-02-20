@@ -269,7 +269,8 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         day if the time has not passed yet, and will
         rollover to the next day if it has passed.
 
-        All times are required to be in 24-hour format.
+        Times can be expressed in either 24- or
+        12-hour time.
 
         **Note**
         If you have configured a timezone in your neo
