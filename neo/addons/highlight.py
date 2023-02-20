@@ -296,9 +296,15 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         for hl, message, later_triggers in [
             pair for nested in queue.values() for pair in nested.values()
         ]:
-            await self.bot.get_user(hl.user_id, as_partial=True).send(
-                **await hl.to_send_kwargs(message, later_triggers)
-            )
+            try:
+                await self.bot.get_user(hl.user_id, as_partial=True).send(
+                    **await hl.to_send_kwargs(message, later_triggers)
+                )
+            except discord.Forbidden:
+                # If a highlight delivery results in a Forbidden response,
+                # then disable highlight receipt for that profile to avoid
+                # wasting future API calls
+                self.bot.profiles[hl.user_id].receive_highlights = False
 
     @neo.Addon.recv("user_settings_update")
     async def handle_update_profile(self, user: discord.User, profile: NeoUser):

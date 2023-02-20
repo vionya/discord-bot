@@ -4,6 +4,10 @@
 COMMENT ON COLUMN profiles.receive_highlights IS
 'Dictates whether you''ll receive highlights from neo.
 
+**Note:** If neo fails to deliver a highlight to you due to being forbidden to do so, this setting will automatically change to `False` and will need to be manually re-enabled. This may occur if:
+- You block neo
+- You no longer share any mutual servers with neo
+
 Expected Value Type: A boolean-like (`yes`/`no`) value
 Default Value: `True`
 
