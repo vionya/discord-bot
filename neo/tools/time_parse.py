@@ -10,14 +10,17 @@ from typing import NoReturn
 
 from neo.tools import try_or_none
 
-ABSOLUTE_FORMATS = {  # Use a set so %H:%M doesn't get duplicated
+ABSOLUTE_FORMATS = {  # Use a set to avoid duplicates
     "%b %d, %Y",
     "%H:%M",
+    "%I:%M %p",
     "%b %d, %Y at %H:%M",
+    "%b %d, %Y at %I:%M %p",
     "%b %d",
     "%b %d at %H:%M",
+    "%b %d at %I:%M %p",
 }  # Define a very rigid set of formats that can be passed
-ABSOLUTE_FORMATS |= {i.replace("%b", "%B") for i in ABSOLUTE_FORMATS}
+ABSOLUTE_FORMATS |= {i.replace(r"%b", "%B") for i in ABSOLUTE_FORMATS}
 RELATIVE_FORMATS = re.compile(
     r"""
     ((?P<years>[0-9]{1,2})\s?(?:y(ears?)?,?))?         # Parse years, allow 1-2 digits
