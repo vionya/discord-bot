@@ -72,6 +72,31 @@ class TimedeltaWithYears(timedelta):
 def parse_absolute(
     string: str, *, tz: tzinfo
 ) -> tuple[datetime, str] | NoReturn:
+    """
+    Attempts to parse a datetime from a string of text.
+
+    The `string` argument is split into an array by spaces, is tested against
+    each format in `ABSOLUTE_FORMATS`. `datetime.strptime` attempts to parse
+    the string with each format. If all formats fail, then one element is
+    removed from the end of the split string. This repeats until either a valid
+    parsing is found, or the string list has been emptied.
+
+    Example: string is "3:00 PM foo bar"
+        -> ["3:00", "PM", "foo", "bar"] *no parsing*
+        -> ["3:00", "PM", "foo""] *no parsing*
+        -> ["3:00", "PM"] *matches %I:%M %p*, return parsed datetime
+
+    :param string: The string to attempt to parse a datetime from
+    :type string: ``str``
+
+    :param tz: The timezone to set the returnd datetime to
+    :type tz: ``datetime.tzinfo``
+
+    :return: A tuple with the parsed datetime and the unparsed string content
+    :rtype: ``tuple[datetime.datetime, str]``
+
+    :raises ValueError: If no valid datetime could be parsed
+    """
     split = string.split(" ")
     endpoint = len(split)
     now = datetime.now(tz)
@@ -127,6 +152,21 @@ def parse_absolute(
 def parse_relative(
     string: str,
 ) -> tuple[TimedeltaWithYears, str] | NoReturn:
+    """
+    Attempts to parse a relative time offset from a string of text.
+
+    The `string` argument is matched against the `RELATIVE_FORMATS` regex, which
+    attempts to group all time denominations. If successful, a timedelta is
+    returned
+
+    :param string: The string to attempt to parse
+    :type string: ``str``
+
+    :return: A tuple with the parsed timedelta and the unparsed string content
+    :rtype: ``tuple[TimedeltaWithYears, Str]``
+
+    :raises ValueError: If no valid delta could be parsed
+    """
     parsed = RELATIVE_FORMATS.match(string)
 
     if parsed and any(parsed.groups()):

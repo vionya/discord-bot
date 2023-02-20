@@ -78,6 +78,7 @@ def generate_autocomplete_list(
         Whether the list should adapt to show indices surrounding the current value
         Default: True
     """
+    # TODO: convert to reST format
     if not isinstance(current, str):
         return []
 
@@ -176,6 +177,7 @@ def add_setting_autocomplete(
     value_param: Optional[str]
         The name of the parameter which specifies the new setting value
     """
+    # TODO: convert to rST docs
 
     def inner(command: app_commands.Command):
         async def setting_param_autocomplete(
