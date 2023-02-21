@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
+U = TypeVar("U")
 P = ParamSpec("P")
 
 
@@ -85,16 +86,75 @@ async def convert_setting(
 
 
 @overload
-def recursive_getattr(target: Any, attr: str, /) -> Any:
-    ...
+def recursive_getattr(target: object, attr: str, /) -> Any:
+    """
+    Recursively get a named attribute from an object.
+
+    This function will recursively get the attribute `attr` from the target
+    `target` while `hasattr(target, attr)` is True.
+
+    Example:
+    ```py
+    class Nested:
+        foo: Nested | int
+        ...
+
+    a = Nested(Nested(Nested(1)))  # a.foo.foo.foo = 1
+    recursive_getattr(a, "foo") == 1  # True
+    ```
+
+    :param target: The object to get an attribute from
+    :type target: ``object``
+
+    :param attr: The name of the attribute to get
+    :type attr: ``str``
+
+    :returns: The recursively accessed attribute
+    :rtype: ``Any``
+
+    :raises AttributeError: If the named attribute does not exist
+    """
 
 
 @overload
-def recursive_getattr(target: Any, attr: str, default: T, /) -> Any | T:
-    ...
+def recursive_getattr(target: object, attr: str, default: T, /) -> Any | T:
+    """
+    Recursively get a named attribute from an object.
+
+    This function will recursively get the attribute `attr` from the target
+    `target` while `hasattr(target, attr)` is True.
+
+    If the attribute is not found, then the value provided for `default` will
+    be returned instead.
+
+    Example:
+    ```py
+    class Nested:
+        foo: Nested | int
+        ...
+
+    a = Nested(Nested(Nested(1)))  # a.foo.foo.foo = 1
+    recursive_getattr(a, "foo", 2) == 1  # True
+    recursive_getattr(a, "bar", 2) == 1  # False
+    recursive_getattr(a, "bar", 2) == 2  # True
+    ```
+
+    :param target: The object to get an attribute from
+    :type target: ``object``
+
+    :param attr: The name of the attribute to get
+    :type attr: ``str``
+
+    :param default: The value to fallback to if the attribute does not exist
+    :type default: ``T``
+
+    :return: The recursively accessed attribute if it exists, otherwise the
+    value provided to `default`
+    :rtype: ``Any | T``
+    """
 
 
-def recursive_getattr(*args):
+def recursive_getattr(*args) -> Any:
     if len(args) > 3:
         raise TypeError(
             f"recursive_getattr expected at most 3 arguments, got {len(args)}"
@@ -135,6 +195,31 @@ def recursive_getattr(*args):
 def recursive_get_command(
     container: app_commands.CommandTree | app_commands.Group, command: str
 ) -> Optional[app_commands.Command | app_commands.Group]:
+    """
+    Recursively gets a command from a nested structure.
+
+    Takes a fully qualified command name, and recursively gets each element in
+    the name, starting at `container`, ending when it reaches the requested
+    command, or when it fails.
+
+    Example:
+
+    - Assume a command tree with a command `/foo bar baz`
+    - Calling `tree.get_command("foo bar baz")` returns `None`
+    - `recursive_get_command(tree, "foo bar baz")` searches performs the
+    following access chain:
+
+        `tree.foo` -> `foo.bar` -> `bar.baz`, returning `bar.baz`
+
+    :param container: The top level container to begin recursion from
+    :type container: ``app_commands.CommandTree | app_commands.Group``
+
+    :param command: The qualified command path to the target command
+    :type command: ``str``
+
+    :returns: The command if found, otherwise `None`
+    :rtype: ``app_commands.Command | app_commands.Group | None``
+    """
     # Split the named command into its parts
     command_path = command.split(" ")
     # The first item will become the next target for search

@@ -35,7 +35,25 @@ RELATIVE_FORMATS = re.compile(
 
 
 def humanize_timedelta(delta: timedelta) -> str:
-    """Humanizes the components of a timedelta"""
+    """
+    Humanizes the components of a timedelta.
+
+    Given a timedelta `delta`, this function returns a textual expansion of the
+    time delta in human-readable form.
+
+    Example:
+    ```py
+    >>> delta = timedelta(days=367, minutes=65, seconds=2)
+    >>> humanize_timedelta(delta)
+    "1 years, 2 days, 1 hours, 5 minutes, 2 seconds"
+    ```
+
+    :param delta: The timedelta to humanize
+    :type delta: ``timedelta``
+
+    :return: A human-readable representation of the provided delta
+    :rtype: ``str``
+    """
     return ", ".join(
         (
             f"{delta.days // 365} years",
@@ -82,9 +100,9 @@ def parse_absolute(
     parsing is found, or the string list has been emptied.
 
     Example: string is "3:00 PM foo bar"
-        -> ["3:00", "PM", "foo", "bar"] *no parsing*
-        -> ["3:00", "PM", "foo""] *no parsing*
-        -> ["3:00", "PM"] *matches %I:%M %p*, return parsed datetime
+        - -> ["3:00", "PM", "foo", "bar"] *no parsing*
+        - -> ["3:00", "PM", "foo""] *no parsing*
+        - -> ["3:00", "PM"] *matches %I:%M %p*, return parsed datetime
 
     :param string: The string to attempt to parse a datetime from
     :type string: ``str``
