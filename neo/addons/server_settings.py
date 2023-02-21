@@ -166,8 +166,8 @@ class ServerConfig(
             """
             Updates the value of a server setting
 
-            More information on the available settings and
-            their functions is in the `server` command
+            More information on the available settings and their functions[JOIN]
+            is in the `server` command
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
@@ -196,9 +196,8 @@ class ServerConfig(
         """
         Creates a config entry for the server
 
-        Run this command when neo phoenix first
-        joins your server, so you can start
-        configuring your server
+        Run this command when neo phoenix first joins your server, so you[JOIN]
+        can start configuring your server
         """
         assert interaction.guild
 
@@ -244,9 +243,8 @@ class ServerConfig(
         """
         Ignores a channel. Run without arguments to view ignored channels
 
-        Any attempts to run a command in an ignored
-        channel will be ignored, *unless they are*
-        *executed by someone with administrator*
+        Any attempts to run a command in an ignored channel will be[JOIN]
+        ignored, *unless they are executed by someone with administrator*[JOIN]
         *permissions*
         """
         assert interaction.guild
@@ -305,19 +303,18 @@ class ServerConfig(
         ],
     ):
         """
-        Disables a command in the server. Run without arguments to view
+        Disables a command in the server. Run without arguments to view [JOIN]
         disabled commands
 
-        When disabling group commands and subcommands,
-        behavior is as follows:
-        - Disabling a group command will disable the group
-        and all its subcommands
-        - Disabling a subcommand will disable only the
-        subcommand, not the entire group
+        When disabling group commands and subcommands, behavior is as[JOIN]
+        follows:
+        - Disabling a group command will disable the group and all its[JOIN]
+        subcommands
+        - Disabling a subcommand will disable only the subcommand, not the[JOIN]
+        entire group
 
-        Any attempts to run a disabled command
-        will be ignored, *unless executed by*
-        *someone with administrator permissions*
+        Any attempts to run a disabled command will be ignored, *unless*[JOIN]
+        executed by someone with administrator permissions*
         """
         assert interaction.guild
 

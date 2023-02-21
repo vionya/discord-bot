@@ -158,7 +158,8 @@ class Profile(neo.Addon, app_group=True):
             """
             Updates the value of a profile setting
 
-            More information on the available settings and their functions is in the `settings` command
+            More information on the available settings and their functions[JOIN]
+            is in the `settings` command
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(

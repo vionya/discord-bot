@@ -126,22 +126,23 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     - A `⑃` symbol next to a listed command identifies it as a command group.
 
     __**Using Slash Commands**__
-    neo phoenix uses a custom system for slash commands which lets you customize
-    your experience. Each command automatically includes a special "`private`"
-    option. This option controls whether the response to your command will be sent
-    as an *ephemeral message*.
+    neo phoenix uses a custom system for slash commands which lets you[JOIN]
+    customize your experience. Each command automatically includes a[JOIN]
+    special "`private`" option. This option controls whether the response[JOIN]
+    to your command will be sent as an *ephemeral message*.
 
-    *Ephemeral messages* are unique because you are the **only** person who can
-    see them - nobody else will even know you ran a command. You can take
-    advantage of the `private` option to decide whether or not you want other
-    people to see what you're doing.
+    *Ephemeral messages* are unique because you are the **only** person[JOIN]
+    who can see them - nobody else will even know you ran a command. You[JOIN]
+    can take advantage of the `private` option to decide whether or not[JOIN]
+    you want other people to see what you're doing.
 
-    With a configured profile, you can even change whether responses are ephemeral
-    by default! By changing the `Private By Default` option, you can choose to
-    have responses be public or private without you having to do anything.
+    With a configured profile, you can even change whether responses are[JOIN]
+    ephemeral by default! By changing the `Private By Default` option, you[JOIN]
+    can choose to have responses be public or private without you having[JOIN]
+    to do anything.
 
-    Of course, the `private` parameter will override the default setting if you
-    ever want to do something different.
+    Of course, the `private` parameter will override the default setting[JOIN]
+    if you ever want to do something different.
     """
 
     def __init__(self, bot: Neo):
@@ -255,7 +256,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 key=len,
             )
             or "No description",
-        )
+        ).replace("[JOIN]\n", " ")  # join multiline strings
 
         signature = f"/{command.qualified_name}"
         if isinstance(command, app_commands.Command):

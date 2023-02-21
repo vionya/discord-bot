@@ -540,7 +540,8 @@ class StarboardAddon(
             """
             Updates the value of a starboard setting
 
-            More information on the available settings and their functions is in the `starboard` command
+            More information on the available settings and their functions[JOIN]
+            is in the `starboard` command
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(

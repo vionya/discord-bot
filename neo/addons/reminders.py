@@ -264,23 +264,20 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         - `month date, year at hour:minute`
         Ex: /remind set `when: January 19, 2038 at 3:14` `content: Y2k38`
 
-        Providing a time within the current day will
-        cause the reminder to be triggered the same
-        day if the time has not passed yet, and will
+        Providing a time within the current day will cause the reminder to[JOIN]
+        be triggered the same day if the time has not passed yet, and will[JOIN]
         rollover to the next day if it has passed.
 
-        Times can be expressed in either 24- or
-        12-hour time.
+        Times can be expressed in either 24- or 12-hour time.
 
         **Note**
-        If you have configured a timezone in your neo
-        profile, it will be used to localize date/time.
-        Otherwise, date/times will be in UTC.
+        If you have configured a timezone in your neo profile, it will be[JOIN]
+        used to localize date/time. Otherwise, date/times will be in UTC.[JOIN]
 
         **__Relative__**
         Offsets have the following requirements:
-        - Must be one of `years`, `weeks`, `days`,
-        `hours`, `minutes`, and `seconds`
+        - Must be one of `years`, `weeks`, `days`, `hours`, `minutes`, and[JOIN]
+        `seconds`
         - Not all time units have to be used
         - Time units have to be ordered by magnitude
 
@@ -290,23 +287,20 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         /remind set `when: 3 weeks, 2 days` `content: Do something funny`
 
         **__Repeating Reminders__**
-        Repeating reminders let you set a reminder to
-        continuously be delivered with a set interval.
-        Absolute and relative time formats are both
-        supported in repeating reminders.
+        Repeating reminders let you set a reminder to continuously be[JOIN]
+        delivered with a set interval. Absolute and relative time formats[JOIN]
+        are both supported in repeating reminders.
 
         **Repeating Absolute Reminders:**
-        With repeating absolute reminders, you can
-        select a time on the clock, and you will be
-        reminded each day at this time. The interval
-        can't be changed for absolute repeat reminders.
+        With repeating absolute reminders, you can select a time on the[JOIN]
+        clock, and you will be reminded each day at this time. The[JOIN]
+        interval can't be changed for absolute repeat reminders.
 
         **Repeating Relative Reminders:**
-        With repeating relative reminders, you can
-        set a custom interval for the reminder to
-        repeat in. The `when` option will control
-        how often the reminder repeats itself.
-        Note that the interval must be at least 1 hour.
+        With repeating relative reminders, you can set a custom interval[JOIN]
+        for the reminder to repeat in. The `when` option will control how[JOIN]
+        often the reminder repeats itself. Note that the interval must be[JOIN]
+        at least 1 hour.
         """
         profile = self.bot.profiles[interaction.user.id]
         tz = profile.timezone or timezone.utc
