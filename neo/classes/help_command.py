@@ -35,6 +35,7 @@ PARAM_TYPE_MAPPING = {
     discord.AppCommandOptionType.number: "A number",
     discord.AppCommandOptionType.attachment: "A file",
 }
+LEADING_WHITESPACE = re.compile(r"(?!$)^\s+", re.MULTILINE)
 
 # Generate the ancestral path (the qualified name up to
 # the second to last index)
@@ -112,9 +113,6 @@ def generate_param_help(command: app_commands.Command) -> str:
             desc += f"\n↳ **Max Value**: `{ma}`"
         descriptions.append(desc)
     return "\n\n".join(descriptions)
-
-
-leading_whitespace = re.compile(r"(?!$)^\s+", re.MULTILINE)
 
 
 class AppHelpCommand(AutoEphemeralAppCommand):
@@ -246,7 +244,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     async def send_command_help(
         self, interaction: discord.Interaction, command: AnyCommand
     ):
-        description = leading_whitespace.sub(
+        description = LEADING_WHITESPACE.sub(
             "",
             max(
                 command.description,
@@ -256,7 +254,9 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 key=len,
             )
             or "No description",
-        ).replace("[JOIN]\n", " ")  # join multiline strings
+        ).replace(
+            "[JOIN]\n", " "
+        )  # join multiline strings
 
         signature = f"/{command.qualified_name}"
         if isinstance(command, app_commands.Command):
