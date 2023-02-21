@@ -62,23 +62,27 @@ def generate_autocomplete_list(
     """
     Generate a list of choices suitable for an autocomplete function
 
-    Parameters
-    ----------
-    container: Sequence[str]
-        The items from which the autocomplete list will be generated
-    current: str
-        The current value that the user has input
-    insert_wildcard: bool
-        Whether the wildcard character (`~`) should be prepended to the output
-        Default: False
-    show_previews: bool
-        Whether previews of the content should be included alongside indices
-        Default: True
-    focus_current: bool
-        Whether the list should adapt to show indices surrounding the current value
-        Default: True
+    :param container: The items from which the autocomplete list will be
+    generated
+    :type container: ``Sequence[str]``
+
+    :param current: The current value that the user has input
+    :type current: ``str``
+
+    :param insert_wildcard: Whether the wildcard character (`~`) should be
+    prepended to the input
+    :type insert_wildcard: ``bool``
+
+    :param show_previews: Whether content previews should be included with indices
+    :type show_previews: ``bool``
+
+    :param focus_current: Whether the list should adapt to show indices around
+    the current value
+    :type focus_current: ``bool``
+
+    :returns: The list of autocomplete choices
+    :rtype: ``list[Choice[Any]]``
     """
-    # TODO: convert to reST format
     if not isinstance(current, str):
         return []
 
@@ -168,16 +172,17 @@ def add_setting_autocomplete(
     Provided parameter names and a settings mapping, autocomplete callbacks
     are generated to provide options that are valid for each setting.
 
-    Parameters
-    ----------
-    mapping: SettingsMapping
-        The settings mapping from which autocompletes will be generated
-    setting_param: str
-        The name of the parameter which specifies the setting key
-    value_param: Optional[str]
-        The name of the parameter which specifies the new setting value
+    :param mapping: The settings mapping to use for autocomplete generation
+    :type mapping: ``SettingsMapping``
+
+    :param settings_param: The name of the command parameter that accepts the
+    setting key
+    :type settings_param: ``str``
+
+    :param value_param: The name of the command parameter that accepts the new
+    setting value
+    :type value_param: ``Optional[str]``
     """
-    # TODO: convert to rST docs
 
     def inner(command: app_commands.Command):
         async def setting_param_autocomplete(

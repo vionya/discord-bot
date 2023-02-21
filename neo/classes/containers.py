@@ -25,16 +25,10 @@ def add_hook(attr_name: str):
 
     This hook will be called whenever the attribute is accessed.
 
-    Parameters
-    ----------
-    attr_name: str
-        The attribute which is to be hooked
+    :param attr_name: The attribute which is to be hooked
+    :type attr_name: ``str``
 
-    Returns
-    -------
-    Any
-        The decorated method must return a type. Usually, this is
-        a transformed version of the original attribute
+    :returns: The decorated method
     """
 
     def inner(func):
