@@ -71,6 +71,9 @@ class Utility(neo.Addon):
         self.bot.tree.context_menu(name="Show Message Info")(
             self.message_info_context_command
         )
+        self.bot.tree.context_menu(name="View Banner")(
+            self.banner_context_command
+        )
 
         asyncio.create_task(self.__ainit__())
 
@@ -442,6 +445,18 @@ class Utility(neo.Addon):
         await interaction.response.send_message(
             embed=embed, view=self.info_buttons()
         )
+
+    async def banner_context_command(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | discord.User,
+    ):
+        if not user.banner:
+            return await interaction.response.send_message(
+                "User does not have a banner."
+            )
+        embed = neo.Embed().set_image(url=user.banner.with_size(4096).url)
+        await interaction.response.send_message(embed=embed)
 
     async def message_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message
