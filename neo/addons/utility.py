@@ -447,15 +447,14 @@ class Utility(neo.Addon):
         )
 
     async def banner_context_command(
-        self,
-        interaction: discord.Interaction,
-        user: discord.Member | discord.User,
+        self, interaction: discord.Interaction, user: discord.User
     ):
         if not user.banner:
             return await interaction.response.send_message(
                 "User does not have a banner."
             )
         embed = neo.Embed().set_image(url=user.banner.with_size(4096).url)
+        setattr(interaction.namespace, "private", True)
         await interaction.response.send_message(embed=embed)
 
     async def message_info_context_command(
