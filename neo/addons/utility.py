@@ -23,6 +23,7 @@ from .auxiliary.utility import (
     InfoButtons,
     SwappableEmbedButton,
     definitions_to_embed,
+    full_timestamp,
     result_to_embed,
     translate,
 )
@@ -466,8 +467,7 @@ class Utility(neo.Addon):
             + get_browser_links(user.banner)
             + "\n\n"
         )
-        setattr(interaction.namespace, "private", True)
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def message_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message
@@ -477,23 +477,17 @@ class Utility(neo.Addon):
         )
 
         raw_description = [
-            f"**Message ID** {message.id}",
+            f"**ID** {message.id}",
             f"**Author** {message.author}",
-            f"**Created** <t:{message.created_at.timestamp():.0f}>",
-            f"**Edited** <t:{message.edited_at.timestamp():.0f}>"
+            f"**Created** {full_timestamp(message.created_at.timestamp())}",
+            f"**Edited** {full_timestamp(message.edited_at.timestamp())}"
             if message.edited_at
             else None,
-            f"\n**Is System Message** {message.is_system()}",
-            f"**Message Type** `{message.type.name}`",
+            f"\n**Message Type** `{message.type.name}`",
             f"**Message Flags** {flags_str}" if flags_str else "",
-            f"\n**Pinned** {message.pinned}",
-            f"**Is Interaction Response** {bool(message.interaction)}",
-            f"**References A Message** {bool(message.reference)}",
-            f"\n[**Jump URL**]({message.jump_url})",
+            f"**Pinned** {message.pinned}",
         ]
-        embed = neo.Embed(
-            description="\n".join(filter(None, raw_description)),
-        )
+        embed = neo.Embed(description="\n".join(filter(None, raw_description)))
 
         if message.application:
             app = message.application
@@ -511,7 +505,20 @@ class Utility(neo.Addon):
 
         embed.set_thumbnail(url=message.author.display_avatar)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        view = discord.ui.View().add_item(
+            discord.ui.Button(label="Jump to Message", url=message.jump_url)
+        )
+        if message.reference:
+            view.add_item(
+                discord.ui.Button(
+                    label="Replied Message",
+                    url=message.reference.jump_url,
+                )
+            )
+
+        await interaction.response.send_message(
+            embed=embed, view=view, ephemeral=True
+        )
 
 
 async def setup(bot: neo.Neo):
