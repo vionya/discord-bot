@@ -167,7 +167,11 @@ class Starboard:
 
             if attachments := (*message.attachments, *message.embeds):
                 if not embed.image:
-                    embed.set_image(url=attachments[0].url)
+                    prev = attachments[0]
+                    # Don't add spoilered images to embed
+                    if not getattr(prev, "filename", "").startswith("SPOILER_"):
+                        embed.set_image(url=prev.url)
+
                 embed.add_field(
                     name=f"Attachments/Embeds [x{len(attachments)}]",
                     value="\n".join(
