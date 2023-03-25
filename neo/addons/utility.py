@@ -123,7 +123,7 @@ class Utility(neo.Addon):
         """Search Google for a query"""
         await self.google_command_callback(interaction, query)
 
-    @app_commands.command(name="image")
+    @app_commands.command(name="img")
     @app_commands.describe(query="The query to search for")
     async def google_image_command(
         self, interaction: discord.Interaction, query: str
