@@ -57,8 +57,10 @@ ignored_exceptions = [
     "str",
     "str",
     "str",
+    "str",
     "str"
 ]
+sync_app_commands = "bool"
 
 [database]
 user = "str"

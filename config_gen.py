@@ -42,7 +42,6 @@ def generate_template(data: dict) -> dict:
         if isinstance(v, dict):
             v = generate_template(v)
         elif isinstance(v, list):
-            v = v.copy()
             for index, value in enumerate(v):
                 if isinstance(value, dict):
                     v[index] = generate_template(value)
