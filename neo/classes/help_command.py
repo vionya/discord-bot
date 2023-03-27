@@ -105,11 +105,11 @@ def generate_param_help(command: app_commands.Command) -> str:
             desc += f"\n↳ **Default**: `{param.default}`"
 
         mi, ma = param.min_value, param.max_value
-        if mi and ma:
+        if mi is not None and ma is not None:
             desc += f"\n↳ **Value Range**: `{mi}..{ma}`"
-        elif mi:
+        elif mi is not None:
             desc += f"\n↳ **Min Value**: `{mi}`"
-        elif ma:
+        elif ma is not None:
             desc += f"\n↳ **Max Value**: `{ma}`"
         descriptions.append(desc)
     return "\n\n".join(descriptions)
