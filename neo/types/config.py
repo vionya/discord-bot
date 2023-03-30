@@ -8,11 +8,9 @@ class NeoInvitePreset(TypedDict):
     desc: str
     value: str
 
-
-class NeoSupport(TypedDict):
+class NeoInfoLink(TypedDict):
     url: str
     disabled: bool
-
 
 class NeoBotConfig(TypedDict):
     token: str
@@ -35,10 +33,10 @@ class NeoDataBaseConfig(TypedDict):
 
 class NeoConfig(TypedDict):
     addons: list[str]
-    upstream_url: str
     privacy_policy_path: str
     invite_presets: list[NeoInvitePreset]
-    support: NeoSupport
+    support: NeoInfoLink
+    upstream: NeoInfoLink
 
     bot: NeoBotConfig
     database: NeoDataBaseConfig

@@ -102,7 +102,10 @@ class Utility(neo.Addon):
                 disabled=self.bot.cfg["support"]["disabled"],
             ),
             discord.ui.Button(
-                url=self.bot.cfg["upstream_url"], label="Source Code", row=1
+                url=self.bot.cfg["upstream"]["url"],
+                label="Source Code",
+                disabled=self.bot.cfg["upstream"]["disabled"],
+                row=1,
             ),
         ]
         self.info_buttons = partial(
