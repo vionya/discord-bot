@@ -71,7 +71,11 @@ class BaseMenu(Generic[T], discord.ui.View):
         return cls(_pages, **kwargs)
 
     async def start(
-        self, origin: NeoContext | discord.Interaction, *, as_reply=False
+        self,
+        origin: NeoContext | discord.Interaction,
+        *,
+        as_reply=False,
+        force_ephemeral=False,
     ):
         self.origin = origin
 
@@ -89,6 +93,8 @@ class BaseMenu(Generic[T], discord.ui.View):
             self.author = self.origin.author
 
         else:
+            if force_ephemeral is True:
+                send_kwargs.update(ephemeral=True)
             await self.origin.response.send_message(view=self, **send_kwargs)
             self.bot = self.origin.client  # type: ignore
             self.author = self.origin.user
@@ -208,11 +214,6 @@ class BaseMenu(Generic[T], discord.ui.View):
 
 
 class ButtonsMenu(BaseMenu, Generic[T]):
-    async def start(
-        self, origin: NeoContext | discord.Interaction, *, as_reply=False
-    ):
-        await super().start(origin, as_reply=as_reply)
-
     @discord.ui.button(label="ᐊ", row=4)
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
