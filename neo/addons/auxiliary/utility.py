@@ -200,3 +200,23 @@ class SwappableEmbedButton(discord.ui.Button):
         embed = embed.set_image(url=thumbnail.url).set_thumbnail(url=image.url)
         await interaction.response.defer()
         await interaction.edit_original_response(embed=embed)
+
+
+class MessageInfoRawContentButton(discord.ui.Button):
+    def __init__(self, content: str, *args, **kwargs):
+        self.content = content
+        kwargs["label"] = "View Raw Content"
+        kwargs["disabled"] = not bool(content)
+        super().__init__(*args, **kwargs)
+
+    async def callback(self, interaction: discord.Interaction):
+        pages = neo.Pages(
+            self.content.replace("`", "`\u200b"),
+            1500,
+            prefix="```\n",
+            suffix="```",
+            joiner="",
+            use_embed=True,
+        )
+        menu = neo.ButtonsMenu(pages)
+        await menu.start(interaction, force_ephemeral=True)

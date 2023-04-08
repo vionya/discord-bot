@@ -21,6 +21,7 @@ from neo.tools.formatters import Table
 
 from .auxiliary.utility import (
     InfoButtons,
+    MessageInfoRawContentButton,
     SwappableEmbedButton,
     definitions_to_embed,
     full_timestamp,
@@ -509,15 +510,23 @@ class Utility(neo.Addon):
         embed.set_thumbnail(url=message.author.display_avatar)
 
         view = discord.ui.View().add_item(
-            discord.ui.Button(label="Jump to Message", url=message.jump_url)
+            discord.ui.Button(
+                label="Jump to Message", url=message.jump_url, row=0
+            )
         )
         if message.reference:
             view.add_item(
                 discord.ui.Button(
                     label="Replied Message",
                     url=message.reference.jump_url,
+                    row=0,
                 )
             )
+        view.add_item(
+            MessageInfoRawContentButton(
+                message.content, row=len(view.children) - 1
+            )
+        )
 
         await interaction.response.send_message(
             embed=embed, view=view, ephemeral=True
