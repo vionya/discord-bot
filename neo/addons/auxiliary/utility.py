@@ -216,7 +216,6 @@ class MessageInfoRawContentButton(discord.ui.Button):
             prefix="```\n",
             suffix="```",
             joiner="",
-            use_embed=True,
         )
         menu = neo.ButtonsMenu(pages)
         await menu.start(interaction, force_ephemeral=True)
