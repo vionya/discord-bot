@@ -14,7 +14,7 @@ from discord import app_commands
 from discord.utils import escape_markdown
 
 import neo
-from neo.addons.auxiliary.todos import TodoEditModal
+from neo.addons.auxiliary.todos import TodoEditModal, TodoShowView
 from neo.classes.app_commands import no_defer
 from neo.modules import ButtonsMenu
 from neo.tools import (
@@ -270,7 +270,15 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
                 name="Category:", value=todo.category.title(), inline=False
             )
 
-        await interaction.response.send_message(embed=embed)
+        categories = [
+            cat.title()
+            for cat in self.bot.profiles[interaction.user.id].todo_categories
+        ]
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=TodoShowView(self, todo=todo, categories=categories),
+        )
 
     @app_commands.command(name="edit")
     @app_commands.rename(index="todo")

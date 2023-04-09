@@ -4,6 +4,7 @@
 An auxiliary module for the `Todos` addon
 """
 from __future__ import annotations
+from operator import attrgetter
 
 from typing import TYPE_CHECKING
 
@@ -94,3 +95,38 @@ class TodoEditModal(discord.ui.Modal):
         )
 
         await send_confirmation(interaction, ephemeral=True)
+
+
+class TodoShowView(discord.ui.View):
+    def __init__(self, addon: Todos, *, todo: TodoItem, categories: list[str]):
+        super().__init__()
+        self.addon = addon
+        self.todo = todo
+        self.categories = categories
+
+    @discord.ui.button(label="Edit", style=discord.ButtonStyle.primary)
+    async def edit_todo(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        modal = TodoEditModal(
+            self.addon,
+            title="Editing a Todo",
+            todo=self.todo,
+            categories=self.categories,
+        )
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Delete", style=discord.ButtonStyle.red)
+    async def delete_todo(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await self.addon.bot.db.execute(
+            """
+            DELETE FROM todos WHERE
+                todo_id=$1 AND
+                user_id=$2
+            """,
+            self.todo.todo_id,
+            interaction.user.id,
+        )
+        await send_confirmation(interaction)
