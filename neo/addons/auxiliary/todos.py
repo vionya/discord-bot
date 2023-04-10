@@ -133,4 +133,5 @@ class TodoShowView(discord.ui.View):
             self.todo.todo_id,
             interaction.user.id,
         )
+        self.addon.todos[self.todo.user_id].remove(self.todo)
         await send_confirmation(interaction, ephemeral=True)
