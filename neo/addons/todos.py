@@ -295,9 +295,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             cat.title()
             for cat in self.bot.profiles[interaction.user.id].todo_categories
         ]
-        modal = TodoEditModal(
-            self, title="Editing a Todo", todo=todo, categories=categories
-        )
+        modal = TodoEditModal(self, todo=todo, categories=categories)
         await interaction.response.send_modal(modal)
 
     @todo_view.autocomplete("index")

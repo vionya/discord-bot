@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 
 class TodoEditModal(discord.ui.Modal):
-    def __init__(
-        self, addon: Todos, *, title: str, todo: TodoItem, categories: list[str]
-    ):
+    def __init__(self, addon: Todos, *, todo: TodoItem, categories: list[str]):
         self.addon = addon
         self.todo = todo
         self.content: discord.ui.TextInput[Self] = discord.ui.TextInput(
@@ -45,7 +43,7 @@ class TodoEditModal(discord.ui.Modal):
         #     ],
         # )
 
-        super().__init__(title=title, timeout=300)
+        super().__init__(title="Editing a Todo", timeout=300)
 
         self.add_item(self.content)
         # self.add_item(self.category)  TODO: Uncomment when supported
@@ -112,7 +110,6 @@ class TodoShowView(discord.ui.View):
     ):
         modal = TodoEditModal(
             self.addon,
-            title="Editing a Todo",
             todo=self.todo,
             categories=self.categories,
         )
