@@ -104,7 +104,9 @@ class TodoShowView(discord.ui.View):
         self.todo = todo
         self.categories = categories
 
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.primary)
+    @discord.ui.button(
+        label="Edit Todo", emoji="✏️", style=discord.ButtonStyle.primary
+    )
     async def edit_todo(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -116,7 +118,9 @@ class TodoShowView(discord.ui.View):
         )
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Delete", style=discord.ButtonStyle.red)
+    @discord.ui.button(
+        label="Delete Todo", emoji="🗑️", style=discord.ButtonStyle.red
+    )
     async def delete_todo(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -129,4 +133,4 @@ class TodoShowView(discord.ui.View):
             self.todo.todo_id,
             interaction.user.id,
         )
-        await send_confirmation(interaction)
+        await send_confirmation(interaction, ephemeral=True)
