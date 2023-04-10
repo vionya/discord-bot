@@ -12,26 +12,25 @@ import discord
 from neo.tools.message_helpers import send_confirmation
 
 if TYPE_CHECKING:
+    from asyncpg import Pool
     from typing_extensions import Self
 
     from neo.addons.reminders import Reminder, Reminders
 
 
 class ReminderEditModal(discord.ui.Modal):
-    def __init__(
-        self, addon: Reminders, *, title: str, reminder: Reminder, max_len: int
-    ):
-        self.addon = addon
+    def __init__(self, db: Pool, *, reminder: Reminder):
+        self.db = db
         self.reminder = reminder
         self.content: discord.ui.TextInput[Self] = discord.ui.TextInput(
             label="Edit Reminder Content",
             style=discord.TextStyle.paragraph,
             default=self.reminder.content,
             min_length=1,
-            max_length=max_len,
+            max_length=reminder.MAX_LEN,
         )
 
-        super().__init__(title=title, timeout=300)
+        super().__init__(title="Editing a Reminder", timeout=300)
 
         self.add_item(self.content)
 
@@ -40,7 +39,7 @@ class ReminderEditModal(discord.ui.Modal):
         assert self.content.value
 
         self.reminder.content = self.content.value
-        await self.addon.bot.db.execute(
+        await self.db.execute(
             """
             UPDATE reminders
             SET
@@ -54,4 +53,30 @@ class ReminderEditModal(discord.ui.Modal):
             self.reminder.user_id,
         )
 
+        await send_confirmation(interaction, ephemeral=True)
+
+
+class ReminderShowView(discord.ui.View):
+    def __init__(self, db: Pool, *, reminder: Reminder):
+        self.db = db
+        self.reminder = reminder
+
+        super().__init__()
+
+    @discord.ui.button(
+        label="Edit Reminder", emoji="✏️", style=discord.ButtonStyle.primary
+    )
+    async def edit_reminder(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        modal = ReminderEditModal(self.db, reminder=self.reminder)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(
+        label="Delete Reminder", emoji="🗑️", style=discord.ButtonStyle.red
+    )
+    async def delete_reminder(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await self.reminder.delete()
         await send_confirmation(interaction, ephemeral=True)

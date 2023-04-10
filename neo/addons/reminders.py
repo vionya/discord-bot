@@ -11,6 +11,7 @@ import discord
 from discord import app_commands, utils
 
 import neo
+from neo.addons.auxiliary.reminders import ReminderEditModal, ReminderShowView
 from neo.classes.app_commands import no_defer
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
@@ -30,17 +31,16 @@ from neo.tools.time_parse import (
     parse_relative,
 )
 
-from .auxiliary.reminders import ReminderEditModal
-
 # Maximum number of reminders per user
 MAX_REMINDERS = 15
-# Max number of characters in a reminder's content
-MAX_REMINDER_LEN = 1000
 # Minimum number of total seconds in a repeating reminder
 REPEATING_MINIMUM_SECONDS = 3600
 
 
 class Reminder:
+    # Max number of characters in a reminder's content
+    MAX_LEN = 1000
+
     __slots__ = (
         "user_id",
         "reminder_id",
@@ -247,7 +247,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         self,
         interaction: discord.Interaction,
         when: str,
-        content: app_commands.Range[str, 1, MAX_REMINDER_LEN] = "…",
+        content: app_commands.Range[str, 1, Reminder.MAX_LEN] = "…",
         repeat: bool = False,
     ):
         """
@@ -415,7 +415,10 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
                 name="This reminder will repeat every:",
                 value=f"`{humanize_timedelta(reminder.delta)}`",
             )
-        await interaction.response.send_message(embed=embed)
+
+        view = ReminderShowView(self.bot.db, reminder=reminder)
+
+        await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="edit")
     @app_commands.rename(index="reminder")
@@ -428,12 +431,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         except IndexError:
             raise IndexError("Couldn't find that reminder.")
 
-        modal = ReminderEditModal(
-            self,
-            title="Editing a Reminder",
-            reminder=reminder,
-            max_len=MAX_REMINDER_LEN,
-        )
+        modal = ReminderEditModal(self.bot.db, reminder=reminder)
         await interaction.response.send_modal(modal)
 
     @remind_view.autocomplete("index")
