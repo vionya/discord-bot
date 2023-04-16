@@ -21,7 +21,6 @@ from neo.tools.formatters import Table
 
 from .auxiliary.utility import (
     InfoButtons,
-    MessageInfoRawContentButton,
     SwappableEmbedButton,
     definitions_to_embed,
     full_timestamp,
@@ -70,11 +69,14 @@ class Utility(neo.Addon):
         self.bot.tree.context_menu(name="View Avatar")(
             self.avatar_context_command
         )
+        self.bot.tree.context_menu(name="View Banner")(
+            self.banner_context_command
+        )
         self.bot.tree.context_menu(name="Show Message Info")(
             self.message_info_context_command
         )
-        self.bot.tree.context_menu(name="View Banner")(
-            self.banner_context_command
+        self.bot.tree.context_menu(name="Show Raw Content")(
+            self.raw_msg_context_command
         )
 
         asyncio.create_task(self.__ainit__())
@@ -522,15 +524,23 @@ class Utility(neo.Addon):
                     row=0,
                 )
             )
-        view.add_item(
-            MessageInfoRawContentButton(
-                message.content, row=len(view.children) - 1
-            )
-        )
 
         await interaction.response.send_message(
             embed=embed, view=view, ephemeral=True
         )
+
+    async def raw_msg_context_command(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        pages = neo.Pages(
+            message.content.replace("`", "`\u200b"),
+            1500,
+            prefix="```\n",
+            suffix="```",
+            joiner="",
+        )
+        menu = neo.ButtonsMenu(pages)
+        await menu.start(interaction, force_ephemeral=True)
 
 
 async def setup(bot: neo.Neo):
