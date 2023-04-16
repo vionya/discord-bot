@@ -532,6 +532,10 @@ class Utility(neo.Addon):
     async def raw_msg_context_command(
         self, interaction: discord.Interaction, message: discord.Message
     ):
+        if not message.content:
+            return await interaction.response.send_message(
+                "Message is empty", ephemeral=True
+            )
         pages = neo.Pages(
             message.content.replace("`", "`\u200b"),
             1500,
