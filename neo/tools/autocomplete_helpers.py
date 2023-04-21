@@ -139,7 +139,7 @@ def generate_autocomplete_list(
     for opt in opts:
         opt_name = str(opt)
         if isinstance(opt, int) and show_previews is True:
-            content = shorten(container[opt - 1], 50 - (len(opt_name) + 3))
+            content = shorten(container[opt - 1], 100 - (len(opt_name) + 3))
             opt_name = f"{opt_name} - {content}"
         opt_names.append(opt_name)
 
