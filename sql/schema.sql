@@ -7,7 +7,7 @@ CREATE TABLE profiles (
     receive_highlights BOOLEAN DEFAULT TRUE,
     timezone           TEXT DEFAULT NULL,
     hl_timeout         BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1,
-    default_ephemeral  BOOLEAN DEFAULT TRUE,
+    default_ephemeral  BOOLEAN DEFAULT FALSE,
     silence_hl         BOOLEAN DEFAULT FALSE,
     -- Private settings, indirectly modified
     hl_blocks          BIGINT[] DEFAULT ARRAY[]::BIGINT[],

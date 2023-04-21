@@ -45,7 +45,7 @@ COMMENT ON COLUMN profiles.default_ephemeral IS
 Ephemeral messages can be seen by you, and nobody else.
 
 Expected Value Type: A boolean-like (`yes`/`no`) value
-Default Value: `True`
+Default Value: `False`
 
 **Current Value:** `{}`
 ';

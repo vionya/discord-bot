@@ -32,7 +32,8 @@ def get_ephemeral(
 
     user = interaction.user
 
-    default = True
+    # whether users who have no profile should get ephemeral responses by default
+    default = False
     if user.id in bot.profiles:
         default = bot.profiles[user.id].default_ephemeral
 
