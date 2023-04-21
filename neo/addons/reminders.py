@@ -365,17 +365,17 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         reminders = self.reminders[interaction.user.id].copy()
         formatted_reminders: list[str] = []
 
-        for index, reminder in enumerate(reminders, 1):
+        for reminder in reminders:
             formatted_reminders.append(
-                "`{0} {1}` {2}\n➥ Triggers <t:{3}:R>".format(
-                    index,
+                "- {0} (<t:{1}:R>) {2}".format(
                     "\U0001F501"
                     if reminder.repeating
                     else "\u0031\uFE0F\u20E3",
-                    utils.escape_markdown(shorten(reminder.content, 75)),
                     int(reminder.end_time.timestamp()),
+                    utils.escape_markdown(shorten(reminder.content, 75)),
                 )
             )
+
         menu = ButtonsMenu.from_iterable(
             formatted_reminders or ["No reminders"],
             per_page=5,
