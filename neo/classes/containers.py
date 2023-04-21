@@ -108,7 +108,6 @@ class NeoUser(RecordContainer):
     timezone: Optional[zoneinfo.ZoneInfo]
     hl_timeout: int
     default_ephemeral: bool
-    todo_categories: list[str]
     silence_hl: bool
 
     __slots__ = (
@@ -119,7 +118,6 @@ class NeoUser(RecordContainer):
         "timezone",
         "hl_timeout",
         "default_ephemeral",
-        "todo_categories",
         "silence_hl",
     )
 

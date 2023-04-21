@@ -29,27 +29,3 @@ BEGIN
     RETURN result;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE
-OR REPLACE FUNCTION is_valid_todo_category(
-    _user_id BIGINT,
-    _cat_name VARCHAR(100) DEFAULT NULL
-) RETURNS BOOLEAN AS $$
-BEGIN
-    -- If no category name is provided, the todo is
-    -- uncategorized, so it's fine
-    IF _cat_name IS NULL THEN
-        RETURN TRUE;
-    ELSE
-    -- Otherwise, return the boolean result of checking
-    -- if the category name exists in the associated
-    -- todo category column
-        RETURN _cat_name = ANY ((
-            SELECT todo_categories
-            FROM profiles
-            WHERE user_id = _user_id
-        )::VARCHAR(100)[]);
-    END IF;
-END;
-$$ LANGUAGE plpgsql
-   CALLED ON NULL INPUT;

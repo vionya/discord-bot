@@ -29,12 +29,10 @@ from neo.tools import (
 from neo.tools.checks import is_registered_profile_predicate
 
 MAX_TODOS = 100
-MAX_TODO_CATEGORIES = 10
-MAX_CATEGORY_LEN = 100
 
 
 class TodoItem:
-    __slots__ = ("user_id", "content", "todo_id", "created_at", "category")
+    __slots__ = ("user_id", "content", "todo_id", "created_at")
 
     def __init__(
         self,
@@ -43,18 +41,15 @@ class TodoItem:
         content: str,
         todo_id: UUID,
         created_at: datetime,
-        category: str | None,
     ):
         self.user_id = user_id
         self.content = content
         self.todo_id = todo_id
         self.created_at = created_at
-        self.category = category
 
     def __repr__(self):
         return (
-            '<{0.__class__.__name__} user_id={0.user_id} todo_id="{0.todo_id}"'
-            ' category="{0.category}">'
+            '<{0.__class__.__name__} user_id={0.user_id} todo_id="{0.todo_id}">'
         ).format(self)
 
 
@@ -82,56 +77,19 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     ) -> bool:
         return is_registered_profile_predicate(interaction)
 
-    def _category_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ):
-        if interaction.user.id not in self.bot.profiles:
-            return []
-
-        profile = self.bot.profiles[interaction.user.id]
-        return [
-            app_commands.Choice(name=cat.title(), value=cat)
-            for cat in profile.todo_categories
-            if current.casefold() in cat
-        ][:25]
-
     @app_commands.command(name="list")
-    @app_commands.describe(category="The category to display todos from")
-    async def todo_list(
-        self, interaction: discord.Interaction, category: Optional[str] = None
-    ):
+    async def todo_list(self, interaction: discord.Interaction):
         """List your todos"""
-        formatted_todos: dict[str | None, list[str]] = defaultdict(list)
-
-        todos: list[TodoItem] = []
-        if category is None:
-            todos = self.todos[interaction.user.id]
-        else:
-            todos = [
-                todo
-                for todo in self.todos[interaction.user.id]
-                if todo.category == category
-            ]
+        formatted_todos: list[str] = []
+        todos: list[TodoItem] = self.todos[interaction.user.id]
 
         for todo in todos:
-            formatted_todos[todo.category].append(
+            formatted_todos.append(
                 "- {0}".format(escape_markdown(shorten(todo.content, width=75)))
             )
 
-        output: list[str] = []
-        for cat, cat_fmted_todos in sorted(
-            formatted_todos.items(), key=lambda x: x[0] is None, reverse=True
-        ):
-            if len(cat_fmted_todos) == 0:
-                continue
-
-            cat_name = f"**{(cat or 'Uncategorized').title()}**:"
-            output.append(
-                "{0}\n{1}".format(cat_name, "\n".join(cat_fmted_todos))
-            )
-
         menu = ButtonsMenu.from_iterable(
-            "\n\n".join(output).splitlines(keepends=True) or ["No todos"],
+            "\n".join(formatted_todos),
             per_page=10,
             use_embed=True,
             joiner="",
@@ -143,15 +101,11 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         await menu.start(interaction)
 
     @app_commands.command(name="add")
-    @app_commands.describe(
-        content="The content of the new todo",
-        category="The category this todo will belong to",
-    )
+    @app_commands.describe(content="The content of the new todo")
     async def todo_add(
         self,
         interaction: discord.Interaction,
         content: str,
-        category: Optional[str] = None,
     ):
         """Add a new todo"""
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
@@ -167,7 +121,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             "content": content,
             "todo_id": uuid4(),
             "created_at": datetime.now(timezone.utc),
-            "category": category,
         }
 
         await self.bot.db.execute(
@@ -177,9 +130,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
                 content,
                 todo_id,
                 created_at,
-                category
             ) VALUES (
-                $1, $2, $3, $4, $5
+                $1, $2, $3, $4
             )
             """,
             *data.values(),
@@ -187,13 +139,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
         self.todos[interaction.user.id].append(TodoItem(**data))
         await send_confirmation(interaction)
-
-    @todo_list.autocomplete("category")
-    @todo_add.autocomplete("category")
-    async def todo_list_add_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ):
-        return self._category_autocomplete(interaction, current)
 
     @app_commands.command(name="remove")
     @app_commands.rename(index="todo")
@@ -263,19 +208,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             )
         )
 
-        if todo.category is not None:
-            embed.add_field(
-                name="Category:", value=todo.category.title(), inline=False
-            )
-
-        categories = [
-            cat.title()
-            for cat in self.bot.profiles[interaction.user.id].todo_categories
-        ]
-
         await interaction.response.send_message(
             embed=embed,
-            view=TodoShowView(self, todo=todo, categories=categories),
+            view=TodoShowView(self, todo=todo),
         )
 
     @app_commands.command(name="edit")
@@ -289,11 +224,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         except IndexError:
             raise IndexError("Couldn't find that todo.")
 
-        categories = [
-            cat.title()
-            for cat in self.bot.profiles[interaction.user.id].todo_categories
-        ]
-        modal = TodoEditModal(self, todo=todo, categories=categories)
+        modal = TodoEditModal(self, todo=todo)
         await interaction.response.send_modal(modal)
 
     @todo_view.autocomplete("index")
@@ -306,110 +237,6 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
         todos = [todo.content for todo in self.todos[interaction.user.id]]
         return generate_autocomplete_list(todos, current)
-
-    @instantiate
-    class Category(app_commands.Group):
-        """Commands for managing todo categories"""
-
-        addon: Todos
-
-        @app_commands.command(name="list")
-        async def todo_category_list(self, interaction: discord.Interaction):
-            """List your todo categories"""
-            categories = self.addon.bot.profiles[
-                interaction.user.id
-            ].todo_categories
-
-            embed = neo.Embed(
-                description="\n".join(f"• {cat.title()}" for cat in categories)
-                if categories
-                else "No todo categories"
-            ).set_author(
-                name=f"{interaction.user}'s todo categories",
-                icon_url=interaction.user.display_avatar,
-            )
-            await interaction.response.send_message(embed=embed)
-
-        @app_commands.command(name="create")
-        @app_commands.rename(category_name="category-name")
-        @app_commands.describe(category_name="The name of the new category")
-        @with_docstring(
-            f"Create a new todo category ({MAX_TODO_CATEGORIES} maximum)"
-        )
-        async def todo_category_create(
-            self,
-            interaction: discord.Interaction,
-            category_name: app_commands.Range[str, 1, MAX_CATEGORY_LEN],
-        ):
-            profile = self.addon.bot.profiles[interaction.user.id]
-            if len(profile.todo_categories) == MAX_TODO_CATEGORIES:
-                raise RuntimeError(
-                    "You've reached the maximum number of todo categories!"
-                )
-
-            _name = category_name.casefold()
-            if _name not in profile.todo_categories:
-                profile.todo_categories += [_name]
-            await send_confirmation(interaction)
-
-        @app_commands.command(name="remove")
-        @app_commands.rename(
-            category_name="category-name", delete_associated="clear-todos"
-        )
-        @app_commands.describe(
-            category_name="The name of the category to remove",
-            delete_associated="Whether todos in this category should be deleted",
-        )
-        async def todo_category_remove(
-            self,
-            interaction: discord.Interaction,
-            category_name: app_commands.Range[str, 1, MAX_CATEGORY_LEN],
-            delete_associated: bool = False,
-        ):
-            """Remove a todo category"""
-            profile = self.addon.bot.profiles[interaction.user.id]
-            if category_name not in profile.todo_categories:
-                raise ValueError("Invalid category name provided.")
-
-            _name = category_name.casefold()
-            if delete_associated:
-                query = """
-                    DELETE FROM
-                        todos
-                    WHERE
-                        user_id=$1 AND
-                        category=$2
-                    """
-            else:
-                query = """
-                    UPDATE todos
-                    SET category=NULL
-                    WHERE
-                        user_id=$1 AND
-                        category=$2
-                    """
-
-            await self.addon.bot.db.execute(query, interaction.user.id, _name)
-            for todo in filter(
-                lambda t: t.category == _name,
-                self.addon.todos[interaction.user.id].copy(),
-            ):
-                if delete_associated:
-                    self.addon.todos[interaction.user.id].remove(todo)
-                else:
-                    todo.category = None
-
-            # Remove from a shallow copy first
-            (categories := profile.todo_categories[:]).remove(_name)
-            profile.todo_categories = categories
-
-            await send_confirmation(interaction)
-
-        @todo_category_remove.autocomplete("category_name")
-        async def todo_category_remove_autocomplete(
-            self, interaction: discord.Interaction, current: str
-        ):
-            return self.addon._category_autocomplete(interaction, current)
 
 
 async def setup(bot):
