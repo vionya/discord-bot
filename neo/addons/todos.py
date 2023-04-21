@@ -19,12 +19,10 @@ from neo.classes.app_commands import no_defer
 from neo.modules import ButtonsMenu
 from neo.tools import (
     generate_autocomplete_list,
-    instantiate,
     is_clear_all,
     is_valid_index,
     send_confirmation,
     shorten,
-    with_docstring,
 )
 from neo.tools.checks import is_registered_profile_predicate
 
