@@ -44,8 +44,8 @@ SETTINGS_MAPPING = SettingsMapping(
     Setting(
         "silence_hl",
         transformer=bool_transformer,
-        name_override="Deliver Highlights Silently"
-    )
+        name_override="Deliver Highlights Silently",
+    ),
 )
 
 
@@ -189,45 +189,6 @@ class Profile(neo.Addon, app_group=True):
         #     self, interaction: discord.Interaction, current: str
         # ):
         #     return generate_setting_mapping_autocomplete(SETTINGS_MAPPING, current)
-
-    @app_commands.command(name="show")
-    @discord.app_commands.describe(
-        user="The user to view the profile for. Yourself if empty"
-    )
-    async def profile_show(
-        self,
-        interaction: discord.Interaction,
-        user: Optional[discord.User | discord.Member] = None,
-    ):
-        """Displays the neo profile of yourself, or a specified user."""
-        user = user or interaction.user
-        if user == interaction.user:
-            is_registered_profile_predicate(interaction)
-
-        profile = self.bot.profiles.get(user.id)
-        if profile is None:
-            raise AttributeError("This user doesn't have a neo profile!")
-
-        assert self.bot.user
-        embed = neo.Embed(
-            description=(
-                f"**<@{user.id}>'s neo profile**\n\n"
-                f"**Created** <t:{int(profile.created_at.timestamp())}>"
-            )
-        ).set_thumbnail(
-            url=self.bot.user.display_avatar
-            if user != interaction.user
-            else interaction.user.display_avatar
-        )
-        if getattr(profile, "timezone", None):
-            embed.add_field(
-                name="Time",
-                value="**Timezone** {0}\n**Local Time** {1:%B %d, %Y %H:%M}".format(
-                    profile.timezone, datetime.now(profile.timezone)
-                ),
-                inline=False,
-            )
-        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="create")
     async def profile_create(self, interaction: discord.Interaction):
