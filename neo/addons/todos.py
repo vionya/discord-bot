@@ -113,11 +113,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
                 if todo.category == category
             ]
 
-        for index, todo in enumerate(todos, 1):
+        for todo in todos:
             formatted_todos[todo.category].append(
-                "`{0}` {1}".format(
-                    index, escape_markdown(shorten(todo.content, width=75))
-                )
+                "- {0}".format(escape_markdown(shorten(todo.content, width=75)))
             )
 
         output: list[str] = []
