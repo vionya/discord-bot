@@ -378,7 +378,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         menu = ButtonsMenu.from_iterable(
             formatted_reminders or ["No reminders"],
-            per_page=5,
+            per_page=10,
             use_embed=True,
             template_embed=neo.Embed().set_author(
                 name=f"{interaction.user}'s reminders",

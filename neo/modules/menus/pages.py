@@ -39,7 +39,7 @@ class Pages:
         Default: False
     joiner: str
         The string that will be used to join items on a page
-        Default: ""
+        Default: "\\n"
     prefix: str
         A string that all pages will be prefixed with
         Default: None

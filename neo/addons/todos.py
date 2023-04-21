@@ -89,10 +89,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             )
 
         menu = ButtonsMenu.from_iterable(
-            "\n".join(formatted_todos),
+            formatted_todos,
             per_page=10,
             use_embed=True,
-            joiner="",
             template_embed=neo.Embed().set_author(
                 name=f"{interaction.user}'s todos",
                 icon_url=interaction.user.display_avatar,
