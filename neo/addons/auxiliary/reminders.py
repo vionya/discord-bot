@@ -53,7 +53,9 @@ class ReminderEditModal(discord.ui.Modal):
             self.reminder.user_id,
         )
 
-        await send_confirmation(interaction, ephemeral=True)
+        await send_confirmation(
+            interaction, predicate="edited reminder", ephemeral=True
+        )
 
 
 class ReminderShowView(discord.ui.View):
@@ -79,4 +81,6 @@ class ReminderShowView(discord.ui.View):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         await self.reminder.delete()
-        await send_confirmation(interaction, ephemeral=True)
+        await send_confirmation(
+            interaction, ephemeral=True, predicate="deleted reminder"
+        )

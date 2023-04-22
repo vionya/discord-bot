@@ -53,7 +53,9 @@ class TodoEditModal(discord.ui.Modal):
             self.todo.user_id,
         )
 
-        await send_confirmation(interaction, ephemeral=True)
+        await send_confirmation(
+            interaction, ephemeral=True, predicate="edited todo"
+        )
 
 
 class TodoShowView(discord.ui.View):
@@ -87,4 +89,6 @@ class TodoShowView(discord.ui.View):
             interaction.user.id,
         )
         self.addon.todos[self.todo.user_id].remove(self.todo)
-        await send_confirmation(interaction, ephemeral=True)
+        await send_confirmation(
+            interaction, ephemeral=True, predicate="deleted todo"
+        )

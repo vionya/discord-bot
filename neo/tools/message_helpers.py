@@ -10,10 +10,27 @@ import neo
 
 
 async def send_confirmation(
-    interaction: discord.Interaction, *, ephemeral=None
+    interaction: discord.Interaction,
+    *,
+    ephemeral: bool | None = None,
+    predicate: str | None = None,
 ):
+    """
+    Sends a confirmation message as a response to the specified interaction
+
+    :param ephemeral: Whether the response should be ephemeral
+    :type ephemeral: ``bool | None``
+
+    :param predicate: The action that is being confirmed in the present perfect
+                      tense
+    :type predicate: ``str | None``
+    """
+    msg = "Success"
+    if predicate:
+        msg = f"Successfully {predicate}"
     await interaction.response.send_message(
-        "\U00002611", **{"ephemeral": True} if ephemeral is not None else {}
+        f"\U00002714 {msg}!",
+        **{"ephemeral": True} if ephemeral is not None else {},
     )
 
 

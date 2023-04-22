@@ -88,7 +88,7 @@ class Profile(neo.Addon, app_group=True):
         if not SETTINGS_MAPPING.get(setting):
             raise NameError(
                 "That's not a valid setting! "
-                "Try `settings` for a list of settings!"
+                "Try `profile settings list` for a list of settings!"
             )
         profile = self.bot.profiles[interaction.user.id]
         await profile.reset_attribute(setting)
@@ -163,7 +163,7 @@ class Profile(neo.Addon, app_group=True):
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                f"Setting `{setting}` has been changed!"
+                f"Setting `{SETTINGS_MAPPING[setting]}` has been changed!"
             )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
@@ -180,7 +180,7 @@ class Profile(neo.Addon, app_group=True):
             """
             await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
-                f"Setting `{setting}` has been reset!"
+                f"Setting `{SETTINGS_MAPPING[setting]}` has been reset!"
             )
 
         # @profile_settings_set.autocomplete("setting")

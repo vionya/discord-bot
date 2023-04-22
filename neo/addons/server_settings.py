@@ -85,7 +85,7 @@ class ServerConfig(
         if not SETTINGS_MAPPING.get(setting):
             raise NameError(
                 "That's not a valid setting! "
-                "Try `server` for a list of settings!"
+                "Try `server settings list` for a list of settings!"
             )
         config = self.bot.configs[interaction.guild.id]
         await config.reset_attribute(setting)
@@ -171,7 +171,7 @@ class ServerConfig(
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                "Your settings have been updated!"
+                f"Setting {SETTINGS_MAPPING[setting]} has been updated!"
             )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
@@ -188,7 +188,7 @@ class ServerConfig(
             """
             await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
-                "Your settings have been updated!"
+                f"Setting {SETTINGS_MAPPING[setting]} has been updated!"
             )
 
     @app_commands.command(name="create")
