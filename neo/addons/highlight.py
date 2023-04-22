@@ -23,7 +23,6 @@ from neo.tools import (
     is_clear_all,
     is_valid_index,
     send_confirmation,
-    with_docstring,
 )
 from neo.tools.checks import is_registered_profile_predicate
 
@@ -335,46 +334,45 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     @app_commands.command(name="list")
     async def highlight_list(self, interaction: discord.Interaction):
         """List your highlights"""
-        description = ""
         user_highlights = self.highlights.get(interaction.user.id, [])
+        formatted_hls = []
 
-        for index, hl in enumerate(user_highlights, 1):
-            description += "`{0}` `{1}`\n".format(index, hl.content)
+        for hl in user_highlights:
+            formatted_hls.append(f"- `{hl.content}`")
 
-        embed = (
-            neo.Embed(description=description or "You have no highlights")
-            .set_footer(
-                text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"
-            )
+        menu = ButtonsMenu.from_iterable(
+            formatted_hls or ["No highlights"],
+            per_page=10,
+            use_embed=True,
+            template_embed=neo.Embed()
             .set_author(
                 name=f"{interaction.user}'s highlights",
-                icon_url=interaction.user.avatar,
+                icon_url=interaction.user.display_avatar,
             )
+            .set_footer(
+                text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"
+            ),
         )
-
-        await interaction.response.send_message(embeds=[embed])
+        await menu.start(interaction)
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The word or phrase to be highlighted by")
-    @with_docstring(
-        f"""
-    Add a new highlight
-
-    Highlights will notify when the word/phrase you add is said in chat.
-    You may have at most {MAX_TRIGGERS} highlights.
-
-    ### Notes
-    - Highlights will **never** be triggered from private threads that you[JOIN]
-    are not a member of
-    - Highlights will **never** be triggered by bots
-    - You must be a member of a channel to be highlighted in it
-    """
-    )
     async def highlight_add(
         self,
         interaction: discord.Interaction,
         content: app_commands.Range[str, 1, MAX_TRIGGER_LEN],
     ):
+        """
+        Add a new highlight
+
+        Highlights will notify you when the word/phrase you add is said in chat.
+
+        ### Notes
+        - Highlights will **never** be triggered from private threads that[JOIN]
+        you are not a member of
+        - Highlights will **never** be triggered by bots
+        - You must be a member of a channel to be highlighted in it
+        """
         if len(self.highlights.get(interaction.user.id, [])) >= MAX_TRIGGERS:
             raise ValueError("You've used up all of your highlight slots!")
 

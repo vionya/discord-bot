@@ -90,10 +90,12 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             formatted_todos,
             per_page=10,
             use_embed=True,
-            template_embed=neo.Embed().set_author(
+            template_embed=neo.Embed()
+            .set_author(
                 name=f"{interaction.user}'s todos",
                 icon_url=interaction.user.display_avatar,
-            ),
+            )
+            .set_footer(text=f"{len(todos)}/{MAX_TODOS} slots used"),
         )
         await menu.start(interaction)
 
