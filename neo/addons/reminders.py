@@ -468,7 +468,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         for reminder in reminders:
             await reminder.delete()
-        await send_confirmation(interaction)
+        await send_confirmation(interaction, predicate="cancelled reminder")
 
     @remind_cancel.autocomplete("index")
     async def remind_cancel_autocomplete(

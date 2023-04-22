@@ -400,7 +400,9 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
             Highlight(self.bot, **result)
         )
         self.recompute_flattened()
-        await send_confirmation(interaction)
+        await send_confirmation(
+            interaction, predicate=f"added `{content}` as a new highlight"
+        )
 
     @app_commands.command(name="remove")
     @app_commands.rename(index="highlight")
@@ -438,7 +440,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
             [*map(attrgetter("content"), highlights)],
         )
         self.recompute_flattened()
-        await send_confirmation(interaction)
+        await send_confirmation(interaction, predicate="removed highlight(s)")
 
     @highlight_remove.autocomplete("index")
     async def highlight_remove_autocomplete(
@@ -501,7 +503,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         ]
 
         self.perform_blocklist_action(profile=profile, ids=ids)
-        await send_confirmation(interaction)
+        await send_confirmation(interaction, predicate="updated your blocklist")
 
     @app_commands.command(name="blocklist")
     async def highlight_block_list(self, interaction: discord.Interaction):
@@ -567,7 +569,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         self.perform_blocklist_action(
             profile=profile, ids=ids, action="unblock"
         )
-        await send_confirmation(interaction)
+        await send_confirmation(interaction, predicate="updated your blocklist")
 
     @highlight_unblock.autocomplete("id")
     async def highlight_unblock_autocomplete(

@@ -270,7 +270,9 @@ class ServerConfig(
             }
         ).add(channel.id)
         config.disabled_channels = [*channel_ids]
-        await send_confirmation(interaction)
+        await send_confirmation(
+            interaction, predicate=f"ignored {channel.mention}"
+        )
 
     @app_commands.command(name="unignore")
     @app_commands.describe(channel="The channel to unignore")
@@ -289,7 +291,9 @@ class ServerConfig(
         ).discard(channel.id)
 
         config.disabled_channels = [*channel_ids]
-        await send_confirmation(interaction)
+        await send_confirmation(
+            interaction, predicate=f"unignored {channel.mention}"
+        )
 
     @app_commands.command(name="disable")
     @app_commands.describe(command="The command to disable")
@@ -339,7 +343,9 @@ class ServerConfig(
             }
         ).add(command.qualified_name)
         config.disabled_commands = [*commands]
-        await send_confirmation(interaction)
+        await send_confirmation(
+            interaction, predicate=f"disabled {command.name}"
+        )
 
     @app_commands.command(name="enable")
     @app_commands.describe(command="The command to re-enable")
@@ -361,7 +367,9 @@ class ServerConfig(
         ).discard(command.qualified_name)
 
         config.disabled_commands = [*commands]
-        await send_confirmation(interaction)
+        await send_confirmation(
+            interaction, predicate=f"enabled {command.name}"
+        )
 
     @server_enable_command.autocomplete("command")
     async def server_enable_command_autocomplete(

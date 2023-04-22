@@ -135,7 +135,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         )
 
         self.todos[interaction.user.id].append(TodoItem(**data))
-        await send_confirmation(interaction)
+        await send_confirmation(
+            interaction, predicate=f"added `{content}` to your todo list"
+        )
 
     @app_commands.command(name="remove")
     @app_commands.rename(index="todo")
@@ -170,7 +172,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             [*map(attrgetter("todo_id"), todos)],
             interaction.user.id,
         )
-        await send_confirmation(interaction, predicate="removed todo")
+        await send_confirmation(interaction, predicate="updated your todo list")
 
     @todo_remove.autocomplete("index")
     async def todo_remove_autocomplete(
