@@ -276,8 +276,8 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         **__Relative__**
         Offsets have the following requirements:
-        - Must be one of `years`, `weeks`, `days`, `hours`, `minutes`, and[JOIN]
-        `seconds`
+        - Must be in terms of `years`, `months`, `weeks`, `days`, `hours`,[JOIN]
+        `minutes`, and `seconds`
         - Not all time units have to be used
         - Time units have to be ordered by magnitude
 
