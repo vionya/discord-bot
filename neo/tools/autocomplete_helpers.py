@@ -35,6 +35,7 @@ def generate_autocomplete_list(
     insert_wildcard: Literal[True],
     show_previews: bool = True,
     focus_current: bool = True,
+    show_numbers: bool = False,
 ) -> list[Choice[str] | Choice[int]]:
     ...
 
@@ -47,6 +48,7 @@ def generate_autocomplete_list(
     insert_wildcard: bool = False,
     show_previews: bool = True,
     focus_current: bool = True,
+    show_numbers: bool = False,
 ) -> list[Choice[int]]:
     ...
 
@@ -58,6 +60,7 @@ def generate_autocomplete_list(
     insert_wildcard: bool = False,
     show_previews: bool = True,
     focus_current: bool = True,
+    show_numbers: bool = False,
 ):
     """
     Generate a list of choices suitable for an autocomplete function
@@ -79,6 +82,10 @@ def generate_autocomplete_list(
     :param focus_current: Whether the list should adapt to show indices around
     the current value
     :type focus_current: ``bool``
+
+    :param show_numbers: Whether numeric indices should be included when show_previews
+    is `True`
+    :type show_numbers: ``bool``
 
     :returns: The list of autocomplete choices
     :rtype: ``list[Choice[Any]]``
@@ -139,8 +146,9 @@ def generate_autocomplete_list(
     for opt in opts:
         opt_name = str(opt)
         if isinstance(opt, int) and show_previews is True:
-            content = shorten(container[opt - 1], 100 - (len(opt_name) + 3))
-            opt_name = f"{opt_name} - {content}"
+            prefix = f"{opt_name} - " * int(show_numbers)
+            content = shorten(container[opt - 1], 100 - len(prefix))
+            opt_name = f"{prefix}{content}"
         opt_names.append(opt_name)
 
     return [
