@@ -40,7 +40,6 @@ class DefaultAvatars(Enum):
 
 
 MAX_TRIGGERS = 100
-MAX_TRIGGER_LEN = 100
 CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
 
 
@@ -80,6 +79,9 @@ def format_hl_context(message: discord.Message, is_trigger=False):
 
 
 class Highlight:
+    # Max number of characters in a trigger
+    MAX_LEN = 100
+
     __slots__ = ("bot", "content", "user_id", "pattern")
 
     def __init__(self, bot: neo.Neo, *, content: str, user_id: int):
@@ -360,7 +362,7 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     async def highlight_add(
         self,
         interaction: discord.Interaction,
-        content: app_commands.Range[str, 1, MAX_TRIGGER_LEN],
+        content: app_commands.Range[str, 1, Highlight.MAX_LEN],
     ):
         """
         Add a new highlight
@@ -404,11 +406,11 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
 
     @app_commands.command(name="remove")
     @app_commands.rename(index="highlight")
-    @app_commands.describe(index="A highlight index to remove")
+    @app_commands.describe(index="A highlight to remove")
     async def highlight_remove(
         self, interaction: discord.Interaction, index: str
     ):
-        """Remove a highlight by index"""
+        """Remove a highlight"""
         if is_clear_all(index):
             highlights = self.highlights.get(interaction.user.id, []).copy()
             self.highlights.pop(interaction.user.id, None)

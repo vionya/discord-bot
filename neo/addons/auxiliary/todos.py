@@ -27,7 +27,7 @@ class TodoEditModal(discord.ui.Modal):
             style=discord.TextStyle.paragraph,
             default=self.todo.content,
             min_length=1,
-            max_length=1500,
+            max_length=todo.MAX_LEN,
         )
 
         super().__init__(title="Editing a Todo", timeout=300)

@@ -30,6 +30,9 @@ MAX_TODOS = 100
 
 
 class TodoItem:
+    # Max number of characters in a todo's content
+    MAX_LEN = 1500
+
     __slots__ = ("user_id", "content", "todo_id", "created_at")
 
     def __init__(
@@ -104,16 +107,11 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     async def todo_add(
         self,
         interaction: discord.Interaction,
-        content: str,
+        content: app_commands.Range[str, 1, TodoItem.MAX_LEN],
     ):
         """Add a new todo"""
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
             raise ValueError("You've used up all your todo slots!")
-
-        if len(content) > 1500:
-            raise ValueError(
-                "Todo content may be no more than 1500 characters long"
-            )
 
         data = {
             "user_id": interaction.user.id,
@@ -143,13 +141,13 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="remove")
     @app_commands.rename(index="todo")
-    @app_commands.describe(index="A todo index to remove")
+    @app_commands.describe(index="A todo to remove")
     async def todo_remove(
         self,
         interaction: discord.Interaction,
         index: str,
     ):
-        """Remove a todo by index"""
+        """Remove a todo"""
         if is_clear_all(index):
             todos = self.todos[interaction.user.id].copy()
             self.todos[interaction.user.id].clear()
@@ -188,9 +186,9 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="view")
     @app_commands.rename(index="todo")
-    @app_commands.describe(index="A todo index to view")
+    @app_commands.describe(index="A todo to view")
     async def todo_view(self, interaction: discord.Interaction, index: int):
-        """View a todo by its listed index"""
+        """View a todo"""
         try:
             todo = self.todos[interaction.user.id][index - 1]
         except IndexError:
@@ -216,7 +214,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="edit")
     @app_commands.rename(index="todo")
-    @app_commands.describe(index="A todo index to edit")
+    @app_commands.describe(index="A todo to edit")
     @no_defer
     async def todo_edit(self, interaction: discord.Interaction, index: int):
         """Edit the content of a todo"""

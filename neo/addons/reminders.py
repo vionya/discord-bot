@@ -391,9 +391,9 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @app_commands.command(name="view")
     @app_commands.rename(index="reminder")
-    @app_commands.describe(index="A reminder index to view")
+    @app_commands.describe(index="A reminder to view")
     async def remind_view(self, interaction: discord.Interaction, index: int):
-        """View the full content of a reminder, accessed by index"""
+        """View the full content of a reminder"""
         try:
             reminder = self.reminders[interaction.user.id][index - 1]
         except IndexError:
@@ -424,10 +424,10 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
     @app_commands.command(name="edit")
     @app_commands.rename(index="reminder")
-    @app_commands.describe(index="A reminder index to edit")
+    @app_commands.describe(index="A reminder to edit")
     @no_defer
     async def remind_edit(self, interaction: discord.Interaction, index: int):
-        """Edit the content of a reminder, accessed by index"""
+        """Edit the content of a reminder"""
         try:
             reminder = self.reminders[interaction.user.id][index - 1]
         except IndexError:
