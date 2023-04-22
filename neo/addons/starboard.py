@@ -549,7 +549,7 @@ class StarboardAddon(
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                "Your settings have been updated!"
+                f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
             )
 
     async def set_option(

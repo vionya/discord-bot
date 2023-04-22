@@ -171,7 +171,7 @@ class ServerConfig(
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                f"Setting {SETTINGS_MAPPING[setting]} has been updated!"
+                f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
             )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
@@ -188,7 +188,7 @@ class ServerConfig(
             """
             await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
-                f"Setting {SETTINGS_MAPPING[setting]} has been updated!"
+                f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
             )
 
     @app_commands.command(name="create")

@@ -163,7 +163,7 @@ class Profile(neo.Addon, app_group=True):
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                f"Setting `{SETTINGS_MAPPING[setting]}` has been changed!"
+                f"Setting `{SETTINGS_MAPPING[setting].display_name}` has been changed!"
             )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
@@ -180,7 +180,7 @@ class Profile(neo.Addon, app_group=True):
             """
             await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
-                f"Setting `{SETTINGS_MAPPING[setting]}` has been reset!"
+                f"Setting `{SETTINGS_MAPPING[setting].display_name}` has been reset!"
             )
 
         # @profile_settings_set.autocomplete("setting")
