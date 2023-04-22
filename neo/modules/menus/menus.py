@@ -107,9 +107,11 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         # If the item is an embed, put the page number in the footer
         if isinstance(item, discord.Embed):
-            item.set_footer(
-                text=f"Page {self.current_page + 1}/{len(self.pages)}"
-            )
+            footer_content = f"Page {self.current_page + 1}/{len(self.pages)}"
+            if item.footer:  # if there was already a footer, preserve it
+                footer_content += f" | {item.footer.text}"
+
+            item.set_footer(text=footer_content)
             kwargs["embed"] = item
 
         # If the item is a string, put the page number at the end of the string
