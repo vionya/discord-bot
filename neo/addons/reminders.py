@@ -32,7 +32,7 @@ from neo.tools.time_parse import (
 )
 
 # Maximum number of reminders per user
-MAX_REMINDERS = 15
+MAX_REMINDERS = 100
 # Minimum number of total seconds in a repeating reminder
 REPEATING_MINIMUM_SECONDS = 3600
 
