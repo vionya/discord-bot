@@ -126,7 +126,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
                 user_id,
                 content,
                 todo_id,
-                created_at,
+                created_at
             ) VALUES (
                 $1, $2, $3, $4
             )
