@@ -140,7 +140,7 @@ class Utility(neo.Addon):
     async def google_command_callback(
         self, interaction: discord.Interaction, query: str, image: bool = False
     ):
-        resp = await self.google.search(query, image=image, results=100)
+        resp = await self.google.search(query, image=image, results=50)
 
         embeds = [*map(result_to_embed, resp)]
         if not embeds:
