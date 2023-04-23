@@ -92,7 +92,7 @@ class Utility(neo.Addon):
 
         # These both take a ClientSession, so we wait until ready so we can use the bot's
         self.google = cse.Search(
-            key=self.bot.cfg["bot"]["cse_keys"],
+            keys=self.bot.cfg["bot"]["cse_keys"],
             engine_id=self.bot.cfg["bot"]["cse_engine"],
             session=self.bot.session,
         )
@@ -140,7 +140,7 @@ class Utility(neo.Addon):
     async def google_command_callback(
         self, interaction: discord.Interaction, query: str, image: bool = False
     ):
-        resp = await self.google.search(query, image=image)
+        resp = await self.google.search(query, image=image, results=100)
 
         embeds = [*map(result_to_embed, resp)]
         if not embeds:
