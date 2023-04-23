@@ -82,7 +82,7 @@ class Search:
                     if (
                         error["code"] == 429
                         and error["status"] == "RESOURCE_EXHAUSTED"
-                        and len(available_keys) > 0
+                        and len(available_keys) > 1
                     ):
                         # if so, remove the dead key
                         available_keys.remove(key)
