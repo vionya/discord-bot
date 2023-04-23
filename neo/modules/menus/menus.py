@@ -322,22 +322,27 @@ class DropdownMenuItem(discord.ui.Select):
         # is made
         cur_index = self.menu.page_index
 
-        window: list[discord.SelectOption] = []
         len_left = cur_index
+        len_right = len(self.all_options) - cur_index - 1
 
-        # create a list of options centered around the current index
-        for i in [
-            *range(cur_index - min(len_left, 12), cur_index),
-            cur_index,
-            *range(
-                cur_index + 1, cur_index + (len(self.all_options) - len_left)
-            ),
-        ]:
-            window.append(self.all_options[i])
-            if len(window) == 25:
-                break
-
-        self.options = window
+        # current index minus the minimum of the number of elements on the left
+        # and (24 - the number of elements on the right if there are less than
+        # 12 on the right, otherwise 12)
+        slice_start = cur_index - min(
+            len_left, 25 - len_right if len_right < 12 else 12
+        )
+        # current index plus 1 plus the minimum of the number of elements on
+        # the right and (24 - the number of elements on the left if there are
+        # less than 12 on the left, otherwise 12)
+        slice_end = (
+            cur_index
+            + 1
+            + min(len_right, 25 - len_left if len_left < 12 else 12)
+        )
+        self.options = (
+            self.all_options[slice_start:cur_index]
+            + self.all_options[cur_index + 1 : slice_end]
+        )
 
 
 class DropdownMenu(ButtonsMenu, Generic[T]):
