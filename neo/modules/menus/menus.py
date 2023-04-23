@@ -358,15 +358,18 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
     ):
         options: list[discord.SelectOption] = []
         for index, page in enumerate(pages.items, 1):
-            label = f"Page {index}"
+            page_num = f"Pg {index}"
+            label = page_num
             description = None
 
             if isinstance(pages, EmbedPages):
                 page = cast(discord.Embed, page)
                 if embed_auto_label:
-                    label = shorten(page.title or f"Page {index}", 100)
+                    label = shorten(page.title or "…", 100)
                 if embed_auto_desc:
-                    description = shorten(page.description or "", 100)
+                    description = page_num + shorten(
+                        " - " + (page.description or "…"), 100 - len(page_num)
+                    )
 
             options.append(
                 discord.SelectOption(
