@@ -40,12 +40,12 @@ class BaseMenu(Generic[T], discord.ui.View):
     __slots__ = (
         "pages",
         "message",
-        "current_page",
         "running",
         "update_lock",
         "origin",
         "bot",
         "author",
+        "_current_page",
     )
 
     def __init__(self, pages: T):
@@ -54,7 +54,7 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         self.message = None
         self.origin: Optional[NeoContext | discord.Interaction] = None
-        self.current_page: int = 0
+        self._page_index: int = 0
         self.running = False
 
         self.update_lock = asyncio.Lock()
@@ -74,12 +74,30 @@ class BaseMenu(Generic[T], discord.ui.View):
         self,
         origin: NeoContext | discord.Interaction,
         *,
-        as_reply=False,
+        as_reply=True,
         force_ephemeral=False,
     ):
+        """
+        Start this menu at the given origin point
+
+        Origin can be either a `discord.ext.commands.Context`, or a
+        `discord.Interaction`. Both origins will generate similarly behaving
+        menus.
+
+        :param origin: The location to send the menu to
+        :type origin: ``NeoContext | discord.Interaction``
+
+        :param as_reply: Whether the menu's message should reply to the message
+        that the context refers to (only applies to `NeoContext` origins)
+        :type as_reply: ``bool``
+
+        :param force_ephemeral: Whether menus should be sent ephemerally,
+        regardless of user settings (only applies to `Interaction` origins)
+        :type force_ephemeral: ``bool``
+        """
         self.origin = origin
 
-        send_kwargs = self._get_msg_kwargs(self.pages[0])
+        send_kwargs = self._get_kwargs(self.pages[0])
 
         if isinstance(self.origin, NeoContext):
             # In text commands, menus may optionally be sent as replies
@@ -88,54 +106,86 @@ class BaseMenu(Generic[T], discord.ui.View):
                     message_id=self.origin.message.id,
                     channel_id=self.origin.channel.id,
                 )
-            self.message = await self.origin.send(view=self, **send_kwargs)
+            self.message = await self.origin.send(**send_kwargs)
             self.bot = self.origin.bot
             self.author = self.origin.author
 
         else:
             if force_ephemeral is True:
                 send_kwargs.update(ephemeral=True)
-            await self.origin.response.send_message(view=self, **send_kwargs)
+            await self.origin.response.send_message(**send_kwargs)
             self.bot = self.origin.client  # type: ignore
             self.author = self.origin.user
 
         self.running = True
 
     @final
-    def _get_msg_kwargs(self, item) -> dict[str, Any]:
-        kwargs = {}
+    def _get_kwargs(self, item: str | discord.Embed) -> dict[str, Any]:
+        """
+        Generates kwargs to update the displayed menu
+
+        Returns a dict containing the menu itself as the view, and an updated
+        embed or content.
+
+        :param item: The item to update the displayed menu with
+        :type item: ``str | discord.Embed``
+
+        :rtype: ``dict[str, Any]``
+        """
+        kwargs: dict[str, Any] = {"view": self}
 
         # If the item is an embed, put the page number in the footer
         if isinstance(item, discord.Embed):
-            footer_content = f"Page {self.current_page + 1}/{len(self.pages)}"
-            if item.footer:  # if there was already a footer, preserve it
-                footer_content += f" | {item.footer.text}"
-
-            item.set_footer(text=footer_content)
+            item.set_footer(
+                text=f"Page {self.page_index + 1}/{len(self.pages)}"
+            )
             kwargs["embed"] = item
 
         # If the item is a string, put the page number at the end of the string
         elif isinstance(item, str):
-            item += f"\nPage {self.current_page + 1}/{len(self.pages)}"
+            item += f"\nPage {self.page_index + 1}/{len(self.pages)}"
             kwargs["content"] = item
         return kwargs
 
-    @final
-    def get_current_page(self, index):
-        # Logic for when menu is at the first/last page, allows
-        # pages to "wrap around"
+    @property
+    def page_index(self):
+        return self._page_index
+
+    @page_index.setter
+    def page_index(self, index: int):
+        # Logic for when menu is at the first/last page, allows pages to
+        # "wrap around"
         if index < 0:
             index = len(self.pages) - 1
-        if index > (len(self.pages) - 1):
+        elif index > len(self.pages) - 1:
             index = 0
-        self.current_page = index
-        return self.pages[index]
+        self._page_index = index
+
+    @property
+    def current_page(self):
+        return self.pages[self.page_index]
+
+    @final
+    async def update_page(self, interaction: discord.Interaction):
+        """
+        Edits the interacted message with the updated contents of the menu
+
+        :param interaction: The interaction to respond to
+        :type interaction: ``discord.Interaction``
+        """
+        await self.on_page_update()
+        kwargs = self._get_kwargs(self.current_page)
+
+        await interaction.response.edit_message(**kwargs)
 
     @final
     async def refresh_page(self):
+        """
+        Refreshes the displayed content with the value of the internal page
+        """
         # Edits the current page with the contents of the
         # stored pages object
-        kwargs = self._get_msg_kwargs(self.pages[self.current_page])
+        kwargs = self._get_kwargs(self.current_page)
 
         # Interactions need to be handled separately
         if isinstance(self.origin, discord.Interaction):
@@ -214,15 +264,26 @@ class BaseMenu(Generic[T], discord.ui.View):
         else:
             await self.close(interaction=self.origin)
 
+    async def on_page_update(self):
+        """
+        Define behavior for when a page is updated by user interaction
+
+        This method is called as soon as any menu element makes a call to
+        `self.update_page`. It is useful for allowing other menu elements to
+        potentially update their state based on the updated state of the menu.
+
+        Intended to be overridden and implemented by subclasses
+        """
+        ...
+
 
 class ButtonsMenu(BaseMenu, Generic[T]):
     @discord.ui.button(label="ᐊ", row=4)
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        current_page = self.get_current_page(self.current_page - 1)
-        send_kwargs = self._get_msg_kwargs(current_page)
-        await interaction.response.edit_message(**send_kwargs)
+        self.page_index -= 1
+        await self.update_page(interaction)
 
     @discord.ui.button(label="⨉", row=4)
     async def close_button(
@@ -235,24 +296,53 @@ class ButtonsMenu(BaseMenu, Generic[T]):
     async def next_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        current_page = self.get_current_page(self.current_page + 1)
-        send_kwargs = self._get_msg_kwargs(current_page)
-        await interaction.response.edit_message(**send_kwargs)
+        self.page_index += 1
+        await self.update_page(interaction)
 
 
 class DropdownMenuItem(discord.ui.Select):
-    def __init__(self, menu: BaseMenu, **kwargs):
+    def __init__(
+        self, menu: BaseMenu, *, options: list[discord.SelectOption], **kwargs
+    ):
         kwargs["placeholder"] = "Choose a page"
+
+        self.all_options = options
+        kwargs.update(options=options[:25])
+
         super().__init__(**kwargs)
         self.menu = menu
 
     async def callback(self, interaction: discord.Interaction):
-        current_page = self.menu.get_current_page(int(self.values[0]))
-        send_kwargs = self.menu._get_msg_kwargs(current_page)
-        await interaction.response.edit_message(**send_kwargs)
+        self.menu.page_index = int(self.values[0])
+        self.update_options_window()
+        await self.menu.update_page(interaction)
+
+    def update_options_window(self):
+        # guaranteed to exist because this method only called once a selection
+        # is made
+        cur_index = self.menu.page_index
+
+        window: list[discord.SelectOption] = []
+        len_left = cur_index
+
+        # create a list of options centered around the current index
+        for i in [
+            *range(cur_index - min(len_left, 12), cur_index),
+            cur_index,
+            *range(
+                cur_index + 1, cur_index + (len(self.all_options) - len_left)
+            ),
+        ]:
+            window.append(self.all_options[i])
+            if len(window) == 25:
+                break
+
+        self.options = window
 
 
 class DropdownMenu(ButtonsMenu, Generic[T]):
+    select: DropdownMenuItem
+
     @classmethod
     def from_pages(
         cls,
@@ -283,12 +373,12 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
 
     @classmethod
     def from_options(cls, *, options: list[discord.SelectOption], pages: Pages):
-        if len(options) > 25:
-            raise ValueError("Cannot have more than 25 items")
+        if not all(isinstance(option.value, int) for option in options):
+            raise TypeError(f"{cls.__name__} options must have `int` values")
         instance = cls(pages)
 
-        select = DropdownMenuItem(instance, options=options, row=0)
-        instance.add_item(select)
+        instance.select = DropdownMenuItem(instance, options=options, row=0)
+        instance.add_item(instance.select)
 
         return instance
 
@@ -298,3 +388,7 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
         raise NotImplementedError
 
     from_iterable = from_embeds
+
+    async def on_page_update(self):
+        # update the select menu to appear around the current page
+        self.select.update_options_window()

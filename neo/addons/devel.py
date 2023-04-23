@@ -95,7 +95,7 @@ class Devel(neo.Addon):
 
         except BaseException as e:  # Ensure that all errors in exec are handled here
             menu.pages.append("\n{}".format(format_exception(e)))
-            await menu.start(ctx, as_reply=True)
+            await menu.start(ctx)
 
     @commands.command(name="sql")
     async def dev_sql(

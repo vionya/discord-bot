@@ -32,7 +32,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
         if not self.view:
             return
 
-        index = self.view.current_page
+        index = self.view.page_index
         current_setting = [*self.settings.values()][index]
 
         outer_self = self
