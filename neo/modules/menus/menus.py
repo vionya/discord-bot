@@ -373,8 +373,10 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
 
     @classmethod
     def from_options(cls, *, options: list[discord.SelectOption], pages: Pages):
-        if not all(isinstance(option.value, int) for option in options):
-            raise TypeError(f"{cls.__name__} options must have `int` values")
+        if not all(option.value.isdecimal() for option in options):
+            raise TypeError(
+                f"{cls.__name__} options must all have integer values"
+            )
         instance = cls(pages)
 
         instance.select = DropdownMenuItem(instance, options=options, row=0)
