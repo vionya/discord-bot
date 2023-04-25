@@ -5,25 +5,29 @@ from __future__ import annotations
 import asyncio
 import random
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from sys import version as py_version
-from typing import Optional
+from typing import Literal, Optional
 
 import discord
 from discord import app_commands
+from discord.utils import format_dt
 from googletrans import LANGUAGES, Translator
 
 import neo
 from neo.classes.app_commands import get_ephemeral
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
-from neo.tools import parse_ids, shorten
+from neo.tools import parse_ids, shorten, try_or_none
 from neo.tools.formatters import Table
+from neo.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
     InfoButtons,
     SwappableEmbedButton,
     definitions_to_embed,
     full_timestamp,
+    get_browser_links,
     result_to_embed,
     translate,
 )
@@ -40,16 +44,6 @@ ASSOCIATION_FILTER = [
     ("Booster-Exclusive Role", discord.Role.is_premium_subscriber),
     ("Managed by Integration", discord.Role.is_integration),
 ]
-
-
-def get_browser_links(avatar: discord.Asset):
-    formats = ["png", "jpg", "webp"]
-    if avatar.is_animated():
-        formats.append("gif")
-
-    return " • ".join(
-        f"[{fmt}]({avatar.with_format(fmt)})" for fmt in formats  # type: ignore
-    )
 
 
 class Utility(neo.Addon):
@@ -352,15 +346,6 @@ class Utility(neo.Addon):
 
         await interaction.response.send_message(embed=embed, **kwargs)
 
-    # Context menu command added in __init__
-    async def avatar_context_command(
-        self,
-        interaction: discord.Interaction,
-        user: discord.Member | discord.User,
-    ):
-        setattr(interaction.namespace, "private", True)
-        await self.avatar_command.callback(self, interaction, user)  # type: ignore
-
     @app_commands.guild_only()
     @app_commands.command(name="serverinfo")
     async def guild_info_command(self, interaction: discord.Interaction):
@@ -452,6 +437,74 @@ class Utility(neo.Addon):
         await interaction.response.send_message(
             embed=embed, view=self.info_buttons()
         )
+
+    @app_commands.command(name="timestamp")
+    @app_commands.describe(
+        when="The time the timestamp should point to, see /remind set for more",
+        style="The style for format the timestamp with",
+    )
+    async def formatted_timestamp_command(
+        self,
+        interaction: discord.Interaction,
+        when: str,
+        style: Literal[
+            "Short Time",
+            "Long Time",
+            "Short Date",
+            "Long Date",
+            "Short Date/Time",
+            "Long Date/Time",
+            "Relative Time",
+        ] = "Short Date/Time",
+    ):
+        """
+        Create a Discord timestamp from a human-readable input
+
+        See the help documentation for `/remind set` to see how to format the
+        input for `when`
+        """
+        tz = timezone.utc
+        if interaction.user.id in self.bot.profiles:
+            tz = self.bot.profiles[interaction.user.id].timezone or tz
+
+        (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
+            when, tz=tz
+        )
+        target = datetime.now(tz)
+
+        if isinstance(time_data, timedelta):
+            target += time_data
+        else:
+            target = time_data
+
+        match style:
+            case "Short Time":
+                formatted = format_dt(target, style="t")
+            case "Long Time":
+                formatted = format_dt(target, style="T")
+            case "Short Date":
+                formatted = format_dt(target, style="d")
+            case "Long Date":
+                formatted = format_dt(target, style="D")
+            case "Long Date/Time":
+                formatted = format_dt(target, style="F")
+            case "Relative Time":
+                formatted = format_dt(target, style="R")
+            case _:  # Short Date/Time is the default
+                formatted = format_dt(target, style="f")
+
+        await interaction.response.send_message(content=formatted)
+
+    # CONTEXT MENU COMMANDS #
+
+    # Context menu command added in __init__
+    async def avatar_context_command(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | discord.User,
+    ):
+        setattr(interaction.namespace, "private", True)
+        await self.avatar_command.callback(self, interaction, user)  # type: ignore
 
     async def banner_context_command(
         self,

@@ -100,6 +100,16 @@ def full_timestamp(timestamp: float) -> str:
     return date + " " + time
 
 
+def get_browser_links(avatar: discord.Asset):
+    formats = ["png", "jpg", "webp"]
+    if avatar.is_animated():
+        formats.append("gif")
+
+    return " • ".join(
+        f"[{fmt}]({avatar.with_format(fmt)})" for fmt in formats  # type: ignore
+    )
+
+
 class InviteDropdown(discord.ui.Select["InviteMenu"]):
     def __init__(self, *args, **kwargs):
         kwargs["custom_id"] = "neo phoenix:invite dropdown menu"
