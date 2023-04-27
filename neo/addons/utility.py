@@ -279,9 +279,9 @@ class Utility(neo.Addon):
         data = Counter(random.choice(options) for _ in range(1000))
 
         table = Table()
-        table.init_columns("Item", "Preference")
+        table.init_columns("Item", "%")
         for item, hits in data.most_common():
-            table.add_row(shorten(item, 13), f"{(hits / 1000) * 100:.1f}%")
+            table.add_row(shorten(item, 19), f"{(hits / 1000) * 100:.1f}%")
         rendered = table.display()
 
         embed = (
