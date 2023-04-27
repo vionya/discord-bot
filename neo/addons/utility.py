@@ -245,7 +245,7 @@ class Utility(neo.Addon):
                 f"**{m.name}** {times} messages" for m, times in deleted.items()
             ),
         )
-        await interaction.response.send_message(embeds=[embed])
+        await interaction.response.send_message(embeds=[embed], ephemeral=True)
 
     @app_commands.command(name="choose")
     @app_commands.rename(
