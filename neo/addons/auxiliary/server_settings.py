@@ -10,21 +10,25 @@ from typing import TYPE_CHECKING, Any
 import discord
 
 import neo
+from neo.classes.containers import Setting, SettingsMapping
+from neo.classes.transformers import bool_transformer
 
 if TYPE_CHECKING:
     from ..server_settings import ServerConfig
 
+SETTINGS_MAPPING = SettingsMapping(
+    Setting(
+        "starboard",
+        transformer=bool_transformer,
+        name_override="Enable Starboard",
+    ),
+    Setting("allow_highlights", transformer=bool_transformer),
+)
+
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
-    def __init__(
-        self,
-        *,
-        settings: neo.containers.SettingsMapping,
-        addon: ServerConfig,
-        **kwargs,
-    ):
+    def __init__(self, *, addon: ServerConfig, **kwargs):
         self.addon = addon
-        self.settings = settings
 
         super().__init__(**kwargs)
 
@@ -33,7 +37,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             return
 
         index = self.view.page_index
-        current_setting = [*self.settings.values()][index]
+        current_setting = [*SETTINGS_MAPPING.values()][index]
 
         outer_self = self
 
@@ -65,7 +69,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                         "Your settings have been updated!", ephemeral=True
                     )
 
-                    description = outer_self.settings[current_setting.key][
+                    description = SETTINGS_MAPPING[current_setting.key][
                         "description"
                     ].format(
                         getattr(
@@ -85,15 +89,8 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
 
 
 class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
-    def __init__(
-        self,
-        *,
-        settings: neo.containers.SettingsMapping,
-        addon: ServerConfig,
-        **kwargs,
-    ):
+    def __init__(self, *, addon: ServerConfig, **kwargs):
         self.addon = addon
-        self.settings = settings
 
         super().__init__(**kwargs)
 
@@ -102,7 +99,7 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             return
 
         index = self.view.page_index
-        current_setting = [*self.settings.values()][index]
+        current_setting = [*SETTINGS_MAPPING.values()][index]
 
         await self.addon.reset_option(interaction, current_setting.key)
 
@@ -110,7 +107,9 @@ class ResetSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             "Your settings have been updated!", ephemeral=True
         )
 
-        description = self.settings[current_setting.key]["description"].format(
+        description = SETTINGS_MAPPING[current_setting.key][
+            "description"
+        ].format(
             getattr(
                 self.addon.bot.configs[interaction.guild.id],
                 current_setting.key,

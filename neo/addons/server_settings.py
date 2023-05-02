@@ -9,8 +9,7 @@ import discord
 from discord import app_commands
 
 import neo
-from neo.classes.containers import Setting, SettingsMapping
-from neo.classes.transformers import bool_transformer, command_transformer
+from neo.classes.transformers import command_transformer
 from neo.modules import ButtonsMenu
 from neo.tools import (
     add_setting_autocomplete,
@@ -23,15 +22,10 @@ from neo.tools import (
 from neo.tools.checks import owner_or_admin_predicate
 from neo.types.commands import AnyCommand
 
-from .auxiliary.server_settings import ChangeSettingButton, ResetSettingButton
-
-SETTINGS_MAPPING = SettingsMapping(
-    Setting(
-        "starboard",
-        transformer=bool_transformer,
-        name_override="Enable Starboard",
-    ),
-    Setting("allow_highlights", transformer=bool_transformer),
+from .auxiliary.server_settings import (
+    SETTINGS_MAPPING,
+    ChangeSettingButton,
+    ResetSettingButton,
 )
 
 
@@ -127,7 +121,6 @@ class ServerConfig(
             menu.add_item(
                 ChangeSettingButton(
                     addon=self.addon,
-                    settings=SETTINGS_MAPPING,
                     label="Change this setting",
                     style=discord.ButtonStyle.primary,
                     row=0,
@@ -136,7 +129,6 @@ class ServerConfig(
             menu.add_item(
                 ResetSettingButton(
                     addon=self.addon,
-                    settings=SETTINGS_MAPPING,
                     label="Reset this setting",
                     style=discord.ButtonStyle.danger,
                     row=0,

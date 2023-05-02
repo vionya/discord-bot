@@ -10,12 +10,6 @@ import discord
 from discord import app_commands
 
 import neo
-from neo.classes.containers import Setting, SettingsMapping
-from neo.classes.transformers import (
-    bool_transformer,
-    timeout_transformer,
-    timezone_transformer,
-)
 from neo.modules import ButtonsMenu
 from neo.tools import (
     add_setting_autocomplete,
@@ -26,26 +20,10 @@ from neo.tools import (
 )
 from neo.tools.checks import is_registered_profile_predicate
 
-from .auxiliary.profile import ChangeSettingButton, ResetSettingButton
-
-SETTINGS_MAPPING = SettingsMapping(
-    Setting("receive_highlights", transformer=bool_transformer),
-    Setting("timezone", transformer=timezone_transformer),
-    Setting(
-        "hl_timeout",
-        transformer=timeout_transformer,
-        name_override="Highlight Timeout",
-    ),
-    Setting(
-        "default_ephemeral",
-        transformer=bool_transformer,
-        name_override="Private By Default",
-    ),
-    Setting(
-        "silence_hl",
-        transformer=bool_transformer,
-        name_override="Deliver Highlights Silently",
-    ),
+from .auxiliary.profile import (
+    SETTINGS_MAPPING,
+    ChangeSettingButton,
+    ResetSettingButton,
 )
 
 
@@ -123,7 +101,6 @@ class Profile(neo.Addon, app_group=True):
             menu.add_item(
                 ChangeSettingButton(
                     addon=self.addon,
-                    settings=SETTINGS_MAPPING,
                     label="Change this setting",
                     style=discord.ButtonStyle.primary,
                     row=0,
@@ -132,7 +109,6 @@ class Profile(neo.Addon, app_group=True):
             menu.add_item(
                 ResetSettingButton(
                     addon=self.addon,
-                    settings=SETTINGS_MAPPING,
                     label="Reset this setting",
                     style=discord.ButtonStyle.danger,
                     row=0,

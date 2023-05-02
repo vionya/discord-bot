@@ -10,21 +10,41 @@ from typing import TYPE_CHECKING, Any
 import discord
 
 import neo
+from neo.classes.containers import Setting, SettingsMapping
+from neo.classes.transformers import (
+    max_days_transformer,
+    text_channel_transformer,
+)
 
 if TYPE_CHECKING:
     from ..starboard import StarboardAddon
 
+SETTINGS_MAPPING = SettingsMapping(
+    Setting(
+        "channel",
+        transformer=text_channel_transformer,
+        name_override="Starboard Channel",
+        autocomplete_func=lambda interaction, _: [
+            (f"#{channel}", channel.mention)
+            for channel in interaction.guild.text_channels  # type: ignore  # guild_only
+        ],
+    ),
+    Setting(
+        "threshold", transformer=int, name_override="Minimum Stars Required"
+    ),
+    Setting("format", transformer=str, name_override="Starred Message Format"),
+    Setting("max_days", transformer=max_days_transformer),
+    Setting(
+        "emoji",
+        transformer=discord.PartialEmoji.from_str,
+        name_override="Star Emoji",
+    ),
+)
+
 
 class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
-    def __init__(
-        self,
-        *,
-        settings: neo.containers.SettingsMapping,
-        addon: StarboardAddon,
-        **kwargs,
-    ):
+    def __init__(self, *, addon: StarboardAddon, **kwargs):
         self.addon = addon
-        self.settings = settings
 
         super().__init__(**kwargs)
 
@@ -33,7 +53,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
             return
 
         index = self.view.page_index
-        current_setting = [*self.settings.values()][index]
+        current_setting = [*SETTINGS_MAPPING.values()][index]
 
         outer_self = self
 
@@ -65,7 +85,7 @@ class ChangeSettingButton(discord.ui.Button[neo.ButtonsMenu[neo.EmbedPages]]):
                         "Your settings have been updated!", ephemeral=True
                     )
 
-                    description = outer_self.settings[current_setting.key][
+                    description = SETTINGS_MAPPING[current_setting.key][
                         "description"
                     ].format(
                         getattr(

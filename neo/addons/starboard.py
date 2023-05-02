@@ -10,11 +10,7 @@ import discord
 from discord import app_commands
 
 import neo
-from neo.classes.containers import Setting, SettingsMapping, TimedCache
-from neo.classes.transformers import (
-    max_days_transformer,
-    text_channel_transformer,
-)
+from neo.classes.containers import TimedCache
 from neo.modules import ButtonsMenu
 from neo.tools import (
     add_setting_autocomplete,
@@ -24,32 +20,10 @@ from neo.tools import (
 )
 from neo.tools.checks import is_valid_starboard_env
 
-from .auxiliary.starboard import ChangeSettingButton
+from .auxiliary.starboard import SETTINGS_MAPPING, ChangeSettingButton
 
 if TYPE_CHECKING:
     from asyncpg import Pool
-
-SETTINGS_MAPPING = SettingsMapping(
-    Setting(
-        "channel",
-        transformer=text_channel_transformer,
-        name_override="Starboard Channel",
-        autocomplete_func=lambda interaction, _: [
-            (f"#{channel}", channel.mention)
-            for channel in interaction.guild.text_channels  # type: ignore  # guild_only
-        ],
-    ),
-    Setting(
-        "threshold", transformer=int, name_override="Minimum Stars Required"
-    ),
-    Setting("format", transformer=str, name_override="Starred Message Format"),
-    Setting("max_days", transformer=max_days_transformer),
-    Setting(
-        "emoji",
-        transformer=discord.PartialEmoji.from_str,
-        name_override="Star Emoji",
-    ),
-)
 
 
 class Star:
@@ -518,10 +492,9 @@ class StarboardAddon(
             menu.add_item(
                 ChangeSettingButton(
                     addon=self.addon,
-                    settings=SETTINGS_MAPPING,
                     label="Change this setting",
                     style=discord.ButtonStyle.primary,
-                    row=0,
+                    row=0
                 )
             )
 
