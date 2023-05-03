@@ -140,21 +140,32 @@ def parse_absolute(
             if raw_parsed_dt:
                 parsed_datetime = raw_parsed_dt.replace(tzinfo=tz)
 
-                # N.B. If no year is provided in the parsed timestamp, it will be
-                # set to 1900, so this bit of code resolves the year to the current
-                # year when it isn't given
-                if parsed_datetime.year < now.year:
+                # N.B. This happens when the %y directive is not in the chosen
+                # format string. In this case, we want to update the year to be
+                # the current year, since the default is 1900. Otherwise, a
+                # year was provided, so we don't want to change it
+                if "%y" not in format.lower():
                     parsed_datetime = parsed_datetime.replace(year=now.year)
 
-                # If after resolving the year the timestamp is still before now,
-                # it's assumed to be a time in the current day, therefore the
-                # datetime is updated to be a copy of now, with the hour and
-                # minute adjusted
-                if parsed_datetime < now:
-                    parsed_datetime = now.replace(
-                        hour=parsed_datetime.hour,
-                        minute=parsed_datetime.minute,
-                    )
+                # N.B. This happens when the %b %d directive is not in the
+                # chosen format string. In this case, we want to update the
+                # date to be the current day, since the default is the first
+                # day of the year. Otherwise, a date was provided, so we don't
+                # want to change it.
+                if "%b %d" not in format.lower():
+                    # We want to update the timestamp so that it's during the
+                    # current day, with only the hour and minute replaced.
+                    if parsed_datetime < now:
+                        parsed_datetime = now.replace(
+                            hour=parsed_datetime.hour,
+                            minute=parsed_datetime.minute,
+                        )
+
+                    # Then we take another pass. If the datetime is still before
+                    # the current time, we want to bump it up by a day
+                    if parsed_datetime < now:
+                        parsed_datetime += timedelta(days=1)
+
                 break
 
         if parsed_datetime is not None:  # We got a hit
@@ -163,10 +174,6 @@ def parse_absolute(
 
     else:
         raise ValueError("An invalid date format was provided.")
-
-    # If the parsed time is still earlier than now, push it forward by a day
-    if parsed_datetime < now:
-        parsed_datetime += timedelta(days=1)
 
     return parsed_datetime.replace(second=0), " ".join(
         string.split(" ")[endpoint:]
