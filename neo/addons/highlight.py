@@ -45,7 +45,7 @@ CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
 
 def format_hl_context(message: discord.Message, is_trigger=False):
     fmt = (
-        "[{0} **{1.author.display_name}**]({1.jump_url}) {1.content}"
+        "**{0} [{1.author.display_name}]({1.jump_url})** {1.content}"
         if is_trigger
         else "{0} **{1.author.display_name}** {1.content}"
     )
