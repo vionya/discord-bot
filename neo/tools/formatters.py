@@ -177,9 +177,12 @@ class NeoLoggingFormatter(Formatter):
 def full_timestamp(timestamp: float) -> str:
     """
     Returns a detailed Discord timestamp string
+
     Timestamps are in the form "<t:xxx:d> <t:xxx:T>"
+
     :param timestamp: The timestamp to convert to string
     :type timestamp: ``float``
+
     :return: The Discord-formatted timestamp string
     :rtype: ``str``
     """
