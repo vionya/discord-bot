@@ -19,14 +19,13 @@ import neo
 from neo.classes.app_commands import get_ephemeral
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
 from neo.tools import parse_ids, shorten, try_or_none
-from neo.tools.formatters import Table
+from neo.tools.formatters import Table, full_timestamp
 from neo.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
     InfoButtons,
     SwappableEmbedButton,
     definitions_to_embed,
-    full_timestamp,
     get_browser_links,
     result_to_embed,
     translate,

@@ -83,23 +83,6 @@ async def translate(translator, *args, **kwargs):  # Lazy async wrapper
     return await asyncio.to_thread(do_translate, translator, *args, **kwargs)
 
 
-def full_timestamp(timestamp: float) -> str:
-    """
-    Returns a detailed Discord timestamp string
-
-    Timestamps are in the form "<t:xxx:d> <t:xxx:T>"
-
-    :param timestamp: The timestamp to convert to string
-    :type timestamp: ``float``
-
-    :return: The Discord-formatted timestamp string
-    :rtype: ``str``
-    """
-    date = f"<t:{timestamp:.0f}:d>"
-    time = f"<t:{timestamp:.0f}:T>"
-    return date + " " + time
-
-
 def get_browser_links(avatar: discord.Asset):
     formats = ["png", "jpg", "webp"]
     if avatar.is_animated():

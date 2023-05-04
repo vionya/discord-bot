@@ -22,13 +22,36 @@ def format_exception(exc: BaseException | OptExcInfo) -> str:
 
 
 def shorten(text: str, width: int) -> str:
+    """
+    Shorten a string `text` to length `width`
+
+    If a string's length is <= `width`, it is returned as-is. Otherwise, the
+    string is shortened to length `width - 1` and an ellipsis ("…") is appended.
+
+    :param text: The text content to shorten
+    :type text: ``str``
+
+    :param width: The maximum length of the shortened text
+    :type width: ``int``
+
+    :rtype: ``str``
+    """
     if len(text) > width:
         text = text[: width - 1] + "…"
     return text
 
 
 def humanize_snake_case(text: str) -> str:
-    """Transform a snake_case variable name to a human-friendly representation"""
+    """
+    Transform a snake_case variable name to a human-friendly representation
+
+    Example: given "snake_case", this function returns "Snake Case".
+
+    :param text: The snake-cased text to convert
+    :type text: ``str``
+
+    :rtype: ``str``
+    """
     return text.replace("_", " ").title()
 
 
@@ -149,3 +172,17 @@ class NeoLoggingFormatter(Formatter):
         record.name = Color.Purple(record.name)
         record.levelname = self.COLORS[record.levelname](record.levelname)
         return super().format(record)
+
+
+def full_timestamp(timestamp: float) -> str:
+    """
+    Returns a detailed Discord timestamp string
+    Timestamps are in the form "<t:xxx:d> <t:xxx:T>"
+    :param timestamp: The timestamp to convert to string
+    :type timestamp: ``float``
+    :return: The Discord-formatted timestamp string
+    :rtype: ``str``
+    """
+    date = f"<t:{timestamp:.0f}:d>"
+    time = f"<t:{timestamp:.0f}:T>"
+    return date + " " + time
