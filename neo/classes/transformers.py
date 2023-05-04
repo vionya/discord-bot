@@ -92,7 +92,7 @@ def mention_transformer(mention: str) -> int:
     return int(match[1])
 
 
-@wrap_transformer([str(i) for i in range(1, 6)])
+@wrap_transformer(("1", "2", "3", "4", "5"))
 def timeout_transformer(provided_timeout: str) -> int:
     if not provided_timeout.isnumeric():
         raise ValueError("`timeout` must be a number.")
