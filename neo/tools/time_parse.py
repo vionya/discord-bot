@@ -58,15 +58,14 @@ def humanize_timedelta(delta: timedelta) -> str:
     :return: A human-readable representation of the provided delta
     :rtype: ``str``
     """
-    return ", ".join(
-        (
-            f"{delta.days // 365} years",
-            f"{delta.days % 365} days",
-            f"{delta.seconds // 3600} hours",
-            f"{delta.seconds % 3600 // 60} minutes",
-            f"{delta.seconds % 3600 % 60} seconds",
-        )
+    fmt_pairs = (
+        (delta.days // 365, "years"),
+        (delta.days % 365, "days"),
+        (delta.seconds // 3600, "hours"),
+        (delta.seconds % 3600 // 60, "minutes"),
+        (delta.seconds % 3600 % 60, "seconds"),
     )
+    return ", ".join(f"{p[0]} {p[1]}" for p in fmt_pairs if p[0] != 0)
 
 
 class TimedeltaWithYears(timedelta):

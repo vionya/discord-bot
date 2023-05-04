@@ -11,7 +11,6 @@ import discord
 from discord import app_commands, utils
 
 import neo
-from neo.addons.auxiliary.reminders import ReminderEditModal, ReminderShowView
 from neo.classes.app_commands import no_defer
 from neo.classes.timer import periodic
 from neo.modules import ButtonsMenu
@@ -20,6 +19,7 @@ from neo.tools import (
     is_clear_all,
     is_valid_index,
     send_confirmation,
+    seq_autocomplete,
     shorten,
     try_or_none,
 )
@@ -31,10 +31,12 @@ from neo.tools.time_parse import (
     parse_relative,
 )
 
+from .auxiliary.reminders import ReminderEditModal, ReminderShowView
+
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
 # Minimum number of total seconds in a repeating reminder
-REPEATING_MINIMUM_SECONDS = 3600
+REPEATING_MINIMUM_SECONDS = 1800
 
 
 class Reminder:
@@ -237,18 +239,20 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     ) -> bool:
         return is_registered_profile_predicate(interaction)
 
+    @seq_autocomplete(("1d", "1w", "1mo", "1y"), param="repeat")
     @app_commands.command(name="set")
     @app_commands.describe(
         when="When the reminder should be delivered. See this command's help entry for more info",
         content="The content to remind yourself about. Can be empty",
-        repeat="Whether this reminder should repeat. See this command's help entry for more info",
+        repeat="When this reminder should repeat. Provided options are suggestions",
     )
+    @app_commands.rename(repeat="repeat-every")
     async def reminder_set(
         self,
         interaction: discord.Interaction,
         when: str,
         content: app_commands.Range[str, 1, Reminder.MAX_LEN] = "…",
-        repeat: bool = False,
+        repeat: str | None = None,
     ):
         """
         Schedule a reminder
@@ -288,19 +292,14 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         **__Repeating Reminders__**
         Repeating reminders let you set a reminder to continuously be[JOIN]
-        delivered with a set interval. Absolute and relative time formats[JOIN]
-        are both supported in repeating reminders.
+        delivered with a set interval. **Only absolute reminders are[JOIN]
+        allowed to be repeating reminders.**
 
-        **Repeating Absolute Reminders:**
-        With repeating absolute reminders, you can select a time on the[JOIN]
-        clock, and you will be reminded each day at this time. The[JOIN]
-        interval can't be changed for absolute repeat reminders.
+        To create a repeating reminder, you can set `when` to any given[JOIN]
+        as normal, and provide a relative offset to `repeat-every`.
 
-        **Repeating Relative Reminders:**
-        With repeating relative reminders, you can set a custom interval[JOIN]
-        for the reminder to repeat in. The `when` option will control how[JOIN]
-        often the reminder repeats itself. Note that the interval must be[JOIN]
-        at least 1 hour.
+        The `repeat-every` offset looks like a relative reminder format[JOIN]
+        which is described above.
         """
         profile = self.bot.profiles[interaction.user.id]
         tz = profile.timezone or timezone.utc
@@ -316,29 +315,31 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         message = "Your reminder will be delivered <t:{0}:R> [<t:{0}>]"
         match time_data:
             case TimedeltaWithYears():
+                if repeat:
+                    raise ValueError("Relative reminders cannot repeat")
+
                 # Delta is provided, epoch time is now since it's the starting
                 # point for the reminder
                 delta = time_data
                 epoch = now
 
-                if repeat:
-                    if delta.total_seconds() < REPEATING_MINIMUM_SECONDS:
-                        raise ValueError("Interval must be at least 1 hour")
-                    message = (
-                        "Your reminder will be delivered every "
-                        f"`{humanize_timedelta(delta)}`"
-                    )
-
             case datetime():
                 if repeat:
-                    # Absolute repeats cycle every day
-                    delta = timedelta(days=1)
+                    # Parse the repetition frequency
+                    delta = parse_relative(repeat)[0]
+                    if delta.total_seconds() < REPEATING_MINIMUM_SECONDS:
+                        raise ValueError(
+                            "Reminders may repeat no more than twice an hour"
+                        )
+
                     # Subtracting the delta from the parsed datetime allows
                     # times from later in the current day to be triggered once
                     epoch = (time_data - delta).replace(second=1, microsecond=0)
                     message = (
-                        "Your reminder will be delivered every day at "
-                        f"<t:{epoch.timestamp():.0f}:t>"
+                        "Your reminder will be delivered every {0}, starting"
+                        " <t:{1:.0f}>"
+                    ).format(
+                        humanize_timedelta(delta), (epoch + delta).timestamp()
                     )
 
                 else:
@@ -354,7 +355,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             reminder_id=uuid4(),
             content=content,
             delta=delta,
-            repeating=repeat,
+            repeating=bool(repeat),
             epoch=epoch,
         )
         await interaction.response.send_message(message.format(timestamp))

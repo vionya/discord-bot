@@ -175,7 +175,7 @@ def add_setting_autocomplete(
 ):
     """
     Decorates a Command and automatically implements a settings-based autocomplete
-    on it.
+    on it
 
     Provided parameter names and a settings mapping, autocomplete callbacks
     are generated to provide options that are valid for each setting.
@@ -276,6 +276,34 @@ def add_setting_autocomplete(
                 ][:25]
 
             command.autocomplete(value_param)(value_param_autocomplete)
+
+        return command
+
+    return inner
+
+
+def seq_autocomplete(options: Sequence[str], *, param: str):
+    """
+    Decorates a Command and adds an autocomplete to it given a list of options
+
+    :param options: The sequence of options to use for autocomplete
+    :type options: ``Sequence[str]``
+
+    :param param: The name of the parameter to add the autocomplete to
+    :type param: ``str``
+    """
+
+    def inner(command: app_commands.Command):
+        async def _autocomplete_func(interaction: Interaction, current: str):
+            matching = filter(
+                lambda option: current.casefold() in option.casefold(), options
+            )
+
+            return [
+                app_commands.Choice(name=opt, value=opt) for opt in matching
+            ][:25]
+
+        command.autocomplete(param)(_autocomplete_func)
 
         return command
 
