@@ -31,7 +31,7 @@ class Pages:
     ----------
 
     :param items: The items to be partitioned and paginated
-    :type items: ``str | list[Any]``
+    :type items: ``str | list``
 
     :param per_page: The number of items to be included on each page, default 1
     :type per_page: ``int``
