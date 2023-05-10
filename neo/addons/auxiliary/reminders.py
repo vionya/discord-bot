@@ -65,6 +65,9 @@ class ReminderShowView(discord.ui.View):
 
         super().__init__()
 
+    async def interaction_check(self, interaction: discord.Interaction):
+        return interaction.user.id == self.reminder.user_id
+
     @discord.ui.button(
         label="Edit Reminder", emoji="✏️", style=discord.ButtonStyle.primary
     )

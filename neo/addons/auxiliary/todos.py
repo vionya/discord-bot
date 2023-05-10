@@ -4,7 +4,6 @@
 An auxiliary module for the `Todos` addon
 """
 from __future__ import annotations
-from operator import attrgetter
 
 from typing import TYPE_CHECKING
 
@@ -63,6 +62,9 @@ class TodoShowView(discord.ui.View):
         super().__init__()
         self.addon = addon
         self.todo = todo
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return interaction.user.id == self.todo.user_id
 
     @discord.ui.button(
         label="Edit Todo", emoji="✏️", style=discord.ButtonStyle.primary
