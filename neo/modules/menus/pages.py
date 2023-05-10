@@ -59,7 +59,7 @@ class Pages:
     ----------
 
     :property pages: Returns the partitioning of all pages
-    :type pages: ``List[Any]``
+    :type pages: ``list``
     """
 
     __slots__ = (
