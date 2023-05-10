@@ -29,31 +29,37 @@ class Pages:
 
     Parameters
     ----------
-    items: str | list[Any]
-        The items to be partitioned and paginated, can be any iterable
-    per_page: int
-        The number of items to be included on each page
-        Default: 1
-    use_embed: bool
-        Whether the items should be returned as a uniform embed
-        Default: False
-    joiner: str
-        The string that will be used to join items on a page
-        Default: "\\n"
-    prefix: str
-        A string that all pages will be prefixed with
-        Default: None
-    suffix: str
-        A string that all pages will be suffixed with
-        Default: None
-    template_embed: discord.Embed
-        An embed that will be used as a template for all pages
-        (if `use_embed`) is `True`.
+
+    :param items: The items to be partitioned and paginated
+    :type items: ``str | list[Any]``
+
+    :param per_page: The number of items to be included on each page, default 1
+    :type per_page: ``int``
+
+    :param use_embed: Whether the items should be displayed in a simple embed,
+    default False
+    :type use_embed: ``bool``
+
+    :param joiner: The string to join items on the page with, default "\\n".
+    :type joiner: ``str``
+
+    :param prefix: A string that all pages will be prefixed with, default None.
+    May only be used when ``items`` is of type ``str``
+    :type prefix: ``str``
+
+    :param suffix: A string that all pages will be suffixed with, default None.
+    May only be used when ``items`` is of type ``str``
+    :type suffix: ``str``
+
+    :param template_embed: An embed that will be used as a template for all
+    pages when `use_embed` is True
+    :type template_embed: ``discord.Embed``
 
     Attributes
     ----------
-    pages
-        Returns all pages
+
+    :property pages: Returns the partitioning of all pages
+    :type pages: ``List[Any]``
     """
 
     __slots__ = (
