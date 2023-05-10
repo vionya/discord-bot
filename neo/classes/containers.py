@@ -282,7 +282,11 @@ VT = TypeVar("VT")
 
 
 class TimedCache(MutableMapping, Generic[KT, VT]):
-    __slots__ = ("__underlying_dict", "__running_store", "loop", "timeout")
+    __slots__ = ("_store", "loop", "timeout")
+
+    loop: asyncio.AbstractEventLoop
+    timeout: int
+    _store: dict[KT, tuple[asyncio.tasks.Task[None], VT]]
 
     def __init__(
         self,
@@ -292,39 +296,36 @@ class TimedCache(MutableMapping, Generic[KT, VT]):
         self.timeout = timeout
         self.loop = loop or asyncio.get_event_loop()
 
-        self.__underlying_dict: dict[KT, VT] = {}
-        self.__running_store: dict[KT, asyncio.tasks.Task[None]] = {}
+        self._store = {}
 
     async def invalidate(self, key: KT):
         await asyncio.sleep(self.timeout)
         del self[key]
 
     def clear(self):
-        for task in self.__running_store.values():
+        for task, _ in self._store.values():
             task.cancel()
-        self.__underlying_dict.clear()
+        self._store.clear()
 
     def __setitem__(self, key: KT, value: VT):
         if key in self:
-            active = self.__running_store.pop(key)
+            active = self._store.pop(key)[0]
             active.cancel()
 
-        self.__underlying_dict[key] = value
-        self.__running_store[key] = self.loop.create_task(self.invalidate(key))
+        self._store[key] = (self.loop.create_task(self.invalidate(key)), value)
 
     def __getitem__(self, key: KT):
-        return self.__underlying_dict[key]
+        return self._store[key][1]
 
     def __delitem__(self, key: KT):
-        self.__running_store[key].cancel()
-        del self.__running_store[key]
-        del self.__underlying_dict[key]
+        self._store[key][0].cancel()
+        del self._store[key]
 
     def __iter__(self):
-        return iter(self.__underlying_dict)
+        return iter(self._store)
 
     def __len__(self):
-        return len(self.__underlying_dict)
+        return len(self._store)
 
 
 class Setting(MutableMapping):
