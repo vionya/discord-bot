@@ -513,7 +513,7 @@ class Utility(neo.Addon):
         user = await self.bot.fetch_user(user.id)
         if not user.banner:
             return await interaction.response.send_message(
-                "User does not have a banner."
+                "User does not have a banner.", ephemeral=True
             )
         embed = (
             neo.Embed()
