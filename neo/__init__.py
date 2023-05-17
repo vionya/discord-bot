@@ -249,7 +249,7 @@ class Neo(commands.Bot):
     ):
         return await super().get_context(message, cls=cls)
 
-    def get_user(self, id, *, as_partial=False):
+    def get_user(self, id: int, *, as_partial=False):
         user = self._connection.get_user(id)
         if as_partial or not user:
             user = partials.PartialUser(state=self._connection, id=id)

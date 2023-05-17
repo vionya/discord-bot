@@ -5,24 +5,27 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from itertools import chain
 from types import MethodType
-from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeGuard, cast
 
 from discord import Interaction, app_commands
 from discord.ext import commands
 from typing_extensions import Self
 
 ReceiverRet = Any | Awaitable[Any]
+P = ParamSpec("P")
 
 
-class Receiver(Protocol):
+class Receiver(Protocol[P]):
     __receiver__: bool
     __event_name__: str
 
-    def __call__(self, addon: Addon, *args: Any, **kwargs: Any) -> ReceiverRet:
+    def __call__(
+        self, addon: Addon, *args: P.args, **kwargs: P.kwargs
+    ) -> ReceiverRet:
         ...
 
 
-def is_receiver(val: Callable[..., ReceiverRet]) -> TypeGuard[Receiver]:
+def is_receiver(val: Callable[P, ReceiverRet]) -> TypeGuard[Receiver[P]]:
     return callable(val) and hasattr(val, "__receiver__")
 
 
@@ -180,7 +183,7 @@ class Addon(commands.Cog, metaclass=AddonMeta):
         parent addon, under the event name `event`
         """
 
-        def inner(func: Callable[..., ReceiverRet]) -> Receiver:
+        def inner(func: Callable[P, ReceiverRet]) -> Receiver[P]:
             receiver = func
             receiver.__receiver__ = True
             receiver.__event_name__ = event
