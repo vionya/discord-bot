@@ -29,6 +29,13 @@ if TYPE_CHECKING:
 
     from neo.classes.containers import SettingsMapping
 
+ID_PATTERN = re.compile(
+    r"(?:(?P<channel_id>[0-9]{15,20})-)?(?P<message_id>[0-9]{15,20})"
+)
+URL_PATTERN = re.compile(
+    r"https?://(?:(?:canary|ptb|www)\.)?discord(?:app)?\.com/channels/(?:[0-9]"
+    r"{15,20})/(?P<channel_id>[0-9]{15,20})/(?P<message_id>[0-9]{15,20})"
+)
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -242,21 +249,52 @@ def recursive_get_command(
     return None
 
 
-def parse_ids(argument: str) -> tuple[int, Optional[int]]:
-    id_regex = re.compile(
-        r"(?:(?P<channel_id>[0-9]{15,20})-)?(?P<message_id>[0-9]{15,20})$"
-    )
-    link_regex = re.compile(
-        r"https?://(?:(ptb|canary|www)\.)?discord(?:app)?\.com/channels/"
-        r"(?P<guild_id>[0-9]{15,20}|@me)"
-        r"/(?P<channel_id>[0-9]{15,20})/(?P<message_id>[0-9]{15,20})/?$"
-    )
-    match = id_regex.match(argument) or link_regex.match(argument)
+@overload
+def parse_id(content: str) -> int:
+    ...
+
+
+@overload
+def parse_id(
+    content: str, *, with_channel: bool = True
+) -> tuple[int, int | None]:
+    ...
+
+
+def parse_id(
+    content: str, *, with_channel: bool = False
+) -> tuple[int, int | None] | int:
+    """
+    Parse a message (and optionally channel) ID from an arbitrary representation
+
+    Attempts to extract an ID from either a raw ID string, or from a message
+    jump URL.
+
+    If `with_channel` is `True`, this function returns a tuple of values, with
+    the first being the message ID, and the second being the channel ID if it
+    can be found.
+
+    :param content: The text to attempt to parse an ID from
+    :type content: ``str``
+
+    :param with_channel: Whether to attempt extracting the channel ID
+    :type with_channel: ``bool``
+
+    :returns: The parsed ID(s)
+    :rtype: ``tuple[int, int | None] | int``
+
+    :raises ValueError: If the provided content has no valid parsings
+    """
+    match = ID_PATTERN.match(content) or URL_PATTERN.match(content)
 
     if not match:
-        raise ValueError(f"Message {argument} not found")
+        raise ValueError("No valid ID was provided")
 
     data = match.groupdict()
-    channel_id = utils._get_as_snowflake(data, "channel_id")
     message_id = int(data["message_id"])
-    return message_id, channel_id
+    if not with_channel:
+        return message_id
+
+    if "channel_id" not in data:
+        return (message_id, None)
+    return (message_id, int(data["channel_id"]))

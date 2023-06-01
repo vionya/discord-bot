@@ -18,7 +18,7 @@ from googletrans import LANGUAGES, Translator
 import neo
 from neo.classes.app_commands import get_ephemeral
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
-from neo.tools import parse_ids, shorten, try_or_none
+from neo.tools import parse_id, shorten, try_or_none
 from neo.tools.formatters import Table, full_timestamp
 from neo.tools.time_parse import parse_absolute, parse_relative
 
@@ -233,8 +233,8 @@ class Utility(neo.Addon):
         purged = await interaction.channel.purge(
             limit=limit,
             check=(lambda m: m.author == user if user else True),
-            before=discord.Object(parse_ids(before)[0]) if before else before_o,
-            after=discord.Object(parse_ids(after)[0]) if after else None,
+            before=discord.Object(parse_id(before)) if before else before_o,
+            after=discord.Object(parse_id(after)) if after else None,
         )
 
         deleted = Counter([m.author for m in purged])

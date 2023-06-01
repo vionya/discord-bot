@@ -16,6 +16,7 @@ from neo.tools import (
     add_setting_autocomplete,
     convert_setting,
     instantiate,
+    parse_id,
     shorten,
 )
 from neo.tools.checks import is_valid_starboard_env
@@ -494,7 +495,7 @@ class StarboardAddon(
                     addon=self.addon,
                     label="Change this setting",
                     style=discord.ButtonStyle.primary,
-                    row=0
+                    row=0,
                 )
             )
 
@@ -561,7 +562,7 @@ class StarboardAddon(
     @app_commands.checks.has_permissions(manage_messages=True)
     @app_commands.describe(
         channel="The channel to ignore, can be a channel mention or ID",
-        message="The message to ignore, must be a message ID",
+        message="The message to ignore, can be a message link or ID",
     )
     async def starboard_ignore(
         self,
@@ -572,21 +573,22 @@ class StarboardAddon(
         """
         Ignores a channel or message
 
-        Messages from the channel/the message are prevented
-        from being sent to starboard
+        Messages from the channel/the message are prevented from being[JOIN]
+        sent to starboard
 
-        Note: If an already starred message is ignored, the
-        star will be deleted, *and* the message will be ignored
+        Note: If an already starred message is ignored, the star will[JOIN]
+        be deleted, *and* the message will be ignored
         """
-        assert interaction.guild and isinstance(
-            interaction.channel, discord.abc.Messageable
+        assert (
+            interaction.guild
+            and isinstance(interaction.channel, discord.abc.Messageable)
+            and isinstance(interaction.channel, discord.abc.GuildChannel)
         )
 
         message_obj = None
-        if message and message.isdigit():
-            message_obj = interaction.channel.get_partial_message(int(message))
-        elif message and not message.isdigit():
-            raise TypeError("`message` must be a message ID")
+        if message:
+            parsed_id = parse_id(message)
+            message_obj = interaction.channel.get_partial_message(parsed_id)
 
         if not any(
             [
@@ -631,7 +633,7 @@ class StarboardAddon(
     @app_commands.describe(
         id="A generic ID to unignore",
         channel="The channel to unignore, can be a channel mention or ID",
-        message="The message to unignore, must be a message ID",
+        message="The message to unignore, can be a message link or ID",
     )
     async def starboard_unignore(
         self,
@@ -641,15 +643,16 @@ class StarboardAddon(
         message: Optional[str] = None,
     ):
         """Unignores a channel or message"""
-        assert interaction.guild and isinstance(
-            interaction.channel, discord.abc.Messageable
+        assert (
+            interaction.guild
+            and isinstance(interaction.channel, discord.abc.Messageable)
+            and isinstance(interaction.channel, discord.abc.GuildChannel)
         )
 
         message_obj = None
-        if message and message.isdigit():
-            message_obj = interaction.channel.get_partial_message(int(message))
-        elif message and not message.isdigit():
-            raise TypeError("`message` must be a message ID")
+        if message:
+            parsed_id = parse_id(message)
+            message_obj = interaction.channel.get_partial_message(parsed_id)
 
         id = id or ""
         if not any(
