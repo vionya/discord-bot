@@ -124,7 +124,8 @@ class Starboard:
 
         async with self.lock:
             embed = neo.Embed(description="").set_author(
-                name=message.author, icon_url=message.author.display_avatar
+                name=f"{message.author.display_name} ({message.author})",
+                icon_url=message.author.display_avatar,
             )
 
             if message.content:
@@ -494,7 +495,7 @@ class StarboardAddon(
                     addon=self.addon,
                     label="Change this setting",
                     style=discord.ButtonStyle.primary,
-                    row=0
+                    row=0,
                 )
             )
 
@@ -578,8 +579,10 @@ class StarboardAddon(
         Note: If an already starred message is ignored, the
         star will be deleted, *and* the message will be ignored
         """
-        assert interaction.guild and isinstance(
-            interaction.channel, discord.abc.Messageable
+        assert (
+            interaction.guild
+            and isinstance(interaction.channel, discord.abc.Messageable)
+            and not isinstance(interaction.channel, discord.GroupChannel)
         )
 
         message_obj = None
@@ -641,8 +644,10 @@ class StarboardAddon(
         message: Optional[str] = None,
     ):
         """Unignores a channel or message"""
-        assert interaction.guild and isinstance(
-            interaction.channel, discord.abc.Messageable
+        assert (
+            interaction.guild
+            and isinstance(interaction.channel, discord.abc.Messageable)
+            and not isinstance(interaction.channel, discord.GroupChannel)
         )
 
         message_obj = None

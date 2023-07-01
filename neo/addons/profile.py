@@ -90,7 +90,7 @@ class Profile(neo.Addon, app_group=True):
                     getattr(profile, setting)
                 )
                 embed = neo.Embed(
-                    title=f"Settings for {interaction.user}",
+                    title=f"Settings for {interaction.user.display_name}",
                     description=f"**Setting: `{setting_info.display_name}`**\n\n"
                     + description,
                 ).set_thumbnail(url=interaction.user.display_avatar)

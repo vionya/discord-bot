@@ -241,7 +241,7 @@ class Utility(neo.Addon):
         embed = neo.Embed(
             title="Channel Purge Breakdown",
             description="\n".join(
-                f"**{m.name}** {times} messages" for m, times in deleted.items()
+                f"**{m}** {times} messages" for m, times in deleted.items()
             ),
         )
         await interaction.response.send_message(embeds=[embed], ephemeral=True)
@@ -290,7 +290,7 @@ class Utility(neo.Addon):
                 value=f"`{shorten(data.most_common(1)[0][0], 250)}`",
             )
             .set_author(
-                name=f"{interaction.user}'s choice results",
+                name=f"{interaction.user.display_name}'s choice results",
                 icon_url=interaction.user.display_avatar,
             )
         )
