@@ -26,7 +26,7 @@ from neo.tools import (
 )
 from neo.tools.checks import is_registered_profile_predicate
 
-MAX_TODOS = 100
+MAX_TODOS = 1000
 
 
 class TodoItem:
@@ -90,7 +90,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             )
 
         menu = ButtonsMenu.from_iterable(
-            formatted_todos,
+            formatted_todos or ["No todos"],
             per_page=10,
             use_embed=True,
             template_embed=neo.Embed()
