@@ -125,7 +125,8 @@ class Starboard:
 
         async with self.lock:
             embed = neo.Embed(description="").set_author(
-                name=message.author, icon_url=message.author.display_avatar
+                name=f"{message.author.display_name} ({message.author})",
+                icon_url=message.author.display_avatar,
             )
 
             if message.content:
@@ -582,7 +583,7 @@ class StarboardAddon(
         assert (
             interaction.guild
             and isinstance(interaction.channel, discord.abc.Messageable)
-            and isinstance(interaction.channel, discord.abc.GuildChannel)
+            and not isinstance(interaction.channel, discord.GroupChannel)
         )
 
         message_obj = None
@@ -646,7 +647,7 @@ class StarboardAddon(
         assert (
             interaction.guild
             and isinstance(interaction.channel, discord.abc.Messageable)
-            and isinstance(interaction.channel, discord.abc.GuildChannel)
+            and not isinstance(interaction.channel, discord.GroupChannel)
         )
 
         message_obj = None
