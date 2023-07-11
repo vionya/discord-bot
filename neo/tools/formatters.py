@@ -4,13 +4,18 @@ import traceback
 from enum import Enum
 from logging import Formatter, LogRecord
 from types import TracebackType
+import re
 
 # Taken from typeshed
 ExcInfo = tuple[type[BaseException], BaseException, TracebackType]
 OptExcInfo = ExcInfo | tuple[None, None, None]
 
+FILE_PAT = re.compile(r"File \"[a-zA-Z0-9\-_\.\/:\\\s]*?\",")
 
-def format_exception(exc: BaseException | OptExcInfo) -> str:
+
+def format_exception(
+    exc: BaseException | OptExcInfo, *, no_filename: bool = False
+) -> str:
     if isinstance(exc, tuple) and all(exc):
         exc_info = exc
     elif isinstance(exc, BaseException):
@@ -18,7 +23,11 @@ def format_exception(exc: BaseException | OptExcInfo) -> str:
     else:
         return ""
 
-    return "".join(traceback.format_exception(*exc_info)).rstrip()
+    fmted = "".join(traceback.format_exception(*exc_info)).rstrip()
+    if no_filename:
+        fmted = FILE_PAT.sub('File "...",', fmted)
+
+    return fmted
 
 
 def shorten(text: str, width: int) -> str:

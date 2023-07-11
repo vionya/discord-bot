@@ -94,7 +94,9 @@ class Devel(neo.Addon):
             await ctx.message.add_reaction("\U00002611")
 
         except BaseException as e:  # Ensure that all errors in exec are handled here
-            menu.pages.append("\n{}".format(format_exception(e)))
+            menu.pages.append(
+                "\n{}".format(format_exception(e, no_filename=True))
+            )
             await menu.start(ctx)
 
     @commands.command(name="sql")
