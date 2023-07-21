@@ -76,6 +76,18 @@ class ReminderShowView(discord.ui.View):
     ):
         modal = ReminderEditModal(self.db, reminder=self.reminder)
         await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        # this generally shouldn't happen
+        if not interaction.message:
+            return
+
+        # copy embed from message
+        embed = interaction.message.embeds[0]
+        # update its description with the new content
+        embed.description = self.reminder.content
+        # edit the original response
+        await interaction.edit_original_response(embeds=[embed])
 
     @discord.ui.button(
         label="Delete Reminder", emoji="🗑️", style=discord.ButtonStyle.red

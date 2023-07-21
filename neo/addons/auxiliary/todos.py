@@ -38,19 +38,19 @@ class TodoEditModal(discord.ui.Modal):
         assert self.content.value
 
         self.todo.content = self.content.value
-        await self.addon.bot.db.execute(
-            """
-            UPDATE todos
-            SET
-                content=$1
-            WHERE
-                todo_id=$2 AND
-                user_id=$3
-            """,
-            self.content.value,
-            self.todo.todo_id,
-            self.todo.user_id,
-        )
+        # await self.addon.bot.db.execute(
+        #     """
+        #     UPDATE todos
+        #     SET
+        #         content=$1
+        #     WHERE
+        #         todo_id=$2 AND
+        #         user_id=$3
+        #     """,
+        #     self.content.value,
+        #     self.todo.todo_id,
+        #     self.todo.user_id,
+        # )
 
         await send_confirmation(
             interaction, ephemeral=True, predicate="edited todo"
@@ -74,6 +74,18 @@ class TodoShowView(discord.ui.View):
     ):
         modal = TodoEditModal(self.addon, todo=self.todo)
         await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        # this generally shouldn't happen
+        if not interaction.message:
+            return
+
+        # copy embed from message
+        embed = interaction.message.embeds[0]
+        # update its description with the new content
+        embed.description = self.todo.content
+        # edit the original response
+        await interaction.edit_original_response(embeds=[embed])
 
     @discord.ui.button(
         label="Delete Todo", emoji="🗑️", style=discord.ButtonStyle.red
