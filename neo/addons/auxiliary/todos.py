@@ -103,6 +103,11 @@ class TodoShowView(discord.ui.View):
             interaction.user.id,
         )
         self.addon.todos[self.todo.user_id].remove(self.todo)
-        await send_confirmation(
-            interaction, ephemeral=True, predicate="deleted todo"
-        )
+
+        # remove edit button
+        self.remove_item(self.edit_todo)
+        # update this button to be disabled and say Todo Deleted
+        button.label = "Todo Deleted"
+        button.disabled = True
+
+        await interaction.response.edit_message(view=self)

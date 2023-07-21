@@ -96,6 +96,11 @@ class ReminderShowView(discord.ui.View):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         await self.reminder.delete()
-        await send_confirmation(
-            interaction, ephemeral=True, predicate="deleted reminder"
-        )
+
+        # remove edit button
+        self.remove_item(self.edit_reminder)
+        # update this button to be disabled and say Reminder Deleted
+        button.label = "Reminder Deleted"
+        button.disabled = True
+
+        await interaction.response.edit_message(view=self)
