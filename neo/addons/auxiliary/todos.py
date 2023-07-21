@@ -38,19 +38,19 @@ class TodoEditModal(discord.ui.Modal):
         assert self.content.value
 
         self.todo.content = self.content.value
-        # await self.addon.bot.db.execute(
-        #     """
-        #     UPDATE todos
-        #     SET
-        #         content=$1
-        #     WHERE
-        #         todo_id=$2 AND
-        #         user_id=$3
-        #     """,
-        #     self.content.value,
-        #     self.todo.todo_id,
-        #     self.todo.user_id,
-        # )
+        await self.addon.bot.db.execute(
+            """
+            UPDATE todos
+            SET
+                content=$1
+            WHERE
+                todo_id=$2 AND
+                user_id=$3
+            """,
+            self.content.value,
+            self.todo.todo_id,
+            self.todo.user_id,
+        )
 
         await send_confirmation(
             interaction, ephemeral=True, predicate="edited todo"
