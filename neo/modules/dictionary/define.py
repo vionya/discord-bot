@@ -5,9 +5,10 @@ from typing import Optional
 from aiohttp import ClientSession
 from yarl import URL
 
-from .objects import DictionaryResponse
+from .objects import StandardDictionaryResponse, UrbanDictionaryResponse
 
-BASE = URL("https://api.dictionaryapi.dev/api/v2/entries/")
+BASE_STANDARD = URL("https://api.dictionaryapi.dev/api/v2/entries/")
+BASE_URBAN = URL("https://api.urbandictionary.com/v0/define")
 DefinitionError = type("DefinitionError", (Exception,), {})
 
 
@@ -17,15 +18,26 @@ class Define:
     def __init__(self, session: Optional[ClientSession] = None):
         self.session = session or ClientSession()
 
-    async def define(self, query: str):
-        url = BASE / "en" / query
+    async def define_standard(self, query: str):
+        url = BASE_STANDARD / "en" / query
 
         async with self.session.get(url) as resp:
-
             _data = await resp.json()
             if resp.status != 200:
                 raise DefinitionError(
-                    f"Error fetching definition ({resp.status})"
+                    f"Error fetching standard dictionary definition ({resp.status})"
                 )
 
-        return DictionaryResponse(_data)
+        return StandardDictionaryResponse(_data)
+
+    async def define_urban(self, query: str):
+        url = BASE_URBAN % {"term": query}
+
+        async with self.session.get(url) as resp:
+            _data = await resp.json()
+            if resp.status != 200:
+                raise DefinitionError(
+                    f"Error fetching Urban Dictionary definition ({resp.status})"
+                )
+
+        return UrbanDictionaryResponse(_data)

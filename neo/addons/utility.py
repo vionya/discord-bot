@@ -146,19 +146,34 @@ class Utility(neo.Addon):
         await menu.start(interaction)
 
     @app_commands.command(name="define")
-    @app_commands.describe(term="The term to search the dictionary for")
+    @app_commands.describe(
+        term="The term to search the dictionary for",
+        target_dict="The dictionary to search with",
+    )
+    @app_commands.rename(target_dict="dictionary")
     async def dictionary_app_command(
-        self, interaction: discord.Interaction, term: str
+        self,
+        interaction: discord.Interaction,
+        term: str,
+        target_dict: Literal["standard", "urban"] = "standard",
     ):
-        """Search for a term's dictionary definition"""
+        """
+        Search for a term's dictionary definition
+
+        Use the `dictionary` parameter to choose between the standard[JOIN]
+        dictionary and https://urbandictionary.com for definitions
+        """
+        embeds = []
         try:
-            resp = await self.dictionary.define(term)
+            match target_dict:
+                case "standard":
+                    resp = await self.dictionary.define_standard(term)
+                case "urban":
+                    resp = await self.dictionary.define_urban(term)
         except dictionary.DefinitionError:
             raise RuntimeError("No definition found")
 
-        embeds = []
-        for word in resp.words:
-            embeds.extend(definitions_to_embed(word))
+        embeds.extend(definitions_to_embed(resp))
         if not embeds:
             raise RuntimeError("No definition found")
 

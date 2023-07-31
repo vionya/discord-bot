@@ -12,6 +12,11 @@ from typing import TYPE_CHECKING, Optional
 import discord
 
 import neo
+from neo.modules.dictionary import (
+    StandardDictionaryResponse,
+    UrbanDictionaryResponse,
+)
+from neo.tools.formatters import shorten
 
 if TYPE_CHECKING:
     from googletrans import Translator
@@ -30,19 +35,56 @@ def result_to_embed(result):
     return embed
 
 
-def definitions_to_embed(word):
-    for meaning in word.meanings[
-        :25
-    ]:  # Slice at 25 to fit within dropdown limits
-        for definition in meaning.definitions:
-            embed = neo.Embed(
-                description=definition.definition,
-                title=f"{word.word}: {meaning.part_of_speech}",
-            ).add_field(
-                name="Synonyms",
-                value=", ".join((definition.synonyms or ["No synonyms"])[:5]),
+def definitions_to_embed(
+    resp: StandardDictionaryResponse | UrbanDictionaryResponse,
+):
+    if isinstance(resp, UrbanDictionaryResponse):
+        # iterate over urban responses
+        for definition in resp:
+            # construct embed
+            # n.b. the shorten calls might accidentally cut off a link but lol
+            embed = (
+                neo.Embed(
+                    description=shorten(definition.definition, 4000),
+                    title=f"{definition.word} (by {definition.author})",
+                )
+                .add_field(
+                    name="Example",
+                    value=shorten(definition.example, 1000),
+                    inline=False,
+                )
+                .add_field(
+                    name="Sourced from Urban Dictionary",
+                    value="[Link]({0}) | \U0001F44D {1} | \U0001F44E {2} | {3}".format(
+                        definition.permalink,
+                        definition.thumbs_up,
+                        definition.thumbs_down,
+                        # want timestamp relative
+                        discord.utils.format_dt(
+                            definition.written_on, style="R"
+                        ),
+                    ),
+                    inline=False,
+                )
             )
             yield embed
+    else:
+        # this looks really bad but it's really only O(n^2)
+        for word in resp.words:
+            for meaning in word.meanings[
+                :25
+            ]:  # Slice at 25 to fit within dropdown limits
+                for definition in meaning.definitions:
+                    embed = neo.Embed(
+                        description=definition.definition,
+                        title=f"{word.word}: {meaning.part_of_speech}",
+                    ).add_field(
+                        name="Synonyms",
+                        value=", ".join(
+                            (definition.synonyms or ["No synonyms"])[:5]
+                        ),
+                    )
+                    yield embed
 
 
 def get_translation_kwargs(content: str) -> tuple[str, dict[str, str]]:
