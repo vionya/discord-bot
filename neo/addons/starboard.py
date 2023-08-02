@@ -356,7 +356,10 @@ class StarboardAddon(
                 return
 
             channel = self.bot.get_channel(payload.channel_id)
-            if not isinstance(channel, discord.TextChannel):
+            if not (
+                isinstance(channel, discord.abc.Messageable)
+                and not isinstance(channel, discord.GroupChannel)
+            ):
                 return
             message = await channel.fetch_message(payload.message_id)
 
