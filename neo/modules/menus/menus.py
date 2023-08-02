@@ -321,6 +321,8 @@ class DropdownMenuItem(discord.ui.Select):
         await self.menu.update_page(interaction)
 
     def update_options_window(self):
+        if len(self.all_options) == 1:
+            return
         # guaranteed to exist because this method only called once a selection
         # is made
         cur_index = self.menu.page_index
