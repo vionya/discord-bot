@@ -136,7 +136,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
         self.todos[interaction.user.id].append(TodoItem(**data))
         await send_confirmation(
-            interaction, predicate=f"added `{content}` to your todo list"
+            interaction,
+            predicate=f"added `{escape_markdown(content)}` to your todo list",
         )
 
     @app_commands.command(name="remove")
