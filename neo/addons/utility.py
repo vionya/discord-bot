@@ -154,7 +154,7 @@ class Utility(neo.Addon):
         target_dict="The dictionary to search with",
     )
     @app_commands.rename(target_dict="dictionary")
-    async def dictionary_app_command(
+    async def dictionary_command(
         self,
         interaction: discord.Interaction,
         term: str,
@@ -193,7 +193,7 @@ class Utility(neo.Addon):
         content="The content to translate",
     )
     @app_commands.rename(source="from", destination="to")
-    async def translate_app_command(
+    async def translate_command(
         self,
         interaction: discord.Interaction,
         content: str,
@@ -227,7 +227,7 @@ class Utility(neo.Addon):
     )
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def clear_app_command(
+    async def clear_command(
         self,
         interaction: discord.Interaction,
         limit: discord.app_commands.Range[int, 0, 2000],
