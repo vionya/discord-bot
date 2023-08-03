@@ -71,6 +71,9 @@ class Utility(neo.Addon):
         self.bot.tree.context_menu(name="Show Raw Content")(
             self.raw_msg_context_command
         )
+        self.bot.tree.context_menu(name="Steal Sticker")(
+            self.sticker_steal_context_command
+        )
 
         asyncio.create_task(self.__ainit__())
 
@@ -549,7 +552,7 @@ class Utility(neo.Addon):
             f"`{flag[0]}`" for flag in filter(lambda p: p[1], message.flags)
         )
 
-        raw_description = [
+        raw_description = (
             f"**ID** {message.id}",
             f"**Author** {message.author}",
             f"**Created** {full_timestamp(message.created_at.timestamp())}",
@@ -559,7 +562,7 @@ class Utility(neo.Addon):
             f"\n**Message Type** `{message.type.name}`",
             f"**Message Flags** {flags_str}" if flags_str else "",
             f"**Pinned** {message.pinned}",
-        ]
+        )
         embed = neo.Embed(description="\n".join(filter(None, raw_description)))
 
         if message.application:
@@ -612,6 +615,77 @@ class Utility(neo.Addon):
         )
         menu = neo.ButtonsMenu(pages)
         await menu.start(interaction, force_ephemeral=True)
+
+    @app_commands.default_permissions(create_expressions=True)
+    @app_commands.guild_only()
+    async def sticker_steal_context_command(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        assert interaction.guild
+
+        # check that the bot itself has permission to make a sticker
+        if not (
+            interaction.app_permissions.create_expressions
+            and interaction.app_permissions.manage_expressions
+        ):
+            return await interaction.response.send_message(
+                "neo phoenix is missing the `Create Expressions` and/or"
+                " `Manage Expressions` permission(s)",
+                ephemeral=True,
+            )
+        # if the message has no stickers on it, there's no point in proceeding
+        if not message.stickers:
+            return await interaction.response.send_message(
+                "That message has no sticker to steal", ephemeral=True
+            )
+
+        try:
+            # fetch the entire sticker data
+            sticker = await message.stickers[0].fetch()
+            # want to make sure it's not a standard sticker
+            if not isinstance(sticker, discord.GuildSticker):
+                return await interaction.response.send_message(
+                    "Standard stickers can't be stolen", ephemeral=True
+                )
+            # try to create the sticker
+            new_sticker = await interaction.guild.create_sticker(
+                name=sticker.name,
+                description=sticker.description,
+                emoji=sticker.emoji,
+                file=await sticker.to_file(),
+            )
+        except discord.HTTPException as e:
+            match e.code:
+                # sticker limit reached
+                case 30039:
+                    return await interaction.response.send_message(
+                        "This server has no available sticker slots",
+                        ephemeral=True,
+                    )
+                # sticker no longer available
+                case 10060:
+                    return await interaction.response.send_message(
+                        "This sticker has been deleted and is no longer available",
+                        ephemeral=True,
+                    )
+            # default response for anything else
+            await interaction.response.send_message(
+                f"Something went wrong: {e}", ephemeral=True
+            )
+            raise
+
+        # create something nice to show to users once sticker created
+        raw_description = (
+            f"**Name** {new_sticker.name}",
+            f"**ID** {new_sticker.id}",
+            f"**Image Format** `{new_sticker.format.name}`",
+            f"**Emoji** :{new_sticker.emoji}:",
+        )
+        embed = neo.Embed(
+            title="Sticker has been stolen!",
+            description="\n".join(raw_description),
+        ).set_thumbnail(url=new_sticker.url)
+        await interaction.response.send_message(embeds=[embed])
 
 
 async def setup(bot: neo.Neo):
