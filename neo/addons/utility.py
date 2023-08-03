@@ -65,12 +65,12 @@ class Utility(neo.Addon):
         self.bot.tree.context_menu(name="View Banner")(
             self.banner_context_command
         )
-        self.bot.tree.context_menu(name="Show Message Info")(
-            self.message_info_context_command
-        )
-        self.bot.tree.context_menu(name="Show Raw Content")(
-            self.raw_msg_context_command
-        )
+        # self.bot.tree.context_menu(name="Show Message Info")(
+        #     self.message_info_context_command
+        # )
+        # self.bot.tree.context_menu(name="Show Raw Content")(
+        #     self.raw_msg_context_command
+        # )
         self.bot.tree.context_menu(name="Steal Sticker")(
             self.sticker_steal_context_command
         )
