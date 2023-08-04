@@ -123,7 +123,9 @@ class Starboard:
         ):
             return
 
-        assert isinstance(message.channel, discord.abc.GuildChannel)
+        assert isinstance(
+            message.channel, discord.abc.GuildChannel | discord.Thread
+        )
 
         async with self.lock:
             embed = (
