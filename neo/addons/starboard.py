@@ -123,11 +123,23 @@ class Starboard:
         ):
             return
 
+        assert isinstance(message.channel, discord.abc.GuildChannel)
+
         async with self.lock:
-            embed = neo.Embed(description="").set_author(
-                name=f"{message.author.display_name} ({message.author})",
-                icon_url=message.author.display_avatar,
+            embed = (
+                neo.Embed(description="")
+                .set_author(
+                    name=f"{message.author.display_name} ({message.author})",
+                    icon_url=message.author.display_avatar,
+                )
+                .set_footer(text=f"#{message.channel.name}")
             )
+
+            if isinstance(message.channel, discord.Thread):
+                assert message.channel.parent
+                embed.set_footer(
+                    text=f"#{message.channel.parent.name} > {message.channel.name}"
+                )
 
             if message.content:
                 embed.description = shorten(message.content, 1900) + "\n\n"
