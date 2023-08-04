@@ -259,7 +259,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         `when` may be either absolute or relative.
 
-        **__Absolute__**
+        ## Absolute
         A select few date/time formats are supported:
         - `month date, year`
         Ex: /remind set `when: Mar 2, 2022` `content: Dance`
@@ -274,23 +274,23 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         Times can be expressed in either 24- or 12-hour time.
 
-        **Note**
+        ### Note
         If you have configured a timezone in your neo profile, it will be[JOIN]
         used to localize date/time. Otherwise, date/times will be in UTC.[JOIN]
 
-        **__Relative__**
+        ## Relative
         Offsets have the following requirements:
         - Must be in terms of `years`, `months`, `weeks`, `days`, `hours`,[JOIN]
         `minutes`, and `seconds`
         - Not all time units have to be used
         - Time units have to be ordered by magnitude
 
-        **Examples**
+        ### Examples
         /remind set `when: 5 years` `content: Hey, hello!`
         /remind set `when: 4h30m` `content: Check what time it is`
         /remind set `when: 3 weeks, 2 days` `content: Do something funny`
 
-        **__Repeating Reminders__**
+        ## Repeating Reminders
         Repeating reminders let you set a reminder to continuously be[JOIN]
         delivered with a set interval. **Only absolute reminders are[JOIN]
         allowed to be repeating reminders.**
