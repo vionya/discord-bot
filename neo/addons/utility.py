@@ -16,7 +16,7 @@ from discord.utils import format_dt
 from googletrans import LANGUAGES, Translator
 
 import neo
-from neo.classes.app_commands import get_ephemeral
+from neo.classes.app_commands import get_ephemeral, no_defer
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
 from neo.tools import parse_id, shorten, try_or_none
 from neo.tools.formatters import Table, full_timestamp
@@ -227,6 +227,7 @@ class Utility(neo.Addon):
     )
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
+    @no_defer
     async def clear_command(
         self,
         interaction: discord.Interaction,
@@ -242,16 +243,12 @@ class Utility(neo.Addon):
             interaction.channel, discord.TextChannel | discord.VoiceChannel
         )
 
-        ephemeral = get_ephemeral(interaction, interaction.namespace)
-        before_o = (
-            discord.Object(interaction.channel.last_message_id)
-            if interaction.channel.last_message_id and not ephemeral
-            else None
-        )
+        await interaction.response.defer(ephemeral=True)
+
         purged = await interaction.channel.purge(
             limit=limit,
             check=(lambda m: m.author == user if user else True),
-            before=discord.Object(parse_id(before)) if before else before_o,
+            before=discord.Object(parse_id(before)) if before else None,
             after=discord.Object(parse_id(after)) if after else None,
         )
 
@@ -262,7 +259,7 @@ class Utility(neo.Addon):
                 f"**{m}** {times} messages" for m, times in deleted.items()
             ),
         )
-        await interaction.response.send_message(embeds=[embed], ephemeral=True)
+        await interaction.followup.send(embeds=[embed], ephemeral=True)
 
     @app_commands.command(name="choose")
     @app_commands.rename(
