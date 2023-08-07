@@ -276,7 +276,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         when: str,
         content: app_commands.Range[str, 1, Reminder.MAX_LEN] = "…",
         repeat: str | None = None,
-        send_here: bool = False,
+        send_here: bool | None = None,
     ):
         """
         Schedule a reminder
@@ -374,6 +374,10 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
                 raise RuntimeError("Unknown error in time parsing")
 
         timestamp = int((now + delta).timestamp())
+        in_channel = (
+            send_here if send_here is not None else profile.reminders_in_channel
+        )
+
         await self.add_reminder(
             user_id=interaction.user.id,
             reminder_id=uuid4(),
@@ -381,7 +385,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             delta=delta,
             repeating=bool(repeat),
             epoch=epoch,
-            deliver_in=interaction.channel_id if send_here is True else None,
+            deliver_in=interaction.channel_id if in_channel is True else None,
         )
         await interaction.response.send_message(message.format(timestamp))
 

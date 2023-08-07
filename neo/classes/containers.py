@@ -109,6 +109,7 @@ class NeoUser(RecordContainer):
     hl_timeout: int
     default_ephemeral: bool
     silence_hl: bool
+    reminders_in_channel: bool
 
     __slots__ = (
         "user_id",
@@ -119,6 +120,7 @@ class NeoUser(RecordContainer):
         "hl_timeout",
         "default_ephemeral",
         "silence_hl",
+        "reminders_in_channel",
     )
 
     def __repr__(self):

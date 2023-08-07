@@ -38,6 +38,11 @@ SETTINGS_MAPPING = SettingsMapping(
         transformer=bool_transformer,
         name_override="Deliver Highlights Silently",
     ),
+    Setting(
+        "reminders_in_channel",
+        transformer=bool_transformer,
+        name_override="Send Reminders Where Created",
+    ),
 )
 
 

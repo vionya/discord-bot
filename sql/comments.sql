@@ -63,6 +63,21 @@ Default Value: `False`
 **Current Value:** `{}`
 ';
 
+COMMENT ON COLUMN profiles.reminders_in_channel IS
+'Sets whether reminders will be sent where they were created by default (rather than in DMs).
+
+If this is true, reminders will first try to be sent in the channel where the `/remind set` command was used.
+
+If sending in a channel fails, reminders will still try to DM themselves to you so you don''t miss anything.
+
+You can use the `send-here` parameter in `/remind set` to override this setting at any time.
+
+Expected Value Type: A boolean-like (`yes`/`no`) value
+Default Value: `False`
+
+**Current Value:** `{}`
+';
+
 -- Table: guild_configs | Documentation for settings --
 COMMENT ON COLUMN guild_configs.starboard IS
 'Controls whether the server''s starboard is enabled.

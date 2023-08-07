@@ -1,16 +1,17 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 -- Copyright (C) 2023 sardonicism-04
 CREATE TABLE profiles (
-    user_id            BIGINT PRIMARY KEY,
-    created_at         TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    user_id              BIGINT PRIMARY KEY,
+    created_at           TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC'),
     -- Public settings, directly modified by user
-    receive_highlights BOOLEAN DEFAULT TRUE,
-    timezone           TEXT DEFAULT NULL,
-    hl_timeout         BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1,
-    default_ephemeral  BOOLEAN DEFAULT FALSE,
-    silence_hl         BOOLEAN DEFAULT FALSE,
+    receive_highlights   BOOLEAN DEFAULT TRUE,
+    timezone             TEXT DEFAULT NULL,
+    hl_timeout           BIGINT CHECK (hl_timeout >= 1 AND hl_timeout <= 5) DEFAULT 1,
+    default_ephemeral    BOOLEAN DEFAULT FALSE,
+    silence_hl           BOOLEAN DEFAULT FALSE,
+    reminders_in_channel BOOLEAN DEFAULT FALSE,
     -- Private settings, indirectly modified
-    hl_blocks          BIGINT[] DEFAULT ARRAY[]::BIGINT[],
+    hl_blocks            BIGINT[] DEFAULT ARRAY[]::BIGINT[],
 );
 
 CREATE TABLE guild_configs (
