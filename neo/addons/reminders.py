@@ -137,7 +137,7 @@ class Reminder:
                     inline=False,
                 )
 
-            content = self.content
+            content = shorten(self.content, 75)
             # mention the user if there is an existing channel we want to send in
             if isinstance(
                 dest,
