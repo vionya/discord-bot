@@ -14,7 +14,7 @@ from .autocomplete_helpers import (
     generate_autocomplete_list,
     is_clear_all,
     is_valid_index,
-    seq_autocomplete,
+    iter_autocomplete,
 )
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, instantiate, with_docstring

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 from sys import version as py_version
 from typing import Literal, Optional
+from zoneinfo import ZoneInfo, available_timezones
 
 import discord
 from discord import app_commands
@@ -18,7 +19,7 @@ from googletrans import LANGUAGES, Translator
 import neo
 from neo.classes.app_commands import get_ephemeral, no_defer
 from neo.modules import DropdownMenu, EmbedPages, cse, dictionary
-from neo.tools import parse_id, shorten, try_or_none
+from neo.tools import parse_id, iter_autocomplete, shorten, try_or_none
 from neo.tools.formatters import Table, full_timestamp
 from neo.tools.time_parse import parse_absolute, parse_relative
 
@@ -43,6 +44,7 @@ ASSOCIATION_FILTER = [
     ("Booster-Exclusive Role", discord.Role.is_premium_subscriber),
     ("Managed by Integration", discord.Role.is_integration),
 ]
+TIMEZONE_STRS = available_timezones()
 
 
 class Utility(neo.Addon):
@@ -452,11 +454,14 @@ class Utility(neo.Addon):
             embed=embed, view=self.info_buttons()
         )
 
+    @iter_autocomplete(TIMEZONE_STRS, param="source_tz")
     @app_commands.command(name="timestamp")
     @app_commands.describe(
         when="The time the timestamp should point to, see /remind set for more",
         style="The style for format the timestamp with",
+        source_tz="The timezone to set absolute timestamps in",
     )
+    @app_commands.rename(source_tz="timezone")
     async def formatted_timestamp_command(
         self,
         interaction: discord.Interaction,
@@ -470,6 +475,7 @@ class Utility(neo.Addon):
             "Long Date/Time",
             "Relative Time",
         ] = "Short Date/Time",
+        source_tz: str | None = None,
     ):
         """
         Create a Discord timestamp from a human-readable input
@@ -477,9 +483,14 @@ class Utility(neo.Addon):
         See the help documentation for `/remind set` to see how to format the
         input for `when`
         """
-        tz = timezone.utc
-        if interaction.user.id in self.bot.profiles:
-            tz = self.bot.profiles[interaction.user.id].timezone or tz
+        if source_tz is not None:
+            if source_tz not in TIMEZONE_STRS:
+                raise ValueError("Invalid timezone provided")
+            tz = ZoneInfo(source_tz)
+        else:
+            tz = timezone.utc
+            if interaction.user.id in self.bot.profiles:
+                tz = self.bot.profiles[interaction.user.id].timezone or tz
 
         (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
             when, tz=tz

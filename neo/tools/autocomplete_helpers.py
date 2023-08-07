@@ -2,22 +2,14 @@
 # Copyright (C) 2023 sardonicism-04
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterable,
-    Literal,
-    Optional,
-    TypeGuard,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeGuard, overload
 
 from discord import app_commands
 
 from .formatters import shorten
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
     from discord import Interaction
     from discord.app_commands import Choice
@@ -282,12 +274,12 @@ def add_setting_autocomplete(
     return inner
 
 
-def seq_autocomplete(options: Sequence[str], *, param: str):
+def iter_autocomplete(options: Iterable[str], *, param: str):
     """
     Decorates a Command and adds an autocomplete to it given a list of options
 
-    :param options: The sequence of options to use for autocomplete
-    :type options: ``Sequence[str]``
+    :param options: The iterable of options to use for autocomplete
+    :type options: ``Iterable[str]``
 
     :param param: The name of the parameter to add the autocomplete to
     :type param: ``str``

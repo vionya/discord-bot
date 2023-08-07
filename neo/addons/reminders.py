@@ -19,7 +19,7 @@ from neo.tools import (
     is_clear_all,
     is_valid_index,
     send_confirmation,
-    seq_autocomplete,
+    iter_autocomplete,
     shorten,
     try_or_none,
 )
@@ -261,7 +261,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     ) -> bool:
         return is_registered_profile_predicate(interaction)
 
-    @seq_autocomplete(("1d", "1w", "1mo", "1y"), param="repeat")
+    @iter_autocomplete(("1d", "1w", "1mo", "1y"), param="repeat")
     @app_commands.command(name="set")
     @app_commands.describe(
         when="When the reminder should be delivered. See this command's help entry for more info",
