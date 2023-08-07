@@ -50,6 +50,7 @@ class Reminder:
         "epoch",
         "delta",
         "repeating",
+        "deliver_in",
         "bot",
         "_done",
     )
@@ -63,6 +64,7 @@ class Reminder:
         epoch: datetime,
         delta: timedelta,
         repeating: bool,
+        deliver_in: int | None,
         bot: neo.Neo,
     ):
         self.user_id = user_id
@@ -71,6 +73,7 @@ class Reminder:
         self.epoch = epoch
         self.delta = delta
         self.repeating = repeating
+        self.deliver_in = deliver_in
 
         self.bot = bot
         self._done = False
@@ -113,6 +116,12 @@ class Reminder:
     async def deliver(self):
         try:
             dest = self.bot.get_user(self.user_id, as_partial=True)
+            if self.deliver_in is not None:
+                dest = self.bot.get_channel(self.deliver_in) or dest
+
+            # self.deliver_in can only be set from a Messageable, so this should
+            # never fail and if it does I will cry
+            assert isinstance(dest, discord.abc.Messageable)
 
             embed = neo.Embed(
                 title="Reminder Triggered", description=self.content
@@ -128,8 +137,18 @@ class Reminder:
                     inline=False,
                 )
 
+            content = self.content
+            # mention the user if there is an existing channel we want to send in
+            if isinstance(
+                dest,
+                discord.abc.GuildChannel
+                | discord.Thread
+                | discord.abc.PrivateChannel,
+            ):
+                content = f"<@{self.user_id}> {content}"
+
             await dest.send(
-                content=self.content,
+                content=content,
                 embed=embed,
                 allowed_mentions=discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
@@ -210,6 +229,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         delta: timedelta,
         repeating: bool,
         epoch: datetime,
+        deliver_in: int | None,
     ):
         data = await self.bot.db.fetchrow(
             """
@@ -219,9 +239,10 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
                 content,
                 delta,
                 repeating,
-                epoch
+                epoch,
+                deliver_in
             ) VALUES (
-                $1, $2, $3, $4, $5, $6
+                $1, $2, $3, $4, $5, $6, $7
             ) RETURNING *
             """,
             user_id,
@@ -230,6 +251,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             delta,
             repeating,
             epoch,
+            deliver_in,
         )
         reminder = Reminder(bot=self.bot, **data)
         self.reminders[user_id].append(reminder)
@@ -245,14 +267,16 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         when="When the reminder should be delivered. See this command's help entry for more info",
         content="The content to remind yourself about. Can be empty",
         repeat="When this reminder should repeat. Provided options are suggestions",
+        send_here="Whether this reminder should be sent to you in this channel",
     )
-    @app_commands.rename(repeat="repeat-every")
+    @app_commands.rename(repeat="repeat-every", send_here="send-here")
     async def reminder_set(
         self,
         interaction: discord.Interaction,
         when: str,
         content: app_commands.Range[str, 1, Reminder.MAX_LEN] = "…",
         repeat: str | None = None,
+        send_here: bool = False,
     ):
         """
         Schedule a reminder
@@ -357,6 +381,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             delta=delta,
             repeating=bool(repeat),
             epoch=epoch,
+            deliver_in=interaction.channel_id if send_here is True else None,
         )
         await interaction.response.send_message(message.format(timestamp))
 

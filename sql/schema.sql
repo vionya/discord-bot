@@ -70,5 +70,7 @@ CREATE TABLE reminders (
     -- The amount of time until the reminder is next triggered
     delta         INTERVAL NOT NULL,
     repeating     BOOLEAN DEFAULT FALSE,
+    -- If not null, a channel ID to send to
+    deliver_in    BIGINT DEFAULT NULL,
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
 );
