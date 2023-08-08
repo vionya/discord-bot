@@ -417,7 +417,12 @@ class StarboardAddon(
     @neo.Addon.listener("on_raw_reaction_clear")
     @neo.Addon.listener("on_raw_reaction_clear_emoji")
     @neo.Addon.listener("on_raw_message_delete")
-    async def handle_terminations(self, payload):
+    async def handle_terminations(
+        self,
+        payload: discord.RawReactionClearEvent
+        | discord.RawReactionClearEmojiEvent
+        | discord.RawMessageDeleteEvent,
+    ):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
         starboard = self.starboards[payload.guild_id]
