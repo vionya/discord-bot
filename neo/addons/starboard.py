@@ -417,6 +417,7 @@ class StarboardAddon(
     @neo.Addon.listener("on_raw_reaction_clear")
     @neo.Addon.listener("on_raw_reaction_clear_emoji")
     @neo.Addon.listener("on_raw_message_delete")
+    @neo.Addon.listener("on_raw_bulk_message_delete")
     async def handle_terminations(self, payload):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
@@ -428,6 +429,13 @@ class StarboardAddon(
         if isinstance(payload, discord.RawReactionClearEmojiEvent):
             if not self.reaction_check(starboard, payload.emoji):
                 return
+
+        # messages purged, want to check if a star is in the cleared IDs
+        if isinstance(payload, discord.RawBulkMessageDeleteEvent):
+            for star_id in starboard.star_ids:
+                if star_id in payload.message_ids:
+                    await starboard.delete_star(star_id)
+            return
 
         if payload.message_id in starboard.star_ids:
             await starboard.delete_star(payload.message_id)
