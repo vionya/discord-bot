@@ -37,7 +37,7 @@ class ServerConfig(
     group_name="server",
     group_description="Server configuration commands",
 ):
-    """neo phoenix's server config management module"""
+    """neo's server config management module"""
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot
@@ -188,7 +188,7 @@ class ServerConfig(
         """
         Creates a config entry for the server
 
-        Run this command when neo phoenix first joins your server, so you[JOIN]
+        Run this command when neo first joins your server, so you[JOIN]
         can start configuring your server
         """
         assert interaction.guild

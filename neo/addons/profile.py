@@ -28,7 +28,7 @@ from .auxiliary.profile import (
 
 
 class Profile(neo.Addon, app_group=True):
-    """neo phoenix's profile management module"""
+    """neo's profile management module"""
 
     def __init__(self, bot: neo.Neo):
         self.bot = bot

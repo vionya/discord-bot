@@ -389,7 +389,7 @@ class Utility(neo.Addon):
         content = None
         if not interaction.app_permissions.use_external_emojis:
             content = (
-                'Make sure neo phoenix has "Use External Emoji" permissions,'
+                'Make sure neo has "Use External Emoji" permissions,'
                 " otherwise `serverinfo` can't properly display icons!"
             )
 
@@ -423,7 +423,7 @@ class Utility(neo.Addon):
         content = None
         if not interaction.app_permissions.use_external_emojis:
             content = (
-                'Make sure neo phoenix has "Use External Emoji" permissions,'
+                'Make sure neo has "Use External Emoji" permissions,'
                 " otherwise `roleinfo` can't properly display icons!"
             )
 
@@ -431,7 +431,7 @@ class Utility(neo.Addon):
 
     @app_commands.command(name="info")
     async def neo_info_command(self, interaction: discord.Interaction):
-        """Show information about neo phoenix"""
+        """Show information about neo"""
         embed = neo.Embed(
             description=(
                 "**neo Version** {0}"
@@ -637,7 +637,7 @@ class Utility(neo.Addon):
             and interaction.app_permissions.manage_expressions
         ):
             return await interaction.response.send_message(
-                "neo phoenix is missing the `Create Expressions` and/or"
+                "neo is missing the `Create Expressions` and/or"
                 " `Manage Expressions` permission(s)",
                 ephemeral=True,
             )

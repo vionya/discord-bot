@@ -137,7 +137,7 @@ def get_browser_links(avatar: discord.Asset):
 
 class InviteDropdown(discord.ui.Select["InviteMenu"]):
     def __init__(self, *args, **kwargs):
-        kwargs["custom_id"] = "neo phoenix:invite dropdown menu"
+        kwargs["custom_id"] = "neo:invite dropdown menu"
         super().__init__(*args, **kwargs)
 
     async def callback(self, interaction: discord.Interaction):
@@ -153,7 +153,7 @@ class InviteDropdown(discord.ui.Select["InviteMenu"]):
             permissions=discord.Permissions(int(self.values[0])),
         )
         await interaction.response.send_message(
-            f"[**Click here to invite neo phoenix**]({url})", ephemeral=True
+            f"[**Click here to invite neo**]({url})", ephemeral=True
         )
 
 
@@ -174,15 +174,15 @@ class InviteMenu(discord.ui.View):
 class InviteButton(discord.ui.Button):
     def __init__(self, *args, view_kwargs: dict, **kwargs):
         kwargs["style"] = discord.ButtonStyle.primary
-        kwargs["label"] = "Invite neo phoenix"
-        kwargs["custom_id"] = "neo phoenix:invite button"
+        kwargs["label"] = "Invite neo"
+        kwargs["custom_id"] = "neo:invite button"
         self.view_kwargs = view_kwargs
         super().__init__(*args, **kwargs)
 
     async def callback(self, interaction: discord.Interaction):
         embed = neo.Embed(
             title="Select a permissions preset below.",
-            description="**Managed Role** A role assigned to neo phoenix by "
+            description="**Managed Role** A role assigned to neo by "
             "Discord automatically. This role cannot be deleted while the "
             "bot is in a server. Consider `No Permissions` to avoid managed roles."
             "\n\n**Everything** This can be used to be selective with permissions by "
@@ -213,7 +213,7 @@ class InfoButtons(discord.ui.View):
             self.add_item(button)
 
     @discord.ui.button(
-        custom_id="neo phoenix:privacy policy", label="Privacy Policy", row=1
+        custom_id="neo:privacy policy", label="Privacy Policy", row=1
     )
     async def callback(self, interaction: discord.Interaction, button):
         await interaction.response.send_message(

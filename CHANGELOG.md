@@ -1,5 +1,7 @@
 # **Release v1.x.x** (TBD)
 
+- Renamed all instances of "neo phoenix" to "neo"
+
 ## Additions
 
 - New context menu commands:

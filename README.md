@@ -1,7 +1,4 @@
-# neo phoenix
-
-neo phoenix is an in-development rewrite of the `neo` Discord bot.
-
+# neo
 ## Project Goals
 
 * Drastically improve codebase quality and readability

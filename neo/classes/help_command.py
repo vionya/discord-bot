@@ -124,7 +124,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     - A `⑃` symbol next to a listed command identifies it as a command group.
 
     __**Using Slash Commands**__
-    neo phoenix uses a custom system for slash commands which lets you[JOIN]
+    neo uses a custom system for slash commands which lets you[JOIN]
     customize your experience. Each command automatically includes a[JOIN]
     special "`private`" option. This option controls whether the response[JOIN]
     to your command will be sent as an *ephemeral message*.
@@ -230,7 +230,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 )
                 .add_field(
                     name="Lost?",
-                    value="Try /help `command: help` to learn more about neo phoenix",
+                    value="Try /help `command: help` to learn more about neo",
                     inline=False,
                 )
             )
