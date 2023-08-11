@@ -59,6 +59,7 @@ class Neo(commands.Bot):
         kwargs["command_prefix"] = self.cfg["bot"]["prefix"]
         kwargs["activity"] = discord.Activity(
             name=config["bot"]["activity_name"].format(version=__version__),
+            state=config["bot"]["activity_state"],
             type=discord.ActivityType[config["bot"]["activity_type"]],
             url="https://twitch.tv/#",  # for spoofing Discord when activity type is streaming
         )

@@ -48,11 +48,19 @@ token = "str"
 cse_keys = [
     "str",
     "str",
+    "str",
+    "str",
+    "str",
+    "str",
+    "str",
+    "str",
+    "str",
     "str"
 ]
 cse_engine = "str"
 prefix = "str"
 activity_name = "str"
+activity_state = "str"
 activity_type = "str"
 status = "str"
 ignored_exceptions = [

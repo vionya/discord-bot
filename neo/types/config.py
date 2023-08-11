@@ -18,6 +18,7 @@ class NeoBotConfig(TypedDict):
     cse_engine: str
     prefix: str
     activity_name: str
+    activity_state: str
     activity_type: str
     status: str
     ignored_exceptions: list[str]
