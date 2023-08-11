@@ -1,3 +1,60 @@
+# **Release v1.x.x** (TBD)
+
+## Additions
+
+- New context menu commands:
+  - `View Banner` - shows a user's banner ephemerally
+  - `Steal Sticker` - attempts to steal the sticker which was included with the relevant message
+- New command `/timestamp` for generating a Discord-formatted timestamp using human-readable inputs
+  - Parameters accept the exact same syntax as the `when` parameter for the `/remind set` command
+  - Also supports a `timezone` parameter to create absolute timestamps in any timezone
+- New absolute parsing formats for `/remind set` and `/timestamp` supporting 12-hour time
+- The outputs of `/todo view` and `/remind view` now have action buttons for editing and deleting the todo/reminder
+- Relative times can now include months
+- Reminders can now be delivered in the same channel in which the `/remind set` command was run
+  - Added new `reminders_in_channel` user setting which toggles whether reminders will be delivered in their source channel by default, value defaults to `False`
+  - Added new `send-here` parameter to `/remind set` which overrides user settings and toggles this option
+- Implemented support for custom status
+
+## Improvements
+
+- Overhauled repeating reminders:
+  - Only absolute reminders may repeat
+  - The interval between repeating reminders can be set with a new parameter in the `/remind set` command
+- Added a new `dictionary` parameter to the `/define` command which allows users to select between `standard` and `urban` dictionary, the latter searching urbandictionary.com for definitions
+- Improvements to docstring formatting on commands
+- Starboard no longer sends spoilered images
+- `/image` command has been renamed to `/img`
+- The `default_ephemeral` user setting is now `False` by default
+- Updated the appearance for the outputs of `/todo list` and `/remind list`
+- Increased some limits:
+  - Max todos: 100 -> 1000
+  - Max reminders: 15 -> 100
+  - Max highlights: 10 -> 100
+- Web search now shows up to 30 results
+- Use new markdown in various places
+- The output of the `/clear` command is now always ephemeral
+- Starboard embeds now show the source channel of the starred message
+- Shortened the length of the message content in a reminder delivery, embed still shows full length
+
+## Removals
+
+- Removed the `/profile show` command
+- Reminder todo categories
+
+## Fixes
+
+- Fixed issues caused by migration to the new Discord usernames system
+
+## Other
+
+- New `force_ephemeral` parameter for menu objects
+- Improvements to autocomplete helpers
+- Improved confirmations
+- `DropdownMenu`s now have logic similar to the "centered" autocomplete, so that it's possible to show lists of arbitary length while respecting the option limit of 25
+- Overhauled CSE module to paginate results to allow for up to 100 per query
+- Elide filenames from exec command output
+
 # **Release v1.7.1** (February 19, 2023)
 
 ## Improvements
