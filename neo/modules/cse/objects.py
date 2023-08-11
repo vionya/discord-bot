@@ -10,6 +10,13 @@ class SearchResult:
         "image_url",
     )
 
+    title: str
+    title_html: str
+    url: str
+    snippet: str
+    snippet_html: str
+    image_url: str | None
+
     def __init__(self, result_data):
         self.title = result_data.get("title")
         self.snippet = result_data.get("snippet")

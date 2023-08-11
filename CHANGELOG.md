@@ -38,6 +38,7 @@
 - The output of the `/clear` command is now always ephemeral
 - Starboard embeds now show the source channel of the starred message
 - Shortened the length of the message content in a reminder delivery, embed still shows full length
+- Web search embeds now show the original query
 
 ## Removals
 

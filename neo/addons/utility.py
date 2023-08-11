@@ -140,7 +140,14 @@ class Utility(neo.Addon):
     ):
         resp = await self.google.search(query, image=image, results=30)
 
-        embeds = [*map(result_to_embed, resp)]
+        embeds = [
+            *map(
+                lambda r: result_to_embed(r).set_author(
+                    name=f'Results for "{shorten(query, 50)}"'
+                ),
+                resp,
+            )
+        ]
         if not embeds:
             raise RuntimeError("Search returned no results")
 

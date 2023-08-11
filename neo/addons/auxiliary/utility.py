@@ -21,17 +21,20 @@ from neo.tools.formatters import shorten
 if TYPE_CHECKING:
     from googletrans import Translator
 
+    from neo.modules.cse import SearchResult
+
 
 TRANSLATION_DIRECTIVE = re.compile(
     r"((?P<src>[a-zA-Z\*\_]+|auto)->(?P<dest>[a-zA-Z]+))?"
 )
 
 
-def result_to_embed(result):
-    embed = neo.Embed(
-        title=result.title, description=result.snippet, url=result.url
-    )
-    embed.set_image(url=result.image_url or "")
+def result_to_embed(result: SearchResult):
+    embed = neo.Embed(title=result.title, url=result.url)
+    if result.image_url:
+        embed.set_image(url=result.image_url)
+    else:
+        embed.description = result.snippet
     return embed
 
 
