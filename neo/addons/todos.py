@@ -84,7 +84,8 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         formatted_todos: list[str] = []
         todos: list[TodoItem] = self.todos[interaction.user.id]
 
-        for todo in todos:
+        # sort in-place, by created_at ascending
+        for todo in sorted(todos, key=lambda t: t.created_at):
             formatted_todos.append(
                 "- {0}".format(escape_markdown(shorten(todo.content, width=75)))
             )
