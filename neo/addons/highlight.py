@@ -340,7 +340,8 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
         user_highlights = self.highlights.get(interaction.user.id, [])
         formatted_hls = []
 
-        for hl in user_highlights:
+        # sort highlights alphabetically
+        for hl in sorted(user_highlights, key=lambda h: h.content):
             formatted_hls.append(f"- `{hl.content}`")
 
         menu = ButtonsMenu.from_iterable(
