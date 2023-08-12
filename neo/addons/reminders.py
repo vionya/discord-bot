@@ -130,11 +130,11 @@ class Reminder:
                 embed.add_field(
                     name="Repeats at:",
                     value=f"<t:{self.end_time.timestamp():.0f}>",
-                    inline=False,
+                    inline=True,
                 ).add_field(
                     name="Repeats every:",
                     value=f"`{humanize_timedelta(self.delta)}`",
-                    inline=False,
+                    inline=True,
                 )
 
             content = shorten(self.content, 75)
