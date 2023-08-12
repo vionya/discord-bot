@@ -118,12 +118,12 @@ def generate_param_help(command: app_commands.Command) -> str:
 class AppHelpCommand(AutoEphemeralAppCommand):
     """Displays help for the bot.
 
-    __**Command Lists**__
+    ## Command Lists
     In a list of commands, command types are identified symbolically:
     - A `⑄` symbol next to a listed command identifies it as a standalone command.
     - A `⑃` symbol next to a listed command identifies it as a command group.
 
-    __**Using Slash Commands**__
+    ## Using Slash Commands
     neo uses a custom system for slash commands which lets you[JOIN]
     customize your experience. Each command automatically includes a[JOIN]
     special "`private`" option. This option controls whether the response[JOIN]
