@@ -395,7 +395,8 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
         reminders = self.reminders[interaction.user.id].copy()
         formatted_reminders: list[str] = []
 
-        for reminder in reminders:
+        # sort by next to trigger, ascending
+        for reminder in sorted(reminders, key=lambda r: r.end_time):
             formatted_reminders.append(
                 "- {0} (<t:{1}:R>) {2}".format(
                     "\U0001F501"
