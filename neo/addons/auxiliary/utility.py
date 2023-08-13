@@ -81,12 +81,14 @@ def definitions_to_embed(
                     embed = neo.Embed(
                         description=definition.definition,
                         title=f"{word.word}: {meaning.part_of_speech}",
-                    ).add_field(
-                        name="Synonyms",
-                        value=", ".join(
-                            (definition.synonyms or ["No synonyms"])[:5]
-                        ),
                     )
+
+                    if definition.synonyms:
+                        embed.add_field(
+                            name="Synonyms",
+                            value=", ".join(definition.synonyms[:5]),
+                        )
+
                     yield embed
 
 
