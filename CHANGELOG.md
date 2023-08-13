@@ -44,7 +44,8 @@
 ## Removals
 
 - Removed the `/profile show` command
-- Reminder todo categories
+- Removed the `Show Message Info` context menu command
+- Removed todo categories
 
 ## Fixes
 
