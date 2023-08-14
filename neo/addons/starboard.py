@@ -450,7 +450,7 @@ class StarboardAddon(
                 "DELETE FROM stars WHERE guild_id=$1", channel.guild.id
             )
             starboard.cached_stars.clear()
-        starboard.channel = None
+            starboard.channel = None
 
     @neo.Addon.recv("config_update")
     async def handle_starboard_setting(self, guild, settings):
