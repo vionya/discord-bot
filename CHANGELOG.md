@@ -50,6 +50,7 @@
 ## Fixes
 
 - Fixed issues caused by migration to the new Discord usernames system
+- Fixed an issue where if *any* channel was deleted in a server, that server's starboard channel would erroneously be set to `None`
 
 ## Other
 
