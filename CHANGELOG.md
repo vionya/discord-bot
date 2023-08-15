@@ -41,6 +41,7 @@
 - Web search embeds now show the original query
 - Todo, reminder, and highlight lists are now sorted based on various criteria
 - Todo and reminder list previews now strip newlines
+- Shorten message content preview for highlight DMs, embed remains unaffected
 
 ## Removals
 

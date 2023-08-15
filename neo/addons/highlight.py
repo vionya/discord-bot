@@ -23,6 +23,7 @@ from neo.tools import (
     is_clear_all,
     is_valid_index,
     send_confirmation,
+    shorten,
 )
 from neo.tools.checks import is_registered_profile_predicate
 
@@ -200,7 +201,9 @@ class Highlight:
         )
 
         return {
-            "content": "{0.author}: {0.content}".format(message)[:1500],
+            "content": "{0}: {1}".format(
+                message.author, shorten(message.content, 75)
+            ),
             "embed": embed,
             "view": view,
             "silent": self.bot.profiles[self.user_id].silence_hl,
