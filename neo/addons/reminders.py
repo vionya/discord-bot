@@ -397,13 +397,16 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
 
         # sort by next to trigger, ascending
         for reminder in sorted(reminders, key=lambda r: r.end_time):
+            content = utils.escape_markdown(
+                shorten("".join(reminder.content.splitlines()), 75)
+            )
             formatted_reminders.append(
                 "- {0} (<t:{1}:R>) {2}".format(
                     "\U0001F501"
                     if reminder.repeating
                     else "\u0031\uFE0F\u20E3",
                     int(reminder.end_time.timestamp()),
-                    utils.escape_markdown(shorten(reminder.content, 75)),
+                    content,
                 )
             )
 

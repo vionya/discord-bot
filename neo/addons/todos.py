@@ -86,9 +86,10 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
         # sort in-place, by created_at ascending
         for todo in sorted(todos, key=lambda t: t.created_at):
-            formatted_todos.append(
-                "- {0}".format(escape_markdown(shorten(todo.content, width=75)))
+            content = escape_markdown(
+                shorten("".join(todo.content.splitlines()), width=75)
             )
+            formatted_todos.append(f"- {content}")
 
         menu = ButtonsMenu.from_iterable(
             formatted_todos or ["No todos"],

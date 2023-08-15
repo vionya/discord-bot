@@ -40,6 +40,7 @@
 - Shortened the length of the message content in a reminder delivery, embed still shows full length
 - Web search embeds now show the original query
 - Todo, reminder, and highlight lists are now sorted based on various criteria
+- Todo and reminder list previews now strip newlines
 
 ## Removals
 
