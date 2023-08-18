@@ -15,11 +15,14 @@ ABSOLUTE_FORMATS = {
     "%b %d, %Y",               # Jan 1, 2023
     "%H:%M",                   # 00:00
     "%I:%M %p",                # 12:00 AM
+    "%I:%M%p",                 # 12:00AM
     "%b %d, %Y at %H:%M",      # Jan 1, 2023 at 00:00
     "%b %d, %Y at %I:%M %p",   # Jan 1, 2023 at 12:00 AM
+    "%b %d, %Y at %I:%M%p",    # Jan 1, 2023 at 12:00AM
     "%b %d",                   # Jan 1
     "%b %d at %H:%M",          # Jan 1 at 00:00
     "%b %d at %I:%M %p",       # Jan 1 at 12:00 AM
+    "%b %d at %I:%M%p",        # Jan 1 at 12:00AM
 }
 # fmt: on
 # Add support for full month names too (e.g. January)
