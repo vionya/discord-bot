@@ -129,7 +129,7 @@ class Starboard:
 
         async with self.lock:
             embed = (
-                neo.Embed(description="")
+                neo.Embed(description="", timestamp=message.created_at)
                 .set_author(
                     name=f"{message.author.display_name} ({message.author})",
                     icon_url=message.author.display_avatar,
