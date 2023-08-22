@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+from bisect import insort
 from collections import defaultdict
 from enum import Enum
 from functools import cached_property
@@ -231,7 +232,10 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
     async def __ainit__(self):
         await self.bot.wait_until_ready()
 
-        for record in await self.bot.db.fetch("SELECT * FROM highlights"):
+        # fetch reminders ordered by content
+        for record in await self.bot.db.fetch(
+            "SELECT * FROM highlights ORDER BY content ASC"
+        ):
             self.highlights[record["user_id"]].append(
                 Highlight(self.bot, **record)
             )
@@ -401,8 +405,11 @@ class Highlights(neo.Addon, app_group=True, group_name="highlight"):
             interaction.user.id,
             content,
         )
-        self.highlights[interaction.user.id].append(
-            Highlight(self.bot, **result)
+        # use bisect insort to maintain ordering
+        insort(
+            self.highlights[interaction.user.id],
+            Highlight(self.bot, **result),
+            key=lambda h: h.content,
         )
         self.recompute_flattened()
         await send_confirmation(
