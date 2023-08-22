@@ -5,7 +5,9 @@ An auxiliary module for the `Todos` addon
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import discord
 
@@ -14,7 +16,46 @@ from neo.tools.message_helpers import send_confirmation
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-    from neo.addons.todos import TodoItem, Todos
+    from neo.addons.todos import Todos
+
+
+class TodoItem:
+    # Max number of characters in a todo's content
+    MAX_LEN = 1500
+
+    __slots__ = ("user_id", "content", "todo_id", "created_at")
+
+    def __init__(
+        self,
+        *,
+        user_id: int,
+        content: str,
+        todo_id: UUID,
+        created_at: datetime,
+    ):
+        self.user_id = user_id
+        self.content = content
+        self.todo_id = todo_id
+        self.created_at = created_at
+
+    def __repr__(self):
+        return (
+            '<{0.__class__.__name__} user_id={0.user_id} todo_id="{0.todo_id}">'
+        ).format(self)
+
+
+class TodoAddModal(discord.ui.Modal, title="Creating a Todo"):
+    content: discord.ui.TextInput[Self] = discord.ui.TextInput(
+        label="Todo Content",
+        style=discord.TextStyle.paragraph,
+        min_length=1,
+        max_length=TodoItem.MAX_LEN,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Guaranteed by the min length and required-ness of the field
+        assert self.content.value
+        self.interaction = interaction
 
 
 class TodoEditModal(discord.ui.Modal):
@@ -26,11 +67,10 @@ class TodoEditModal(discord.ui.Modal):
             style=discord.TextStyle.paragraph,
             default=self.todo.content,
             min_length=1,
-            max_length=todo.MAX_LEN,
+            max_length=TodoItem.MAX_LEN,
         )
 
         super().__init__(title="Editing a Todo", timeout=300)
-
         self.add_item(self.content)
 
     async def on_submit(self, interaction: discord.Interaction):

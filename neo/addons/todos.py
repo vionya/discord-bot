@@ -14,7 +14,12 @@ from discord import app_commands
 from discord.utils import escape_markdown
 
 import neo
-from neo.addons.auxiliary.todos import TodoEditModal, TodoShowView
+from neo.addons.auxiliary.todos import (
+    TodoAddModal,
+    TodoEditModal,
+    TodoItem,
+    TodoShowView,
+)
 from neo.classes.app_commands import no_defer
 from neo.modules import ButtonsMenu
 from neo.tools import (
@@ -27,31 +32,6 @@ from neo.tools import (
 from neo.tools.checks import is_registered_profile_predicate
 
 MAX_TODOS = 1000
-
-
-class TodoItem:
-    # Max number of characters in a todo's content
-    MAX_LEN = 1500
-
-    __slots__ = ("user_id", "content", "todo_id", "created_at")
-
-    def __init__(
-        self,
-        *,
-        user_id: int,
-        content: str,
-        todo_id: UUID,
-        created_at: datetime,
-    ):
-        self.user_id = user_id
-        self.content = content
-        self.todo_id = todo_id
-        self.created_at = created_at
-
-    def __repr__(self):
-        return (
-            '<{0.__class__.__name__} user_id={0.user_id} todo_id="{0.todo_id}">'
-        ).format(self)
 
 
 class Todos(neo.Addon, app_group=True, group_name="todo"):
@@ -108,14 +88,32 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
 
     @app_commands.command(name="add")
     @app_commands.describe(content="The content of the new todo")
+    @no_defer
     async def todo_add(
         self,
         interaction: discord.Interaction,
-        content: app_commands.Range[str, 1, TodoItem.MAX_LEN],
+        content: app_commands.Range[str, 1, TodoItem.MAX_LEN] | None = None,
     ):
         """Add a new todo"""
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
             raise ValueError("You've used up all your todo slots!")
+
+        # delegate to custom Interaction by default
+        ephemeral = None
+        # if content is excluded
+        if content is None:
+            # prompt the user with a modal to add the content
+            modal = TodoAddModal(timeout=300)
+            await interaction.response.send_modal(modal)
+            if await modal.wait():
+                # if the view times out, then we don't do anything
+                return
+            # wait until the user is done, and then grab the content and
+            # interaction object from the submission event
+            content = modal.content.value
+            interaction = modal.interaction
+            # always want to respond to modals ephemerally
+            ephemeral = True
 
         data = {
             "user_id": interaction.user.id,
@@ -124,19 +122,19 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             "created_at": datetime.now(timezone.utc),
         }
 
-        await self.bot.db.execute(
-            """
-            INSERT INTO todos (
-                user_id,
-                content,
-                todo_id,
-                created_at
-            ) VALUES (
-                $1, $2, $3, $4
-            )
-            """,
-            *data.values(),
-        )
+        # await self.bot.db.execute(
+        #     """
+        #     INSERT INTO todos (
+        #         user_id,
+        #         content,
+        #         todo_id,
+        #         created_at
+        #     ) VALUES (
+        #         $1, $2, $3, $4
+        #     )
+        #     """,
+        #     *data.values(),
+        # )
 
         self.todos[interaction.user.id].append(TodoItem(**data))
         await send_confirmation(
@@ -144,6 +142,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             predicate="added `{}` to your todo list".format(
                 escape_markdown(content.replace("`", "`\u200b"))
             ),
+            ephemeral=ephemeral,
         )
 
     @app_commands.command(name="remove")
