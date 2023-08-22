@@ -65,7 +65,10 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
     async def __ainit__(self):
         await self.bot.wait_until_ready()
 
-        for record in await self.bot.db.fetch("SELECT * FROM todos"):
+        # fetch records already sorted
+        for record in await self.bot.db.fetch(
+            "SELECT * FROM todos ORDER BY created_at ASC"
+        ):
             self.todos[record["user_id"]].append(TodoItem(**record))
 
     # Need to dynamically account for deleted profiles
@@ -84,8 +87,7 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
         formatted_todos: list[str] = []
         todos: list[TodoItem] = self.todos[interaction.user.id]
 
-        # sort in-place, by created_at ascending
-        for todo in sorted(todos, key=lambda t: t.created_at):
+        for todo in todos:
             content = escape_markdown(
                 shorten("".join(todo.content.splitlines()), width=75)
             )
