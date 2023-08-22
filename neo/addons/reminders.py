@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from bisect import insort
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
@@ -18,8 +19,8 @@ from neo.tools import (
     generate_autocomplete_list,
     is_clear_all,
     is_valid_index,
-    send_confirmation,
     iter_autocomplete,
+    send_confirmation,
     shorten,
     try_or_none,
 )
@@ -193,7 +194,10 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
     async def __ainit__(self):
         await self.bot.wait_until_ready()
 
-        for record in await self.bot.db.fetch("SELECT * FROM reminders"):
+        # initially fetch reminders sorted by end time
+        for record in await self.bot.db.fetch(
+            "SELECT * FROM reminders ORDER BY epoch + delta ASC"
+        ):
             reminder = Reminder(bot=self.bot, **record)
             self.reminders[record["user_id"]].append(reminder)
 
@@ -254,7 +258,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
             deliver_in,
         )
         reminder = Reminder(bot=self.bot, **data)
-        self.reminders[user_id].append(reminder)
+        insort(self.reminders[user_id], reminder, key=lambda r: r.end_time)
 
     async def addon_interaction_check(
         self, interaction: discord.Interaction
