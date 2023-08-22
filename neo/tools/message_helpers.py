@@ -28,10 +28,13 @@ async def send_confirmation(
     msg = "Success"
     if predicate:
         msg = f"Successfully {predicate}"
-    await interaction.response.send_message(
-        f"\U00002714 {msg}!",
-        **{"ephemeral": True} if ephemeral is not None else {},
-    )
+
+    if ephemeral is not None:
+        await interaction.response.send_message(
+            f"\U00002714 {msg}!", ephemeral=ephemeral
+        )
+    else:
+        await interaction.response.send_message(f"\U00002714 {msg}!")
 
 
 class PromptButton(discord.ui.Button):
