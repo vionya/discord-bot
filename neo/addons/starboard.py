@@ -137,6 +137,11 @@ class Starboard:
                 .set_footer(text=f"#{message.channel.name}")
             )
 
+            view = discord.ui.View(timeout=0)
+            view.add_item(
+                discord.ui.Button(url=message.jump_url, label="Jump to message")
+            )
+
             if isinstance(message.channel, discord.Thread):
                 assert message.channel.parent
                 embed.set_footer(
@@ -176,12 +181,17 @@ class Starboard:
                     inline=False,
                 )
 
-            view = discord.ui.View(timeout=0)
-            view.add_item(
-                discord.ui.Button(
-                    url=message.jump_url, label="Jump to original"
+            if (ref := message.reference) and isinstance(
+                ref.resolved, discord.Message
+            ):
+                embed.add_field(
+                    name=f"Replying to {ref.resolved.author}",
+                    value=shorten(ref.resolved.content, 500),
+                    inline=False,
                 )
-            )
+                view.add_item(
+                    discord.ui.Button(url=ref.jump_url, label="Jump to reply")
+                )
 
             starboard_message = await self.channel.send(
                 self.format.format(stars=stars), embed=embed, view=view
