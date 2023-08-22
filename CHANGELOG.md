@@ -43,6 +43,7 @@
 - Todo and reminder list previews now strip newlines
 - Shorten message content preview for highlight DMs, embed remains unaffected
 - Starboard embeds now show the timestamp of the starred message's creation in the footer
+- Starboard embeds now show a preview of replied-to messages if applicable
 
 ## Removals
 
