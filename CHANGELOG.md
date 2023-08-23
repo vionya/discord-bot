@@ -7,6 +7,7 @@
 - New context menu commands:
   - `View Banner` - shows a user's banner ephemerally
   - `Steal Sticker` - attempts to steal the sticker which was included with the relevant message
+- New command `/banner` shows a user's banner
 - New command `/timestamp` for generating a Discord-formatted timestamp using human-readable inputs
   - Parameters accept the exact same syntax as the `when` parameter for the `/remind set` command
   - Also supports a `timezone` parameter to create absolute timestamps in any timezone

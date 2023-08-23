@@ -342,7 +342,6 @@ class Utility(neo.Addon):
                 user_object = await interaction.guild.fetch_member(id)  # type: ignore
             except (discord.HTTPException, AttributeError):
                 user_object = await self.bot.fetch_user(id)
-
         else:
             user_object = user
 
@@ -365,9 +364,45 @@ class Utility(neo.Addon):
         embed.description += (
             "**View user avatar in browser**\n" + get_browser_links(avatar)
         )
-        embed = embed.set_image(url=avatar).set_author(name=user_object)
+        embed = embed.set_image(url=avatar).set_author(
+            name=f"{user_object.display_name} ({user_object})"
+        )
 
         await interaction.response.send_message(embed=embed, **kwargs)
+
+    @app_commands.command(name="banner")
+    @app_commands.describe(
+        user="The user to get the banner of. Yourself if empty"
+    )
+    async def banner_command(
+        self,
+        interaction: discord.Interaction,
+        user: discord.User | discord.Member | None = None,
+    ):
+        """Retrieves the banner of yourself, or the specified user"""
+        id = (user or interaction.user).id
+        try:
+            user_object = await interaction.guild.fetch_member(id)  # type: ignore
+        except (discord.HTTPException, AttributeError):
+            user_object = await self.bot.fetch_user(id)
+
+        if not user_object.banner:
+            return await interaction.response.send_message(
+                "User does not have a banner."
+            )
+
+        embed = (
+            neo.Embed(
+                description=(
+                    "**View banner in browser**\n"
+                    + get_browser_links(user_object.banner)
+                    + "\n\n"
+                )
+            )
+            .set_image(url=user_object.banner.with_size(4096).url)
+            .set_author(name=f"{user_object.display_name} ({user_object})")
+        )
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.guild_only()
     @app_commands.command(name="serverinfo")
@@ -610,22 +645,8 @@ class Utility(neo.Addon):
         interaction: discord.Interaction,
         user: discord.Member | discord.User,
     ):
-        user = await self.bot.fetch_user(user.id)
-        if not user.banner:
-            return await interaction.response.send_message(
-                "User does not have a banner.", ephemeral=True
-            )
-        embed = (
-            neo.Embed()
-            .set_image(url=user.banner.with_size(4096).url)
-            .set_author(name=user)
-        )
-        embed.description = (
-            "**View banner in browser**\n"
-            + get_browser_links(user.banner)
-            + "\n\n"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        setattr(interaction.namespace, "private", True)
+        await self.banner_command.callback(self, interaction, user)  # type: ignore
 
     async def message_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message
