@@ -527,6 +527,73 @@ class Utility(neo.Addon):
 
         await interaction.response.send_message(content=formatted)
 
+    @app_commands.command(name="emoji")
+    @app_commands.default_permissions(create_expressions=True)
+    @app_commands.guild_only()
+    @app_commands.rename(source_emoji="emoji", new_name="name")
+    @app_commands.describe(
+        source_emoji="A custom emoji to steal to this server",
+        file="An image file to add as an emoji",
+        new_name="The name for this emoji",
+    )
+    async def create_emoji_command(
+        self,
+        interaction: discord.Interaction,
+        source_emoji: str | None = None,
+        file: discord.Attachment | None = None,
+        new_name: app_commands.Range[str, 2, 32] | None = None,
+    ):
+        """
+        Create a new custom emoji in the server
+
+        You can either steal a custom emoji from another server with the[JOIN]
+        `emoji` parameter, or create one from an image with the `file`[JOIN]
+        parameter.
+
+        The `name` parameter sets the name of the emoji. If stealing an[JOIN]
+        emoji, this is optional, since the name of the emoji is used by[JOIN]
+        default. If creating an emoji from a file, this is required.
+        """
+        assert interaction.guild
+
+        if not (interaction.app_permissions.create_expressions):
+            return await interaction.response.send_message(
+                "neo is missing the `Create Expressions` permission"
+            )
+
+        src = source_emoji or file
+        if src is None:
+            raise TypeError("You need to provide a source for the emoji")
+
+        if isinstance(src, str):
+            partial = discord.PartialEmoji.from_str(src.strip())
+            if not partial.is_custom_emoji():
+                raise ValueError("You need to provide a valid custom emoji")
+
+            async with self.bot.session.get(partial.url) as resp:
+                data = await resp.read()
+
+            emoji = await interaction.guild.create_custom_emoji(
+                name=new_name or partial.name, image=data
+            )
+        else:
+            if not src.filename.lower().endswith(("jpg", "jpeg", "png", "gif")):
+                raise ValueError("The file must be a JPEG, PNG, or GIF image")
+
+            if src.size > 2_048_000:
+                raise ValueError("The file can't be larger than 2048kb")
+
+            if new_name is None:
+                raise TypeError("You need to provide a name for this emoji")
+
+            emoji = await interaction.guild.create_custom_emoji(
+                name=new_name, image=await src.read()
+            )
+
+        await interaction.response.send_message(
+            f"Successfully created emoji `{emoji.name}` {emoji}"
+        )
+
     # CONTEXT MENU COMMANDS #
 
     # Context menu command added in __init__
