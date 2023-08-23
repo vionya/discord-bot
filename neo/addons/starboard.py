@@ -128,11 +128,18 @@ class Starboard:
         )
 
         async with self.lock:
+            try:
+                # fetch member to get their guild display name and avatar
+                author = await message.guild.fetch_member(message.author.id)
+            except discord.DiscordException:
+                # make sure to have a fallback in case something goes wrong
+                author = message.author
+
             embed = (
                 neo.Embed(description="", timestamp=message.created_at)
                 .set_author(
-                    name=f"{message.author.display_name} ({message.author})",
-                    icon_url=message.author.display_avatar,
+                    name=f"{author.display_name} ({message.author})",
+                    icon_url=author.display_avatar,
                 )
                 .set_footer(text=f"#{message.channel.name}")
             )
@@ -184,8 +191,15 @@ class Starboard:
             if (ref := message.reference) and isinstance(
                 ref.resolved, discord.Message
             ):
+                try:
+                    replied_to = await message.guild.fetch_member(
+                        ref.resolved.author.id
+                    )
+                except discord.DiscordException:
+                    replied_to = ref.resolved.author
+
                 embed.add_field(
-                    name=f"Replying to {ref.resolved.author}",
+                    name=f"Replying to {replied_to.display_name} ({ref.resolved.author})",
                     value=shorten(ref.resolved.content, 500),
                     inline=False,
                 )
