@@ -191,12 +191,17 @@ class Starboard:
             if (ref := message.reference) and isinstance(
                 ref.resolved, discord.Message
             ):
-                try:
-                    replied_to = await message.guild.fetch_member(
-                        ref.resolved.author.id
-                    )
-                except discord.DiscordException:
-                    replied_to = ref.resolved.author
+                # if the replied-to user and author are the same, save a req
+                if ref.resolved.author.id == author.id:
+                    replied_to = author
+                else:
+                    # otherwise we have to fetch it
+                    try:
+                        replied_to = await message.guild.fetch_member(
+                            ref.resolved.author.id
+                        )
+                    except discord.DiscordException:
+                        replied_to = ref.resolved.author
 
                 embed.add_field(
                     name=f"Replying to {replied_to.display_name} ({ref.resolved.author})",
