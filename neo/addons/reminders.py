@@ -37,7 +37,7 @@ from .auxiliary.reminders import ReminderEditModal, ReminderShowView
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
 # Minimum number of total seconds in a repeating reminder
-REPEATING_MINIMUM_SECONDS = 1800
+REPEATING_MINIMUM_SECONDS = 60
 
 
 class Reminder:
@@ -357,7 +357,7 @@ class Reminders(neo.Addon, app_group=True, group_name="remind"):
                     delta = parse_relative(repeat)[0]
                     if delta.total_seconds() < REPEATING_MINIMUM_SECONDS:
                         raise ValueError(
-                            "Reminders may repeat no more than twice an hour"
+                            "Reminders may repeat no more than once an minute"
                         )
 
                     # Subtracting the delta from the parsed datetime allows
