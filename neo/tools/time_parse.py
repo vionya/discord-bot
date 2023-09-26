@@ -8,25 +8,8 @@ import re
 from datetime import datetime, timedelta, tzinfo
 from typing import NoReturn
 
-from neo.tools import try_or_none
+from dateutil.parser import ParserError, parse
 
-# fmt: off
-ABSOLUTE_FORMATS = {
-    "%b %d, %Y",               # Jan 1, 2023
-    "%H:%M",                   # 00:00
-    "%I:%M %p",                # 12:00 AM
-    "%I:%M%p",                 # 12:00AM
-    "%b %d, %Y at %H:%M",      # Jan 1, 2023 at 00:00
-    "%b %d, %Y at %I:%M %p",   # Jan 1, 2023 at 12:00 AM
-    "%b %d, %Y at %I:%M%p",    # Jan 1, 2023 at 12:00AM
-    "%b %d",                   # Jan 1
-    "%b %d at %H:%M",          # Jan 1 at 00:00
-    "%b %d at %I:%M %p",       # Jan 1 at 12:00 AM
-    "%b %d at %I:%M%p",        # Jan 1 at 12:00AM
-}
-# fmt: on
-# Add support for full month names too (e.g. January)
-ABSOLUTE_FORMATS |= {i.replace(r"%b", "%B") for i in ABSOLUTE_FORMATS}
 RELATIVE_FORMATS = re.compile(
     r"""
     ((?P<years>[0-9]{1,2})\s?(?:y(ears?)?,?))?         # Parse years, allow 1-2 digits
@@ -95,22 +78,12 @@ class TimedeltaWithYears(timedelta):
         )
 
 
-def parse_absolute(
-    string: str, *, tz: tzinfo
-) -> tuple[datetime, str] | NoReturn:
+def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str]:
     """
     Attempts to parse a datetime from a string of text.
 
-    The `string` argument is split into an array by spaces, is tested against
-    each format in `ABSOLUTE_FORMATS`. `datetime.strptime` attempts to parse
-    the string with each format. If all formats fail, then one element is
-    removed from the end of the split string. This repeats until either a valid
-    parsing is found, or the string list has been emptied.
-
-    Example: string is "3:00 PM foo bar"
-        - -> ["3:00", "PM", "foo", "bar"] *no parsing*
-        - -> ["3:00", "PM", "foo""] *no parsing*
-        - -> ["3:00", "PM"] *matches %I:%M %p*, return parsed datetime
+    This function leverages `dateutil.parser.parse` to parse datetimes from
+    its input.
 
     :param string: The string to attempt to parse a datetime from
     :type string: ``str``
@@ -122,64 +95,16 @@ def parse_absolute(
     :rtype: ``tuple[datetime.datetime, str]``
 
     :raises ValueError: If no valid datetime could be parsed
+
+    :raises RuntimeError: If there was an unknown underlying exception
     """
-    split = string.split(" ")
-    endpoint = len(split)
-    now = datetime.now(tz)
-
-    for _ in range(len(split)):  # Check for every possible chunk size
-        to_parse = split[
-            :endpoint
-        ]  # Check the string in left-to-right increments
-        # e.g. ["May", "14", "at", "12:34", "some", "text"] removes elements from the right
-        # until the full list, when joined with a whitespace, matches one of the strptime formats
-
-        parsed_datetime = None
-        for format in ABSOLUTE_FORMATS:
-            raw_parsed_dt = try_or_none(
-                datetime.strptime, " ".join(to_parse), format
-            )
-            if raw_parsed_dt:
-                parsed_datetime = raw_parsed_dt.replace(tzinfo=tz)
-
-                # N.B. This happens when the %y directive is not in the chosen
-                # format string. In this case, we want to update the year to be
-                # the current year, since the default is 1900. Otherwise, a
-                # year was provided, so we don't want to change it
-                if "%y" not in format.lower():
-                    parsed_datetime = parsed_datetime.replace(year=now.year)
-
-                # N.B. This happens when the %b %d directive is not in the
-                # chosen format string. In this case, we want to update the
-                # date to be the current day, since the default is the first
-                # day of the year. Otherwise, a date was provided, so we don't
-                # want to change it.
-                if "%b %d" not in format.lower():
-                    # We want to update the timestamp so that it's during the
-                    # current day, with only the hour and minute replaced.
-                    if parsed_datetime < now:
-                        parsed_datetime = now.replace(
-                            hour=parsed_datetime.hour,
-                            minute=parsed_datetime.minute,
-                        )
-
-                    # Then we take another pass. If the datetime is still before
-                    # the current time, we want to bump it up by a day
-                    if parsed_datetime < now:
-                        parsed_datetime += timedelta(days=1)
-
-                break
-
-        if parsed_datetime is not None:  # We got a hit
-            break
-        endpoint -= 1  # Decrease the size of the chunk by one word
-
-    else:
+    try:
+        dt = parse(string, default=datetime.now(tz))
+        return (dt, string)
+    except ParserError:
         raise ValueError("An invalid date format was provided.")
-
-    return parsed_datetime.replace(second=0), " ".join(
-        string.split(" ")[endpoint:]
-    )
+    except Exception:
+        raise RuntimeError("There was an unknown error :(")
 
 
 def parse_relative(

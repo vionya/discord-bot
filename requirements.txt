@@ -6,6 +6,7 @@ typing_extensions
 
 ### Extension Requirements ###
 googletrans==4.0.0rc1
+python-dateutil
 
 ### Circumstantial Requirements ###
 tzdata; sys_platform == "win32"  # Windows doesn't provide a native IANA database
