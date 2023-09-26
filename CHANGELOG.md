@@ -49,6 +49,7 @@
 - Starboard embeds now show the timestamp of the starred message's creation in the footer
 - Starboard embeds now show a preview of replied-to messages if applicable
 - Starboard now shows the server-specific display name and avatar of the user starred (and replied-to user if relevant)
+- Replace custom absolute datetime parser with `python-dateutil` parser for much higher forgiveness with inputs
 
 ## Removals
 
