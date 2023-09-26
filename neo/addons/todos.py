@@ -122,19 +122,19 @@ class Todos(neo.Addon, app_group=True, group_name="todo"):
             "created_at": datetime.now(timezone.utc),
         }
 
-        # await self.bot.db.execute(
-        #     """
-        #     INSERT INTO todos (
-        #         user_id,
-        #         content,
-        #         todo_id,
-        #         created_at
-        #     ) VALUES (
-        #         $1, $2, $3, $4
-        #     )
-        #     """,
-        #     *data.values(),
-        # )
+        await self.bot.db.execute(
+            """
+            INSERT INTO todos (
+                user_id,
+                content,
+                todo_id,
+                created_at
+            ) VALUES (
+                $1, $2, $3, $4
+            )
+            """,
+            *data.values(),
+        )
 
         self.todos[interaction.user.id].append(TodoItem(**data))
         await send_confirmation(
