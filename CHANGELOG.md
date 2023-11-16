@@ -1,6 +1,6 @@
 # **Release v1.x.x** (TBD)
 
-- Renamed all instances of "neo phoenix" to "neo"
+- Renamed all instances of "fuchsia phoenix" to "fuchsia"
 
 ## Additions
 
@@ -60,7 +60,7 @@
 ## Fixes
 
 - Fixed issues caused by migration to the new Discord usernames system
-- Fixed an issue where if *any* channel was deleted in a server, that server's starboard channel would erroneously be set to `None`
+- Fixed an issue where if *any* channel was deleted in a server, that server's starboard channel would errofuchsiausly be set to `None`
 
 ## Other
 
@@ -329,13 +329,13 @@
 #### Removals
 
 - Removed `args` module (obsolete with full slash command implementation)
-- Removed several obsolete methods from the `Neo` object
+- Removed several obsolete methods from the `Fuchsia` object
 - Removed `commands.HelpCommand` subclass implementation of help command
 - Cleaned up unused runtime patches
 
 #### Changes
 
-- `Neo.channel_check` and `Neo.guild_disabled_check` now process only `Interaction` objects
+- `Fuchsia.channel_check` and `Fuchsia.guild_disabled_check` now process only `Interaction` objects
 - `Devel` command `addon` refactored to use `Literal`s rather than the now-removed `args` module
 - Updated schema for todo and reminder tables (migration script included in `scripts/`)
 - Refactor checks, sometimes decoupling the predicate from the check decorator, allowing predicates to be verified separately
@@ -343,7 +343,7 @@
   - `SETTINGS_MAPPING` dicts have been replaced by `SettingsMapping`s which contain `Setting` objects
   - `SettingsMapping`s and `Setting`s are subclasses of `Mapping` and `MutableMapping`, respectively
   - This allows the raw key names to be separated from the user-facing interfaces, by letting aliases be set and used in commands etc
-- `neo.classes.formatters` -> `neo.tools.formatters`
+- `fuchsia.classes.formatters` -> `fuchsia.tools.formatters`
 
 #### Improvements
 
@@ -434,7 +434,7 @@
 
 ## Initial Slash Commands
 
-- neo phoenix has been updated to support slash commands
+- fuchsia phoenix has been updated to support slash commands
   - Support is currently limited to several commands
   - More commands should become slash commands as time progresses
 - To accomodate some code limitations in having commands function as both text and slash commands, the inputs for several commands has been changed slightly:
@@ -487,7 +487,7 @@
 ## Additions
 
 - `serversettings disable`/`serversettings reenable` system
-  - Allows server administrators to disable neo phoenix's commands within their server
+  - Allows server administrators to disable fuchsia phoenix's commands within their server
   - Disabled commands will not be acknowledged, unless invoked by administrators
   - Running `serversettings disable` with no arguments will display a list of all currently ignored commands
 - `choose` command
@@ -545,7 +545,7 @@
   - Purges a variable number of messages from the channel in which it is invoked
   - Restrictions:
     - Invoking member must have `manage_messages` channel permission
-    - neo phoenix must have `manage_messages` channel permission
+    - fuchsia phoenix must have `manage_messages` channel permission
     - Command may only be invoked within a server
   - Flag command to allow for powerful specification:
     - `--after` and `--before` flag to purge within certain timeframes
@@ -655,7 +655,7 @@ Release v0.10.0 implements a couple of utility commands.
 ## Improvements
 
 - Rename `eval` command to `exec`
-- Remove extraneous `Starboard` attributes
+- Remove extrafuchsiaus `Starboard` attributes
 - Change type of `Starboard.ignored`
 
 # **Release v0.9.2** (July 21, 2021)
@@ -670,7 +670,7 @@ Release v0.10.0 implements a couple of utility commands.
 
 ## Improvements
 
-- Removed an extraneous attribute from starboard objects
+- Removed an extrafuchsiaus attribute from starboard objects
 
 ## Fixes
 
@@ -680,7 +680,7 @@ Release v0.10.0 implements a couple of utility commands.
 
 # **Release v0.9.0** (July 17, 2021)
 
-Release v0.9.0 cleans up and slightly enhances neo phoenix.
+Release v0.9.0 cleans up and slightly enhances fuchsia phoenix.
 
 ## Legal
 
@@ -760,9 +760,9 @@ In large part, this release extends and improves existing features.
 
 - Added `Support Server` button to `info` command output
   - Added corresponding key to config file, along with key for configuring whether the button is enabled or not
-- Overhauled flow of `Invite neo phoenix` button on the `info` command
+- Overhauled flow of `Invite fuchsia phoenix` button on the `info` command
   - Responds ephemerally now
-  - Uses dropdown menus to allow users to select permission presets for inviting neo phoenix
+  - Uses dropdown menus to allow users to select permission presets for inviting fuchsia phoenix
 
 ## Other
 
@@ -771,24 +771,24 @@ In large part, this release extends and improves existing features.
 
 # **Release v0.6.0** (June 25, 2021)
 
-This release fleshes out neo phoenix's feature set further.
+This release fleshes out fuchsia phoenix's feature set further.
 
 ## Highlight Collection
 
 - As of v0.6.0, highlights are delivered via a "collection" method
 - A periodic timer triggers highlight delivery every 5 seconds
   - Highlight context embeds aren't generated until delivery time, rather than at the instant of being triggered
-- Any highlights triggered in a given channel within the 5 second period will be collected into a single highlight notification, rather than delivering an individual message for each highlight (the latter is the behavior of legacy `neo` highlights)
+- Any highlights triggered in a given channel within the 5 second period will be collected into a single highlight notification, rather than delivering an individual message for each highlight (the latter is the behavior of legacy `fuchsia` highlights)
 
 ## Other
 
-- Implemented a developer `addon` command for loading, unloading, and reloading neo phoenix addons post-runtime
+- Implemented a developer `addon` command for loading, unloading, and reloading fuchsia phoenix addons post-runtime
 - Implemented a `PeriodicTimer` class to support the highlight collection feature
   - Also added an accompanying decorator to simplify the creation of timers
 
 # **Release v0.5.0** (June 24, 2021)
 
-This release implements features to bring neo phoenix closer to a stable 1.0.0 release.
+This release implements features to bring fuchsia phoenix closer to a stable 1.0.0 release.
 
 ## Front-End Changes/Additions
 
@@ -813,7 +813,7 @@ This release implements features to bring neo phoenix closer to a stable 1.0.0 r
 
 This release implements a full `Reminders` system.
 
-Below is a comparison between the system's predecessor (legacy `neo` `Reminders`) and the new implementation.
+Below is a comparison between the system's predecessor (legacy `fuchsia` `Reminders`) and the new implementation.
 
 #### Similarities to predecessor:
 
@@ -831,14 +831,14 @@ Below is a comparison between the system's predecessor (legacy `neo` `Reminders`
     - Naming aims to be as conducive to natural datetime expression as possible (`remind on June 7, 20XX Do something`)
 - Implements subcommand `remind [view/show]` for viewing the full content of a reminder (reminder content is truncated to 50 characters in the list view)
 - Both relative offset and absolute datetime scheduling are built from lightweight parsers that take advantage of strict bounds on allowed inputs
-  - Parsing also now allows for the actual content of a reminder to be separated from its deadline (both relative and absolute, unlike legacy `neo` reminders which only separated content from absolutes)
-  - Strict parsing allows for more informative documentation, along with examples, increasing ease of use versus legacy `neo` reminders
+  - Parsing also now allows for the actual content of a reminder to be separated from its deadline (both relative and absolute, unlike legacy `fuchsia` reminders which only separated content from absolutes)
+  - Strict parsing allows for more informative documentation, along with examples, increasing ease of use versus legacy `fuchsia` reminders
 - Implements a maximum number of reminders (15 as of initial release)
-- Increased maximum length for reminder content (1,000 versus legacy `neo`'s 200)
+- Increased maximum length for reminder content (1,000 versus legacy `fuchsia`'s 200)
 - Implements implied localization for users who have configured a timezone in their profile
   - Absolute datetimes _only_ will be constructed with a user's configured timezone
-  - Absolute datetimes for users without a configured timezone will mirror legacy `neo`'s use of UTC
-- Reminders are linked to a user's profile via `FOREIGN KEY`, versus the free-standing structure of legacy `neo` reminders
+  - Absolute datetimes for users without a configured timezone will mirror legacy `fuchsia`'s use of UTC
+- Reminders are linked to a user's profile via `FOREIGN KEY`, versus the free-standing structure of legacy `fuchsia` reminders
   - Users are required to have initialized a profile in order to access the reminder interface
   - This change allows for both increased consistency for users, and creates a more connected structure for the database
 
@@ -883,7 +883,7 @@ This release mainly targets the profile system, and improves upon it significant
 This release implements the `Starboard` feature, and its full functionality. It functions largely identically to its predecessor, with several key improvements:
 
 - Management of starboard settings has been consolidated to a single, extensible system, utilizing SQL comments for logical, standardized documentation
-- neo phoenix's starboard features the ability to ignore/unignore message and channel IDs, preventing them from reaching starboard
+- fuchsia phoenix's starboard features the ability to ignore/unignore message and channel IDs, preventing them from reaching starboard
 - Code style and fluency has also been improved all-around
 
 # **Release v0.1.0** (June 6, 2021)

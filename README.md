@@ -1,4 +1,4 @@
-# neo
+# fuchsia
 ## Project Goals
 
 * Drastically improve codebase quality and readability
@@ -15,9 +15,9 @@
 * [x] Add large features
 * [x] `1.0.0` stable release
 * [x] Deploy and publicize
-* [x] Deprecate legacy `neo`
+* [x] Deprecate legacy `fuchsia`
 * [ ] ???
 
 ## License
 
-neo phoenix is licensed under the GNU Affero General Public License v3.0 (AGPLv3).
+fuchsia phoenix is licensed under the GNU Affero General Public License v3.0 (AGPLv3).

@@ -2,11 +2,11 @@
 -- Copyright (C) 2023 sardonicism-04
 -- Table: profiles | Documentation for settings --
 COMMENT ON COLUMN profiles.receive_highlights IS
-'Dictates whether you''ll receive highlights from neo.
+'Dictates whether you''ll receive highlights from fuchsia.
 
-**Note:** If neo fails to deliver a highlight to you due to being forbidden to do so, this setting will automatically change to `False` and will need to be manually re-enabled. This may occur if:
-- You block neo
-- You no longer share any mutual servers with neo
+**Note:** If fuchsia fails to deliver a highlight to you due to being forbidden to do so, this setting will automatically change to `False` and will need to be manually re-enabled. This may occur if:
+- You block fuchsia
+- You no longer share any mutual servers with fuchsia
 
 Expected Value Type: A boolean-like (`yes`/`no`) value
 Default Value: `True`
