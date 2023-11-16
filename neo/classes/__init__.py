@@ -21,12 +21,12 @@ class Embed(discord.Embed):
     timestamp: Optional[datetime.datetime]
 
     def __init__(self, **kwargs):
-        kwargs.setdefault("colour", 0xF3A6A9)
+        kwargs.setdefault("colour", 0xF48EAD)
         super().__init__(**kwargs)
 
     @classmethod
     def from_dict(cls, data: dict):
-        data.setdefault("color", 0xF3A6A9)
+        data.setdefault("color", 0xF48EAD)
         return super().from_dict(data)
 
 
