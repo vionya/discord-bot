@@ -1,6 +1,6 @@
 # **Release v1.x.x** (TBD)
 
-- Renamed all instances of "fuchsia phoenix" to "fuchsia"
+- Renamed from "neo phoenix" to "fuchsia"
 
 ## Additions
 
