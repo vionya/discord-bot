@@ -80,7 +80,7 @@ class Utility(fuchsia.Addon):
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
-        await self.bot.wait_until_ready()
+        # await self.bot.wait_until_ready()
 
         # Since we wait for bot ready, this has to be true
         if not self.bot.user:
@@ -95,7 +95,13 @@ class Utility(fuchsia.Addon):
             session=self.bot.session,
         )
         self.dictionary = dictionary.Define(self.bot.session)
+
         self.appinfo = await self.bot.application_info()
+        if (team := self.appinfo.team):
+            self.owner = team.owner or team.members[0]
+        else:
+            self.owner = self.appinfo.owner
+        
         buttons = [
             discord.ui.Button(
                 url=self.bot.cfg["support"]["url"],
@@ -488,6 +494,9 @@ class Utility(fuchsia.Addon):
                 py_version.split(" ", 1)[0],
                 discord.__version__,
             )
+        ).set_author(
+            name=f"Developed by {self.owner.display_name} ({self.owner})",
+            icon_url=self.owner.avatar
         )
 
         if self.bot.user:
