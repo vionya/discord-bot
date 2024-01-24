@@ -97,11 +97,11 @@ class Utility(fuchsia.Addon):
         self.dictionary = dictionary.Define(self.bot.session)
 
         self.appinfo = await self.bot.application_info()
-        if (team := self.appinfo.team):
+        if team := self.appinfo.team:
             self.owner = team.owner or team.members[0]
         else:
             self.owner = self.appinfo.owner
-        
+
         buttons = [
             discord.ui.Button(
                 url=self.bot.cfg["support"]["url"],
@@ -417,10 +417,9 @@ class Utility(fuchsia.Addon):
         # The guild_only check guarantees that this will always work
         assert interaction.guild
 
-        animated_emotes = len(
-            [e for e in interaction.guild.emojis if e.animated]
-        )
-        static_emotes = len(interaction.guild.emojis) - animated_emotes
+        all_emotes = await interaction.guild.fetch_emojis()
+        animated_emotes = len([e for e in all_emotes if e.animated])
+        static_emotes = len(all_emotes) - animated_emotes
 
         embed = fuchsia.Embed(
             title=f"{PREMIUM_ICON_MAPPING[interaction.guild.premium_tier]} {interaction.guild}",
@@ -496,7 +495,7 @@ class Utility(fuchsia.Addon):
             )
         ).set_author(
             name=f"Developed by {self.owner.display_name} ({self.owner})",
-            icon_url=self.owner.avatar
+            icon_url=self.owner.avatar,
         )
 
         if self.bot.user:
@@ -675,7 +674,9 @@ class Utility(fuchsia.Addon):
             f"**Message Flags** {flags_str}" if flags_str else "",
             f"**Pinned** {message.pinned}",
         )
-        embed = fuchsia.Embed(description="\n".join(filter(None, raw_description)))
+        embed = fuchsia.Embed(
+            description="\n".join(filter(None, raw_description))
+        )
 
         if message.application:
             app = message.application
