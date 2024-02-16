@@ -2,7 +2,7 @@
 # Copyright (C) 2023 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import discord
 from discord.ext import commands
@@ -10,7 +10,7 @@ from discord.ext import commands
 import fuchsia
 from fuchsia.classes.transformers import codeblock_transformer
 from fuchsia.modules import ButtonsMenu, Pages
-from fuchsia.modules.exec import ExecWrapper, env_from_context
+from fuchsia.modules.exec import ExecWrapper
 from fuchsia.tools.formatters import Table, format_exception
 
 if TYPE_CHECKING:
@@ -24,13 +24,24 @@ class Devel(fuchsia.Addon):
 
     def __init__(self, bot: fuchsia.Fuchsia):
         self.bot = bot
-        self._exec_scope = {}
-        self._last_exec_result = None
+        self._exec_scope: dict[str, Any] = {}
+        self._last_exec_result: Any = None
 
     async def cog_check(self, ctx):
         if not await self.bot.is_owner(ctx.author):
             raise commands.NotOwner("You do not own this bot.")
         return True
+
+    def env_from_context(self, ctx: FuchsiaContext):
+        return {
+            "ctx": ctx,
+            "author": ctx.author,
+            "guild": ctx.guild,
+            "message": ctx.message,
+            "channel": ctx.channel,
+            "bot": ctx.bot,
+            "_": self._last_exec_result,
+        }
 
     @commands.guild_only()
     @commands.command(name="cleanup", aliases=["clean"])
@@ -67,7 +78,7 @@ class Devel(fuchsia.Addon):
         ),
     ):
         """Executes some code, retaining the result"""
-        (globals_ := env_from_context(ctx)).update(
+        (globals_ := self.env_from_context(ctx)).update(
             **(self._exec_scope | globals())
         )
         pages = Pages(
@@ -93,7 +104,9 @@ class Devel(fuchsia.Addon):
                     await menu.start(ctx, as_reply=True)
             await ctx.message.add_reaction("\U00002611")
 
-        except BaseException as e:  # Ensure that all errors in exec are handled here
+        except (
+            BaseException
+        ) as e:  # Ensure that all errors in exec are handled here
             menu.pages.append(
                 "\n{}".format(format_exception(e, no_filename=True))
             )

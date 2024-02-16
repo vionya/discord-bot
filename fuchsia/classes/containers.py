@@ -14,6 +14,7 @@ from fuchsia.tools import humanize_snake_case
 if TYPE_CHECKING:
     import datetime
 
+    from asyncpg import Pool
     from typing_extensions import Never, Unpack
 
     from fuchsia.types.settings_mapping import SettingData
@@ -45,7 +46,10 @@ class RecordContainer(metaclass=ABCMeta):
 
     __slots__ = ("ready", "pool", "hooks")
 
-    def __init__(self, *, pool, **record):
+    ready: bool
+    pool: Pool
+
+    def __init__(self, *, pool: Pool, **record):
         super().__setattr__("ready", False)
         super().__setattr__("pool", pool)
 
@@ -69,7 +73,7 @@ class RecordContainer(metaclass=ABCMeta):
     def __repr__(self):
         return "<{0.__class__.__name__}>".format(self)
 
-    def __setattr__(self, attribute, value):
+    def __setattr__(self, attribute: str, value: Any):
         if attribute not in self.__slots__:
             raise AttributeError(
                 "{0.__class__.__name__!r} object has no attribute {1!r}".format(
@@ -82,18 +86,17 @@ class RecordContainer(metaclass=ABCMeta):
 
         super().__setattr__(attribute, value)
 
-    def __getattribute__(self, attribute):
+    def __getattribute__(self, attribute: str):
         value = object.__getattribute__(self, attribute)
         if hook := object.__getattribute__(self, "hooks").get(attribute):
             value = hook(value)
         return value
 
     @abstractmethod
-    async def update_relation(self, attribute, value):
-        ...
+    async def update_relation(self, attribute: str, value: Any): ...
 
     @abstractmethod
-    async def reset_attribute(self, attribute):
+    async def reset_attribute(self, attribute: str):
         """
         Resets the value of an attribute to its database default.
         """

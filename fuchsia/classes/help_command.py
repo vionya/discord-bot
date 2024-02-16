@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from operator import attrgetter
 from typing import TYPE_CHECKING, Any, Optional
+from itertools import chain
 
 import discord
 from discord import app_commands
@@ -37,6 +38,7 @@ PARAM_TYPE_MAPPING = {
 }
 LEADING_WHITESPACE = re.compile(r"(?!$)^\s+", re.MULTILINE)
 
+
 # Generate the ancestral path (the qualified name up to
 # the second to last index)
 def get_ancestral_path(command: AnyCommand) -> str:
@@ -46,20 +48,23 @@ def get_ancestral_path(command: AnyCommand) -> str:
 
 def format_command(command: AnyCommand):
     fmt = (
-        "[{0}] {1} **{2.name}**"
-        if command.parent is not None
-        else "[{0}] {2.name}"
+        "[`{0}`] {1} **{2.name}**"
+        if getattr(command, "parent", None)
+        else "[`{0}`] {2.name}"
     )
 
-    if isinstance(command, app_commands.Group):
-        symbol = "\U00002443"
-    else:
-        symbol = "\U00002444"
+    match command:
+        case app_commands.Group():
+            symbol = "\U00002443"
+        case app_commands.ContextMenu():
+            symbol = "\U00002261"
+        case _:
+            symbol = "\U00002444"
 
     return fmt.format(symbol, get_ancestral_path(command), command)
 
 
-def generate_signature(command: app_commands.Command) -> str:
+def generate_signature(command: AnyCommand) -> str:
     """Generates a signature for a command.
 
     A signature consists of the command's qualified name, and its available
@@ -67,17 +72,24 @@ def generate_signature(command: app_commands.Command) -> str:
     optional parameters in square ([]) brackets.
 
     :param command: The command to generate a signature for
-    :type command: ``discord.app_commands.Command``
+    :type command: ``AnyCommand``
 
     :return: A signature for the command
     :rtype: ``str``
     """
-    signature = [f"/{command.qualified_name}"]
-    for param in command.parameters:
-        if param.required:
-            signature.append(f"<{param.display_name}>")
-        else:
-            signature.append(f"[{param.display_name}]")
+    signature = []
+    match command:
+        case app_commands.Group():
+            signature.append(f"/{command.qualified_name} [*subcommand*]")
+        case app_commands.Command():
+            signature.append(f"/{command.qualified_name}")
+            for param in command.parameters:
+                if param.required:
+                    signature.append(f"<{param.display_name}>")
+                else:
+                    signature.append(f"[{param.display_name}]")
+        case _:
+            signature.append(command.qualified_name)
     return " ".join(signature)
 
 
@@ -120,8 +132,11 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
     ## Command Lists
     In a list of commands, command types are identified symbolically:
-    - A `⑄` symbol next to a listed command identifies it as a standalone command.
-    - A `⑃` symbol next to a listed command identifies it as a command group.
+    - A `⑄` symbol next to a listed command identifies it as a standalone[JOIN]
+    command
+    - A `⑃` symbol next to a listed command identifies it as a command group
+    - A `≡` symbol next to a listed command identifies it as a context[JOIN]
+    menu command
 
     ## Using Slash Commands
     fuchsia uses a custom system for slash commands which lets you[JOIN]
@@ -163,7 +178,13 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         if command is None:
             return await self.send_bot_help(interaction, self.get_mapping())
 
-        cmd = recursive_get_command(self.bot.tree, command)
+        cmd = (
+            self.bot.tree.get_command(command, type=discord.AppCommandType.user)
+            or self.bot.tree.get_command(
+                command, type=discord.AppCommandType.message
+            )
+            or recursive_get_command(self.bot.tree, command)
+        )
         if not cmd:
             raise NameError(f"Command `{command}` does not exist")
         else:
@@ -172,13 +193,21 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     async def _autocomplete_impl(
         self, interaction: discord.Interaction, current: str
     ):
-        all_commands = map(
-            attrgetter("qualified_name"), self.bot.tree.walk_commands()
+        all_commands = chain(
+            self.bot.tree.walk_commands(),
+            self.bot.tree.get_commands(type=discord.AppCommandType.user),
+            self.bot.tree.get_commands(type=discord.AppCommandType.message),
         )
+
         return [
-            app_commands.Choice(name=k, value=k)
+            app_commands.Choice(
+                name=("" if isinstance(k, app_commands.ContextMenu) else "/")
+                + k.qualified_name,
+                value=k.qualified_name,
+            )
             for k in all_commands
-            if current in k
+            if current.casefold().removeprefix("/")
+            in k.qualified_name.casefold()
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
@@ -187,9 +216,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         }
         mapping[None] = [
             command
-            for command in self.bot.tree.get_commands(
-                type=discord.AppCommandType.chat_input
-            )
+            for command in self.bot.tree.get_commands(type=None)
             if getattr(command, "addon", None) is None
         ]
         return mapping
@@ -201,7 +228,12 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         return list(
             filter(
                 lambda cmd: isinstance(
-                    cmd, app_commands.Command | app_commands.Group
+                    cmd,
+                    (
+                        app_commands.Command,
+                        app_commands.Group,
+                        app_commands.ContextMenu,
+                    ),
                 ),
                 commands,
             )
@@ -247,10 +279,12 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         description = LEADING_WHITESPACE.sub(
             "",
             max(
-                command.description,
-                getattr(command.callback, "__doc__", "") or ""  # type: ignore
-                if hasattr(command, "callback")
-                else "",
+                getattr(command, "description", ""),
+                (
+                    getattr(command.callback, "__doc__", "") or ""  # type: ignore
+                    if hasattr(command, "callback")
+                    else ""
+                ),
                 key=len,
             )
             or "No description",
@@ -258,10 +292,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
             "[JOIN]\n", " "
         )  # join multiline strings
 
-        signature = f"/{command.qualified_name}"
-        if isinstance(command, app_commands.Command):
-            signature = generate_signature(command)
-
+        signature = generate_signature(command)
         embed = fuchsia.Embed(
             title=signature,
             description=description,
@@ -293,9 +324,11 @@ class AppHelpCommand(AutoEphemeralAppCommand):
             embed.description = (
                 "**==DEPRECATION NOTICE==**\nThis command is deprecated and "
                 "will be removed in the future.{0}\n\n{1}".format(
-                    f"\nExtra Info: {deprecation}"
-                    if isinstance(deprecation, str)
-                    else "",
+                    (
+                        f"\nExtra Info: {deprecation}"
+                        if isinstance(deprecation, str)
+                        else ""
+                    ),
                     embed.description,
                 )
             )

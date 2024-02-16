@@ -11,6 +11,9 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 from typing_extensions import Self
 
+if TYPE_CHECKING:
+    from fuchsia.types.commands import AnyCommand
+
 ReceiverRet = Any | Awaitable[Any]
 P = ParamSpec("P")
 
@@ -21,8 +24,7 @@ class Receiver(Protocol[P]):
 
     def __call__(
         self, addon: Addon, *args: P.args, **kwargs: P.kwargs
-    ) -> ReceiverRet:
-        ...
+    ) -> ReceiverRet: ...
 
 
 def is_receiver(val: Callable[P, ReceiverRet]) -> TypeGuard[Receiver[P]]:
@@ -32,10 +34,10 @@ def is_receiver(val: Callable[P, ReceiverRet]) -> TypeGuard[Receiver[P]]:
 class AddonMeta(commands.CogMeta):
     __receivers__: dict[str, Receiver]
 
-    def __new__(cls, _name, bases, attrs, **kwargs) -> Self:
+    def __new__(cls, _name, bases, attrs, **kwargs):
         is_app_group = kwargs.pop("app_group", None)
 
-        _cls = cast(Self, super().__new__(cls, _name, bases, attrs, **kwargs))
+        _cls = super().__new__(cls, _name, bases, attrs, **kwargs)
 
         receivers = {}
 
@@ -194,11 +196,7 @@ class Addon(commands.Cog, metaclass=AddonMeta):
 
     def get_commands(
         self,
-    ) -> list[
-        commands.Command[Self, ..., Any]
-        | app_commands.Command[Self, ..., Any]
-        | app_commands.Group
-    ]:
+    ) -> list[AnyCommand]:
         return [
             c
             for c in chain(

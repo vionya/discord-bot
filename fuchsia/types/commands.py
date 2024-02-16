@@ -7,4 +7,5 @@ AnyCommand = (
     commands.Command[Any, ..., Any]
     | app_commands.Command[Any, ..., Any]
     | app_commands.Group
+    | app_commands.ContextMenu
 )

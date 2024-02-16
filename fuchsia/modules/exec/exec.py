@@ -1,46 +1,49 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2023 sardonicism-04
-from inspect import isasyncgenfunction
+from __future__ import annotations
+
+from inspect import isasyncgenfunction, iscoroutinefunction
+from typing import TYPE_CHECKING, Any
 
 from .compiler import compile_all
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Callable, Coroutine
 
-def env_from_context(ctx):
-    return {
-        "ctx": ctx,
-        "author": ctx.author,
-        "guild": ctx.guild,
-        "message": ctx.message,
-        "channel": ctx.channel,
-        "bot": ctx.bot,
-        "_": ctx.cog._last_exec_result,
-    }
+    AExecType = Callable[
+        [dict[str, Any]], Coroutine[Any, Any, Any] | AsyncGenerator[Any, Any]
+    ]
 
 
 class ExecWrapper:
     __slots__ = ("compiled", "globals_", "locals_")
 
-    def __init__(self, code_input, globals_={}, locals_={}):
+    def __init__(
+        self,
+        code_input: str,
+        globals_: dict[str, Any] = {},
+        locals_: dict[str, Any] = {},
+    ):
         self.compiled = compile_all(code_input)
         self.globals_ = globals_
         self.locals_ = locals_
 
     def __aiter__(self):
+        exec_locals: dict[str, Any] = {}
         exec(
-            compile(self.compiled, "<exec>", "exec"),
-            self.globals_,
-            exec_locals := {},
+            compile(self.compiled, "<exec>", "exec"), self.globals_, exec_locals
         )
-        _aexec = exec_locals["__aexec__"]
+        _aexec: AExecType = exec_locals["__aexec__"]
         return self.walk_results(_aexec, self.locals_)
 
-    async def walk_results(self, coro, *args, **kwargs):
+    async def walk_results(self, coro: AExecType, scope: dict[str, Any]):
         try:
             if isasyncgenfunction(coro):
-                async for result in coro(*args, **kwargs):
+                async for result in coro(scope):
                     yield result
             else:
-                yield await coro(*args, **kwargs)
+                assert iscoroutinefunction(coro)
+                yield await coro(scope)
 
         finally:
             if "scope" in self.locals_:

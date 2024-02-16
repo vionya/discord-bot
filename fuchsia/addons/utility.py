@@ -645,6 +645,13 @@ class Utility(fuchsia.Addon):
         interaction: discord.Interaction,
         user: discord.Member | discord.User,
     ):
+        """
+        Shows the selected user's avatar
+        
+        This command is functionally the same as using the `/avatar`[JOIN]
+        command, but is possibly more convenient. Additionally, the output[JOIN]
+        of this command will only ever be visible to you.
+        """
         setattr(interaction.namespace, "private", True)
         await self.avatar_command.callback(self, interaction, user)  # type: ignore
 
@@ -653,6 +660,13 @@ class Utility(fuchsia.Addon):
         interaction: discord.Interaction,
         user: discord.Member | discord.User,
     ):
+        """
+        Shows the selected user's banner
+        
+        This command is functionally the same as using the `/banner`[JOIN]
+        command, but is possibly more convenient. Additionally, the output[JOIN]
+        of this command will only ever be visible to you.
+        """
         setattr(interaction.namespace, "private", True)
         await self.banner_command.callback(self, interaction, user)  # type: ignore
 
@@ -734,6 +748,24 @@ class Utility(fuchsia.Addon):
     async def sticker_steal_context_command(
         self, interaction: discord.Interaction, message: discord.Message
     ):
+        """
+        Steals a sticker from another server and adds it to this one
+
+        This is a convenient (but sometimes finicky) shortcut to easily[JOIN]
+        steal stickers.
+
+        It will work if all of these conditions are true:
+        - fuchsia has the `Create Expressions` and `Manage Expressions`[JOIN]
+        permissions
+        - The selected message actually has a sticker attached
+        - The sticker is not a default Discord sticker
+        - The server has available sticker slots
+        - The sticker has not been deleted on its original server
+        - The server and sticker need to be discoverable
+
+        If the stars align (which they tend to), fuchsia will successfully[JOIN]
+        steal the desired sticker and add it to your server.
+        """
         assert interaction.guild
 
         # check that the bot itself has permission to make a sticker
