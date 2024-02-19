@@ -21,6 +21,7 @@
 - New command `/emoji` for more conveniently creating custom emoji
   - Can steal custom emoji from other servers via the `emoji` parameter
   - Can create custom emoji from an image file using the `file` and `name` parameters
+- New command `/unicode` to get the codepoints and names of all inputted characters
 
 ## Improvements
 

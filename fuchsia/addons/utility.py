@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from functools import partial
@@ -18,8 +19,14 @@ from googletrans import LANGUAGES, Translator
 
 import fuchsia
 from fuchsia.classes.app_commands import get_ephemeral, no_defer
-from fuchsia.modules import DropdownMenu, EmbedPages, cse, dictionary
-from fuchsia.tools import parse_id, iter_autocomplete, shorten, try_or_none
+from fuchsia.modules import (
+    DropdownMenu,
+    EmbedPages,
+    cse,
+    dictionary,
+    ButtonsMenu,
+)
+from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
 from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
@@ -637,6 +644,25 @@ class Utility(fuchsia.Addon):
             f"Successfully created emoji `{emoji.name}` {emoji}"
         )
 
+    @app_commands.command(name="unicode")
+    @app_commands.describe(content="The text to get the unicode data for")
+    async def unicode_info_command(
+        self, interaction: discord.Interaction, content: str
+    ):
+        """
+        Lists the unicode codepoint and name of all characters in the input
+        """
+        output_lines = [
+            "`{0}` | `U+{1:04X}` {2}".format(
+                char, ord(char), unicodedata.name(char, "Unkown Character")
+            )
+            for char in set(content)
+        ]
+        menu = ButtonsMenu.from_iterable(
+            output_lines, per_page=10, use_embed=True
+        )
+        await menu.start(interaction)
+
     # CONTEXT MENU COMMANDS #
 
     # Context menu command added in __init__
@@ -647,7 +673,7 @@ class Utility(fuchsia.Addon):
     ):
         """
         Shows the selected user's avatar
-        
+
         This command is functionally the same as using the `/avatar`[JOIN]
         command, but is possibly more convenient. Additionally, the output[JOIN]
         of this command will only ever be visible to you.
@@ -662,7 +688,7 @@ class Utility(fuchsia.Addon):
     ):
         """
         Shows the selected user's banner
-        
+
         This command is functionally the same as using the `/banner`[JOIN]
         command, but is possibly more convenient. Additionally, the output[JOIN]
         of this command will only ever be visible to you.
@@ -681,9 +707,11 @@ class Utility(fuchsia.Addon):
             f"**ID** {message.id}",
             f"**Author** {message.author}",
             f"**Created** {full_timestamp(message.created_at.timestamp())}",
-            f"**Edited** {full_timestamp(message.edited_at.timestamp())}"
-            if message.edited_at
-            else None,
+            (
+                f"**Edited** {full_timestamp(message.edited_at.timestamp())}"
+                if message.edited_at
+                else None
+            ),
             f"\n**Message Type** `{message.type.name}`",
             f"**Message Flags** {flags_str}" if flags_str else "",
             f"**Pinned** {message.pinned}",
