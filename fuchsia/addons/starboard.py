@@ -360,6 +360,7 @@ class StarboardAddon(
         return Starboard(
             channel=channel,  # type: ignore
             threshold=starboard_settings["threshold"],
+            super_mult=starboard_settings["super_mult"],
             format=starboard_settings["format"],
             max_days=starboard_settings["max_days"],
             emoji=discord.PartialEmoji.from_str(starboard_settings["emoji"]),
