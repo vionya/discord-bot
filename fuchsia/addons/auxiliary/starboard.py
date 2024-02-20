@@ -32,6 +32,9 @@ SETTINGS_MAPPING = SettingsMapping(
     Setting(
         "threshold", transformer=int, name_override="Minimum Stars Required"
     ),
+    Setting(
+        "super_mult", transformer=int, name_override="Super Reaction Multiplier"
+    ),
     Setting("format", transformer=str, name_override="Starred Message Format"),
     Setting("max_days", transformer=max_days_transformer),
     Setting(
@@ -42,7 +45,9 @@ SETTINGS_MAPPING = SettingsMapping(
 )
 
 
-class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]):
+class ChangeSettingButton(
+    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]
+):
     def __init__(self, *, addon: StarboardAddon, **kwargs):
         self.addon = addon
 

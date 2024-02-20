@@ -10,7 +10,7 @@ import discord
 from discord import app_commands
 
 import fuchsia
-from fuchsia.classes.containers import TimedCache
+from fuchsia.classes.containers import TimedCache, TimedSet
 from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
     add_setting_autocomplete,
@@ -55,6 +55,7 @@ class Starboard:
     __slots__ = (
         "channel",
         "threshold",
+        "super_mult",
         "format",
         "max_days",
         "emoji",
@@ -69,8 +70,8 @@ class Starboard:
         self,
         *,
         channel: Optional[discord.TextChannel],
-        stars: list,
         threshold: int,
+        super_mult: int,
         format: str,
         max_days: int,
         emoji: discord.PartialEmoji,
@@ -79,17 +80,36 @@ class Starboard:
     ):
         self.channel = channel
         self.threshold = threshold
+        self.super_mult = super_mult
         self.format = format
         self.max_days = max_days
         self.emoji = emoji
         self.ignored = ignored
-        self.star_ids = [star["message_id"] for star in stars]
+
+        # Don't store star IDs forever
+        self.star_ids = TimedSet[int](timeout=1000)
 
         # Use timed cache so that stars are not persisting for
         # longer than they reasonably should be
         self.cached_stars = TimedCache[int, Star](300)
         self.lock = asyncio.Lock()
         self.pool = pool
+
+    async def exists(self, id: int) -> bool:
+        if id in self.star_ids:
+            return True
+        if await self.pool.fetchval(
+            """
+            SELECT EXISTS(
+                SELECT 1 FROM stars
+                WHERE message_id=$1
+            )
+            """,
+            id,
+        ):
+            self.star_ids.add(id)
+            return True
+        return False
 
     async def get_star(self, id: int) -> Star | None:
         if not self.channel:
@@ -119,7 +139,7 @@ class Starboard:
         if (
             not message.guild
             or not self.channel
-            or any([message.id in self.star_ids, self.lock.locked()])
+            or any([await self.exists(message.id), self.lock.locked()])
         ):
             return
 
@@ -240,7 +260,7 @@ class Starboard:
                 star.starboard_message.id,
             )
 
-            self.star_ids.append(message.id)
+            self.star_ids.add(message.id)
             self.cached_stars[message.id] = star
             return star
 
@@ -248,9 +268,9 @@ class Starboard:
         star = await self.get_star(id)
         if star:
             await star.starboard_message.delete()
+            del self.cached_stars[id]
 
         await self.pool.execute("DELETE FROM stars WHERE message_id=$1", id)
-        del self.cached_stars[id]
         self.star_ids.remove(id)
         return star
 
@@ -263,7 +283,9 @@ class Starboard:
 
         try:
             await star.edit(content=self.format.format(stars=star.stars))
-        except discord.NotFound:  # Delete star from records if its message has been deleted
+        except (
+            discord.NotFound
+        ):  # Delete star from records if its message has been deleted
             return await self.delete_star(id)
 
         await self.pool.execute(
@@ -333,20 +355,10 @@ class StarboardAddon(
             SETTINGS_MAPPING[col_name]["description"] = col_desc
 
     async def create_starboard(self, guild_id, starboard_settings):
-        star_records = await self.bot.db.fetch(
-            """
-            SELECT message_id
-            FROM stars
-            WHERE guild_id=$1
-            """,
-            guild_id,
-        )
-
         channel = self.bot.get_channel(starboard_settings["channel"])
 
         return Starboard(
             channel=channel,  # type: ignore
-            stars=star_records,
             threshold=starboard_settings["threshold"],
             format=starboard_settings["format"],
             max_days=starboard_settings["max_days"],
@@ -391,7 +403,7 @@ class StarboardAddon(
         if not self.predicate(starboard, payload):
             return
 
-        if payload.message_id not in starboard.star_ids:
+        if not await starboard.exists(payload.message_id):
             if (
                 datetime.now(timezone.utc)
                 - discord.Object(payload.message_id).created_at
@@ -406,16 +418,20 @@ class StarboardAddon(
                 return
             message = await channel.fetch_message(payload.message_id)
 
-            reaction_count = getattr(
-                next(
-                    filter(
-                        lambda r: self.reaction_check(starboard, r.emoji),
-                        message.reactions,
-                    ),
-                    None,
+            star_reaction = next(
+                filter(
+                    lambda r: self.reaction_check(starboard, r.emoji),
+                    message.reactions,
                 ),
-                "count",
-                0,
+                None,
+            )
+            if star_reaction is None:
+                return
+
+            # total reactions is a function of the normal count and the super
+            # reaction count multiplied by the super reaction multiplier
+            reaction_count = star_reaction.normal_count + (
+                star_reaction.burst_count * starboard.super_mult
             )
             if reaction_count < starboard.threshold:
                 return
@@ -432,11 +448,12 @@ class StarboardAddon(
             if not star:
                 return
 
+            multiplier = starboard.super_mult if payload.burst else 1
             match payload.event_type:
                 case "REACTION_ADD":
-                    star.stars += 1
+                    star.stars += 1 * multiplier
                 case "REACTION_REMOVE":
-                    star.stars -= 1
+                    star.stars -= 1 * multiplier
 
             if star.stars < starboard.threshold:
                 await starboard.delete_star(star.message_id)
@@ -448,9 +465,11 @@ class StarboardAddon(
     @fuchsia.Addon.listener("on_raw_message_delete")
     async def handle_terminations(
         self,
-        payload: discord.RawReactionClearEvent
-        | discord.RawReactionClearEmojiEvent
-        | discord.RawMessageDeleteEvent,
+        payload: (
+            discord.RawReactionClearEvent
+            | discord.RawReactionClearEmojiEvent
+            | discord.RawMessageDeleteEvent
+        ),
     ):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
@@ -463,7 +482,7 @@ class StarboardAddon(
             if not self.reaction_check(starboard, payload.emoji):
                 return
 
-        if payload.message_id in starboard.star_ids:
+        if await starboard.exists(payload.message_id):
             await starboard.delete_star(payload.message_id)
 
     @fuchsia.Addon.listener("on_guild_channel_delete")
@@ -670,10 +689,9 @@ class StarboardAddon(
                 interaction.guild.id,
             )
 
-            if (
-                isinstance(snowflake, discord.PartialMessage)
-                and id in starboard.star_ids
-            ):
+            if isinstance(
+                snowflake, discord.PartialMessage
+            ) and await starboard.exists(id):
                 await starboard.delete_star(id)
 
         await interaction.response.send_message(

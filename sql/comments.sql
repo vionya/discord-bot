@@ -114,6 +114,21 @@ Default Value: `5`
 **Current Value:** `{}`
 ';
 
+COMMENT ON COLUMN starboards.super_mult IS
+'A multiplier for the amount of stars a super reaction is worth.
+
+If this value is 1, then super reactions behave identically to normal reactions. If it is greater than 1, super reactions will contribute more to the star count of a message.
+
+For example, if a starboard has a threshold of 5, and a super multiplier of 5, then 1 super reaction will immediately star the message.
+
+Or, if a starboard has a threshold of 5, and a super multiplier of 2, then 1 super reaction will bring the star count to 2/5.
+
+Expected Value Type: An integer
+Default Value: `1`
+
+**Current Value:** `{}`
+';
+
 COMMENT ON COLUMN starboards.format IS
 'The format for starred messages.
 
