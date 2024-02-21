@@ -197,11 +197,14 @@ class Starboard:
                 embed.add_field(
                     name=f"Attachments/Embeds [x{len(attachments)}]",
                     value="\n".join(
-                        "[{0}]({1})".format(
-                            discord.utils.escape_markdown(
+                        # don't want the message to look weird if there's not
+                        # a URL associated with an embed (e.g. it's a bot-
+                        # generated embed)
+                        ("[{fn}]({url})" if attachment.url else "{fn}").format(
+                            fn=discord.utils.escape_markdown(
                                 getattr(attachment, "filename", "Embed")
                             ),
-                            attachment.url,
+                            url=attachment.url,
                         )
                         for attachment in attachments
                     ),
