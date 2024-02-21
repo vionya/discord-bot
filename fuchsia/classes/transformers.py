@@ -33,8 +33,7 @@ class WrapperTransformer(Transformer, Generic[T]):
     @classmethod
     def transform(
         cls: type[Self], interaction: discord.Interaction, value: str
-    ) -> T:
-        ...
+    ) -> T: ...
 
 
 def wrap_transformer(_options: Iterable[str] = []):
@@ -104,14 +103,14 @@ def timeout_transformer(provided_timeout: str) -> int:
 
 
 @wrap_transformer()
-def max_days_transformer(provided_max_days: str) -> int:
-    if not provided_max_days.isnumeric():
-        raise ValueError("`max_days` must be a number.")
+def gt_zero_transformer(provided_val: str) -> int:
+    if not provided_val.isnumeric():
+        raise ValueError("Value must be a number.")
 
-    max_days = int(provided_max_days)
-    if max_days < 1:
-        raise ValueError("`max_days` may not be less than 1.")
-    return max_days
+    val = int(provided_val)
+    if val < 1:
+        raise ValueError("Value may not be less than 1.")
+    return val
 
 
 class text_channel_transformer(Transformer):

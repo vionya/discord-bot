@@ -406,9 +406,11 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             )
             formatted_reminders.append(
                 "- {0} (<t:{1}:R>) {2}".format(
-                    "\U0001F501"
-                    if reminder.repeating
-                    else "\u0031\uFE0F\u20E3",
+                    (
+                        "\U0001F501"
+                        if reminder.repeating
+                        else "\u0031\uFE0F\u20E3"
+                    ),
                     int(reminder.end_time.timestamp()),
                     content,
                 )
@@ -454,7 +456,12 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             embed.add_field(
                 name="This reminder will repeat every:",
                 value=f"`{humanize_timedelta(reminder.delta)}`",
+                inline=False,
             )
+
+        embed.add_field(
+            name="Reminder ID", value=f"`{reminder.reminder_id}`", inline=False
+        )
 
         view = ReminderShowView(self.bot.db, reminder=reminder)
 
@@ -483,7 +490,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             return []
 
         reminders = [rem.content for rem in self.reminders[interaction.user.id]]
-        return generate_autocomplete_list(reminders, current)
+        return generate_autocomplete_list(reminders, current, show_numbers=True)
 
     @app_commands.command(name="cancel")
     @app_commands.rename(index="reminder")

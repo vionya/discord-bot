@@ -5,14 +5,14 @@ An auxiliary module for the `Starboard` addon
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
 
 import fuchsia
 from fuchsia.classes.containers import Setting, SettingsMapping
 from fuchsia.classes.transformers import (
-    max_days_transformer,
+    gt_zero_transformer,
     text_channel_transformer,
 )
 
@@ -30,13 +30,17 @@ SETTINGS_MAPPING = SettingsMapping(
         ],
     ),
     Setting(
-        "threshold", transformer=int, name_override="Minimum Stars Required"
+        "threshold",
+        transformer=gt_zero_transformer,
+        name_override="Minimum Stars Required",
     ),
     Setting(
-        "super_mult", transformer=int, name_override="Super Reaction Multiplier"
+        "super_mult",
+        transformer=gt_zero_transformer,
+        name_override="Super Reaction Multiplier",
     ),
     Setting("format", transformer=str, name_override="Starred Message Format"),
-    Setting("max_days", transformer=max_days_transformer),
+    Setting("max_days", transformer=gt_zero_transformer),
     Setting(
         "emoji",
         transformer=discord.PartialEmoji.from_str,
