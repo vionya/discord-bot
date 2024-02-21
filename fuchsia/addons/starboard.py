@@ -557,11 +557,16 @@ class StarboardAddon(
                 description = (setting_info["description"] or "").format(
                     getattr(starboard, setting)
                 )
-                embed = fuchsia.Embed(
-                    title=f"Starboard settings for {interaction.guild}",
-                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
-                    + description,
-                ).set_thumbnail(url=interaction.guild.icon)
+                embed = (
+                    fuchsia.Embed(
+                        title=setting_info.display_name,
+                        description=description,
+                    )
+                    .set_thumbnail(url=interaction.guild.icon)
+                    .set_author(
+                        name=f"Starboard settings for {interaction.guild}",
+                    )
+                )
                 embeds.append(embed)
 
             menu = ButtonsMenu.from_embeds(embeds)

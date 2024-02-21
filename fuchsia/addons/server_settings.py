@@ -110,11 +110,16 @@ class ServerConfig(
                 description = (setting_info["description"] or "").format(
                     getattr(config, setting)
                 )
-                embed = fuchsia.Embed(
-                    title=f"Settings for {interaction.guild}",
-                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
-                    + description,
-                ).set_thumbnail(url=interaction.guild.icon)
+                embed = (
+                    fuchsia.Embed(
+                        title=setting_info.display_name,
+                        description=description,
+                    )
+                    .set_thumbnail(url=interaction.guild.icon)
+                    .set_author(
+                        name=f"Settings for {interaction.guild}",
+                    )
+                )
                 embeds.append(embed)
 
             menu = ButtonsMenu.from_embeds(embeds)

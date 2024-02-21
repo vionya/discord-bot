@@ -89,11 +89,16 @@ class Profile(fuchsia.Addon, app_group=True):
                 description = (setting_info["description"] or "").format(
                     getattr(profile, setting)
                 )
-                embed = fuchsia.Embed(
-                    title=f"Settings for {interaction.user.display_name}",
-                    description=f"**Setting: `{setting_info.display_name}`**\n\n"
-                    + description,
-                ).set_thumbnail(url=interaction.user.display_avatar)
+                embed = (
+                    fuchsia.Embed(
+                        title=setting_info.display_name,
+                        description=description,
+                    )
+                    .set_thumbnail(url=interaction.user.display_avatar)
+                    .set_author(
+                        name=f"Settings for {interaction.user.display_name}",
+                    )
+                )
                 embeds.append(embed)
 
             menu = ButtonsMenu.from_embeds(embeds)
