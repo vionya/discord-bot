@@ -38,6 +38,7 @@ class FuchsiaConfig(TypedDict):
     invite_presets: list[FuchsiaInvitePreset]
     support: FuchsiaInfoLink
     upstream: FuchsiaInfoLink
+    api: str
 
     bot: FuchsiaBotConfig
     database: FuchsiaDataBaseConfig

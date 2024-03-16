@@ -18,11 +18,12 @@
   - Added new `reminders_in_channel` user setting which toggles whether reminders will be delivered in their source channel by default, value defaults to `False`
   - Added new `send-here` parameter to `/remind set` which overrides user settings and toggles this option
 - Implemented support for custom status
-- New command `/emoji` for more conveniently creating custom emoji
+- New command `/emoji create` for more conveniently creating custom emoji
   - Can steal custom emoji from other servers via the `emoji` parameter
   - Can create custom emoji from an image file using the `file` and `name` parameters
 - New command `/unicode` to get the codepoints and names of all inputted characters
 - Added `Super Reaction Multiplier` starboard setting, allowing super reactions to contribute more stars to a message
+- Added `/emoji upscale` command which upscales an emoji by making a request to a locally hosted API
 
 ## Improvements
 

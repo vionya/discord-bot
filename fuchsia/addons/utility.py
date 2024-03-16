@@ -8,11 +8,13 @@ import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from functools import partial
+from io import BytesIO
 from sys import version as py_version
 from typing import Literal, Optional
 from zoneinfo import ZoneInfo, available_timezones
 
 import discord
+from aiohttp import FormData
 from discord import app_commands
 from discord.utils import format_dt
 from googletrans import LANGUAGES, Translator
@@ -20,13 +22,14 @@ from googletrans import LANGUAGES, Translator
 import fuchsia
 from fuchsia.classes.app_commands import get_ephemeral, no_defer
 from fuchsia.modules import (
+    ButtonsMenu,
     DropdownMenu,
     EmbedPages,
     cse,
     dictionary,
-    ButtonsMenu,
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
+from fuchsia.tools.decorators import instantiate
 from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
@@ -577,72 +580,127 @@ class Utility(fuchsia.Addon):
 
         await interaction.response.send_message(content=formatted)
 
-    @app_commands.command(name="emoji")
-    @app_commands.default_permissions(create_expressions=True)
-    @app_commands.guild_only()
-    @app_commands.rename(source_emoji="emoji", new_name="name")
-    @app_commands.describe(
-        source_emoji="A custom emoji to steal to this server",
-        file="An image file to add as an emoji",
-        new_name="The name for this emoji",
-    )
-    async def create_emoji_command(
-        self,
-        interaction: discord.Interaction,
-        source_emoji: str | None = None,
-        file: discord.Attachment | None = None,
-        new_name: app_commands.Range[str, 2, 32] | None = None,
-    ):
-        """
-        Create a new custom emoji in the server
+    @instantiate
+    class EmojiGroup(app_commands.Group, name="emoji"):
+        """Commands for doing stuff with emojis"""
 
-        You can either steal a custom emoji from another server with the[JOIN]
-        `emoji` parameter, or create one from an image with the `file`[JOIN]
-        parameter.
+        addon: Utility
 
-        The `name` parameter sets the name of the emoji. If stealing an[JOIN]
-        emoji, this is optional, since the name of the emoji is used by[JOIN]
-        default. If creating an emoji from a file, this is required.
-        """
-        assert interaction.guild
+        @app_commands.command(name="upscale")
+        @app_commands.describe(emoji="The emoji to upscale")
+        async def upscale_emoji_command(
+            self, interaction: discord.Interaction, emoji: str
+        ):
+            """Upscale a static or animated emoji and send the image"""
+            partial = discord.PartialEmoji.from_str(emoji)
+            if partial.is_unicode_emoji():
+                raise ValueError("Only custom emojis can be upscaled")
 
-        if not (interaction.app_permissions.create_expressions):
-            return await interaction.response.send_message(
-                "fuchsia is missing the `Create Expressions` permission"
+            session = self.addon.bot.session
+            async with session.get(partial.url) as resp:
+                emoji_data = await resp.read()
+
+            content_type = "gif" if partial.animated else "png"
+            (form := FormData()).add_field(
+                name="data",
+                value=emoji_data,
+                filename=f"emoji.{content_type}",
+                content_type=f"image/{content_type}",
             )
 
-        src = source_emoji or file
-        if src is None:
-            raise TypeError("You need to provide a source for the emoji")
+            dim = 256 if partial.animated else 512
+            async with session.post(
+                f"http://{self.addon.bot.cfg['api']}/actions/resize",
+                params={"width": dim, "height": dim, "frames": 250},
+                data=form,
+            ) as resp:
+                upscaled_data = await resp.read()
+                embed = fuchsia.Embed(
+                    title=f"`{partial.name}` upscaled!"
+                ).set_image(url=f"attachment://upscaled.{content_type}")
+                if content_type == "gif":
+                    embed.description = (
+                        "Note: only the first 250 frames of"
+                        " this animated emoji have been upscaled"
+                    )
 
-        if isinstance(src, str):
-            partial = discord.PartialEmoji.from_str(src.strip())
-            if not partial.is_custom_emoji():
-                raise ValueError("You need to provide a valid custom emoji")
+                await interaction.response.send_message(
+                    embed=embed,
+                    file=discord.File(
+                        BytesIO(upscaled_data), f"upscaled.{content_type}"
+                    ),
+                )
 
-            async with self.bot.session.get(partial.url) as resp:
-                data = await resp.read()
-
-            emoji = await interaction.guild.create_custom_emoji(
-                name=new_name or partial.name, image=data
-            )
-        else:
-            if not src.filename.lower().endswith(("jpg", "jpeg", "png", "gif")):
-                raise ValueError("The file must be a JPEG, PNG, or GIF image")
-
-            if src.size > 2_048_000:
-                raise ValueError("The file can't be larger than 2048kb")
-
-            if new_name is None:
-                raise TypeError("You need to provide a name for this emoji")
-
-            emoji = await interaction.guild.create_custom_emoji(
-                name=new_name, image=await src.read()
-            )
-
-        await interaction.response.send_message(
-            f"Successfully created emoji `{emoji.name}` {emoji}"
+        @app_commands.command(name="create")
+        @app_commands.default_permissions(create_expressions=True)
+        @app_commands.guild_only()
+        @app_commands.rename(source_emoji="emoji", new_name="name")
+        @app_commands.describe(
+            source_emoji="A custom emoji to steal to this server",
+            file="An image file to add as an emoji",
+            new_name="The name for this emoji",
         )
+        async def create_emoji_command(
+            self,
+            interaction: discord.Interaction,
+            source_emoji: str | None = None,
+            file: discord.Attachment | None = None,
+            new_name: app_commands.Range[str, 2, 32] | None = None,
+        ):
+            """
+            Create a new custom emoji in the server
+
+            You can either steal a custom emoji from another server with the[JOIN]
+            `emoji` parameter, or create one from an image with the `file`[JOIN]
+            parameter.
+
+            The `name` parameter sets the name of the emoji. If stealing an[JOIN]
+            emoji, this is optional, since the name of the emoji is used by[JOIN]
+            default. If creating an emoji from a file, this is required.
+            """
+            assert interaction.guild
+
+            if not (interaction.app_permissions.create_expressions):
+                return await interaction.response.send_message(
+                    "fuchsia is missing the `Create Expressions` permission"
+                )
+
+            src = source_emoji or file
+            if src is None:
+                raise TypeError("You need to provide a source for the emoji")
+
+            if isinstance(src, str):
+                partial = discord.PartialEmoji.from_str(src.strip())
+                if not partial.is_custom_emoji():
+                    raise ValueError("You need to provide a valid custom emoji")
+
+                async with self.addon.bot.session.get(partial.url) as resp:
+                    data = await resp.read()
+
+                emoji = await interaction.guild.create_custom_emoji(
+                    name=new_name or partial.name, image=data
+                )
+            else:
+                if not src.filename.lower().endswith(
+                    ("jpg", "jpeg", "png", "gif")
+                ):
+                    raise ValueError(
+                        "The file must be a JPEG, PNG, or GIF image"
+                    )
+
+                if src.size > 2_048_000:
+                    raise ValueError("The file can't be larger than 2048kb")
+
+                if new_name is None:
+                    raise TypeError("You need to provide a name for this emoji")
+
+                emoji = await interaction.guild.create_custom_emoji(
+                    name=new_name, image=await src.read()
+                )
+
+            await interaction.response.send_message(
+                f"Successfully created emoji `{emoji.name}` {emoji}"
+            )
 
     @app_commands.command(name="unicode")
     @app_commands.describe(content="The text to get the unicode data for")

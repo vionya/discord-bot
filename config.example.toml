@@ -10,6 +10,7 @@ addons = [
     "str"
 ]
 privacy_policy_path = "str"
+api = "str"
 [[invite_presets]]
 name = "str"
 desc = "str"
