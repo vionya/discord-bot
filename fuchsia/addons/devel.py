@@ -169,15 +169,22 @@ class Devel(fuchsia.Addon):
 
     @commands.guild_only()
     @commands.command(name="sync")
-    async def dev_sync(self, ctx: FuchsiaContext, clear_commands: bool = False):
-        """Sync all global app commands to the current guild"""
+    async def dev_sync(
+        self,
+        ctx: FuchsiaContext,
+        clear_commands: bool = False,
+        glob: bool = False,
+    ):
+        """
+        Sync all app commands to the current guild or global namespace
+        """
         assert ctx.guild
 
         if clear_commands:
-            self.bot.tree.clear_commands(guild=ctx.guild)
+            self.bot.tree.clear_commands(guild=None if glob else ctx.guild)
         else:
             self.bot.tree.copy_global_to(guild=ctx.guild)
-        await self.bot.tree.sync(guild=ctx.guild)
+        await self.bot.tree.sync(guild=None if glob else ctx.guild)
         await ctx.send_confirmation()
 
 
