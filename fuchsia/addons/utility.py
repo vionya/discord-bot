@@ -29,7 +29,7 @@ from fuchsia.modules import (
     dictionary,
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
-from fuchsia.tools.decorators import instantiate
+from fuchsia.tools.decorators import guild_only
 from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
@@ -242,8 +242,8 @@ class Utility(fuchsia.Addon):
         )
         await interaction.response.send_message(embeds=[embed])
 
-    @app_commands.command(name="clear", extras={"integration_types": [0]})
-    @app_commands.guild_only()
+    @guild_only
+    @app_commands.command(name="clear")
     @app_commands.describe(
         limit="The number of messages to delete",
         before="Delete only messages sent before this message ID or URL",
@@ -420,8 +420,8 @@ class Utility(fuchsia.Addon):
         )
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.guild_only()
-    @app_commands.command(name="serverinfo", extras={"integration_types": [0]})
+    @guild_only
+    @app_commands.command(name="serverinfo")
     async def guild_info_command(self, interaction: discord.Interaction):
         """Retrieves information about the current server"""
         # The guild_only check guarantees that this will always work
@@ -453,7 +453,9 @@ class Utility(fuchsia.Addon):
         await interaction.response.send_message(content=content, embed=embed)
 
     @app_commands.guild_only()
-    @app_commands.command(name="roleinfo", extras={"integration_types": [0]})
+    @app_commands.command(
+        name="roleinfo", extras={"integration_types": [0], "contexts": [0]}
+    )
     @app_commands.describe(role="The role to get info about")
     async def role_info_command(
         self, interaction: discord.Interaction, *, role: discord.Role
@@ -625,9 +627,9 @@ class Utility(fuchsia.Addon):
                 ),
             )
 
-    @app_commands.command(name="steal", extras={"integration_types": [0]})
+    @guild_only
+    @app_commands.command(name="steal")
     @app_commands.default_permissions(create_expressions=True)
-    @app_commands.guild_only()
     @app_commands.rename(source_emoji="emoji", new_name="name")
     @app_commands.describe(
         source_emoji="A custom emoji to steal to this server",

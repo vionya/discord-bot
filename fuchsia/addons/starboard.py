@@ -18,6 +18,7 @@ from fuchsia.tools import (
     instantiate,
     parse_id,
     shorten,
+    guild_only
 )
 from fuchsia.tools.checks import is_valid_starboard_env
 
@@ -303,14 +304,13 @@ class Starboard:
         return star
 
 
-@app_commands.guild_only()
+@guild_only
 class StarboardAddon(
     fuchsia.Addon,
     name="Starboard",
     app_group=True,
     group_name="starboard",
     group_description="Starboard management commands",
-    group_extras={"integration_types": [0]},
 ):
     """
     Manages your server's starboard

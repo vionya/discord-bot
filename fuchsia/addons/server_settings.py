@@ -17,7 +17,7 @@ from fuchsia.tools import (
     instantiate,
     is_registered_guild,
     prompt_user,
-    send_confirmation,
+    guild_only,
 )
 from fuchsia.tools.checks import owner_or_admin_predicate
 from fuchsia.types.commands import AnyCommand
@@ -29,14 +29,13 @@ from .auxiliary.server_settings import (
 )
 
 
-@app_commands.guild_only()
+@guild_only
 class ServerConfig(
     fuchsia.Addon,
     name="Server Settings",
     app_group=True,
     group_name="server",
     group_description="Server configuration commands",
-    group_extras={"integration_types": [0]},
 ):
     """fuchsia's server config management module"""
 
