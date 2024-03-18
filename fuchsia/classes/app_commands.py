@@ -2,7 +2,7 @@
 # Copyright (C) 2023 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, ParamSpec, TypeVar, cast
 
 from discord import AppCommandOptionType, Interaction, app_commands
 from discord.ext.commands import Cog

@@ -268,8 +268,9 @@ class Fuchsia(commands.Bot):
             # Verify the interaction against the checks
             # Hierarchy prioritizes channel check first since it will overrule anyways
             try:
-                await self.channel_check(interaction)
-                await self.guild_disabled_check(interaction)
+                pass
+                # await self.channel_check(interaction)
+                # await self.guild_disabled_check(interaction)
             except Exception as e:
                 # If it fails, then re-raise it wrapped in an invoke error
                 raise discord.app_commands.CommandInvokeError(

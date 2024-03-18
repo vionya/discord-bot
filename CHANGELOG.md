@@ -1,6 +1,7 @@
 # **Release v1.x.x** (TBD)
 
 - Renamed from "neo phoenix" to "fuchsia"
+- fuchsia can now be installed to user accounts. This functionality is questionably implemented and very untested. But it's cool so it's being pushed to production
 
 ## Additions
 

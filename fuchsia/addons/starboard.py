@@ -310,6 +310,7 @@ class StarboardAddon(
     app_group=True,
     group_name="starboard",
     group_description="Starboard management commands",
+    group_extras={"integration_types": [0]},
 ):
     """
     Manages your server's starboard
@@ -323,6 +324,8 @@ class StarboardAddon(
         self.bot = bot
         self.ready = False
         self.starboards: dict[int, Starboard] = {}
+
+        self.__cog_app_commands_group__
 
         asyncio.create_task(self.__ainit__())
 

@@ -36,6 +36,7 @@ class ServerConfig(
     app_group=True,
     group_name="server",
     group_description="Server configuration commands",
+    group_extras={"integration_types": [0]},
 ):
     """fuchsia's server config management module"""
 
