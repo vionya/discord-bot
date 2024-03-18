@@ -90,7 +90,7 @@ class Utility(fuchsia.Addon):
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
-        # await self.bot.wait_until_ready()
+        await self.bot.wait_until_ready()
 
         # Since we wait for bot ready, this has to be true
         if not self.bot.user:
