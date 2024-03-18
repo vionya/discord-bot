@@ -268,9 +268,8 @@ class Fuchsia(commands.Bot):
             # Verify the interaction against the checks
             # Hierarchy prioritizes channel check first since it will overrule anyways
             try:
+                # TODO: should this even exist anymore?
                 pass
-                # await self.channel_check(interaction)
-                # await self.guild_disabled_check(interaction)
             except Exception as e:
                 # If it fails, then re-raise it wrapped in an invoke error
                 raise discord.app_commands.CommandInvokeError(
@@ -278,60 +277,6 @@ class Fuchsia(commands.Bot):
                 ) from e
 
         return True
-
-    # TODO: Remove this in favor of Discord's built-in permissions system?
-    async def channel_check(self, interaction: discord.Interaction):
-        # Only relevant in guilds
-        if not interaction.guild or not isinstance(
-            interaction.user, discord.Member
-        ):
-            return True
-
-        predicates = [
-            # If the guild ID has no associated config, this check is irrelevant
-            interaction.guild.id not in self.configs,
-            # Bypasses
-            await self.is_owner(interaction.user),
-            interaction.user.guild_permissions.administrator,
-        ]
-
-        if any(predicates):
-            return True
-
-        elif (
-            interaction.channel_id
-            in self.configs[interaction.guild.id].disabled_channels
-        ):
-            # If the channel is in the list of disabled IDs, the command
-            # can't be executed
-            raise exceptions.DisabledChannel()
-
-        return True
-
-    # TODO: Remove in favor of built-in Discord permissions as well?
-    async def guild_disabled_check(self, interaction: discord.Interaction):
-        if (
-            not interaction.guild
-            or not isinstance(interaction.user, discord.Member)
-            or not isinstance(interaction.command, discord.app_commands.Command)
-        ):
-            return True
-
-        predicates = [
-            interaction.guild.id not in self.configs,
-            await self.is_owner(interaction.user),
-            interaction.user.guild_permissions.administrator,
-        ]
-
-        if any(predicates):
-            return True
-
-        disabled = self.configs[interaction.guild.id].disabled_commands
-        if (
-            interaction.command.qualified_name in disabled
-            or getattr(interaction.command.root_parent, "name", "") in disabled
-        ):
-            raise exceptions.DisabledCommand(interaction.command.qualified_name)
 
     # discord.py's `Client.dispatch` API is both private and *volatile*.
     # This serves as a similar implementation that will not change in the future.

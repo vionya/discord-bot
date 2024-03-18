@@ -177,14 +177,10 @@ class FuchsiaUser(RecordContainer):
 class FuchsiaGuildConfig(RecordContainer):
     guild_id: int
     starboard: bool
-    disabled_channels: list[int]
-    disabled_commands: list[str]
 
     __slots__ = (
         "guild_id",
         "starboard",
-        "disabled_channels",
-        "disabled_commands",
         "allow_highlights",
     )
 
