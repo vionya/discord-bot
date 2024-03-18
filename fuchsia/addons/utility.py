@@ -83,9 +83,11 @@ class Utility(fuchsia.Addon):
         # self.bot.tree.context_menu(name="Show Raw Content")(
         #     self.raw_msg_context_command
         # )
-        self.bot.tree.context_menu(
-            name="Steal Sticker", extras={"integration_types": [0]}
-        )(self.sticker_steal_context_command)
+        guild_only(
+            self.bot.tree.context_menu(name="Steal Sticker")(
+                self.sticker_steal_context_command
+            )
+        )
 
         asyncio.create_task(self.__ainit__())
 
