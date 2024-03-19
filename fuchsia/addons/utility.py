@@ -422,7 +422,8 @@ class Utility(fuchsia.Addon):
         )
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="serverinfo", extras={"contexts": [0]})
+    @guild_only
+    @app_commands.command(name="serverinfo")
     async def guild_info_command(self, interaction: discord.Interaction):
         """Retrieves information about the current server"""
         # The guild_only check guarantees that this will always work
