@@ -120,7 +120,7 @@ class RemindMeLaterModal(discord.ui.Modal):
     def __init__(self, *, reminder: Reminder):
         self.reminder = reminder
 
-        super().__init__()
+        super().__init__(title="Remind Me Later", timeout=300)
 
     async def on_submit(self, interaction: discord.Interaction):
         assert self.when.value
