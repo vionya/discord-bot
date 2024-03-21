@@ -142,7 +142,7 @@ class ReminderDeliveryView(discord.ui.View):
     def __init__(self, *, reminder: Reminder):
         self.reminder = reminder
 
-        super().__init__()
+        super().__init__(timeout=300)
 
     async def interaction_check(self, interaction: discord.Interaction):
         return interaction.user.id == self.reminder.user_id
@@ -160,3 +160,6 @@ class ReminderDeliveryView(discord.ui.View):
         button.label = "Reminder Delayed!"
         button.disabled = True
         await interaction.edit_original_response(view=self)
+
+        self.reminder._keepalive = True
+        self.stop()

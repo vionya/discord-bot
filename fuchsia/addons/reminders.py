@@ -58,6 +58,7 @@ class Reminder:
         "deliver_in",
         "bot",
         "_done",
+        "_keepalive",
     )
 
     def __init__(
@@ -82,6 +83,7 @@ class Reminder:
 
         self.bot = bot
         self._done = False
+        self._keepalive = False
 
     @property
     def end_time(self):
@@ -151,23 +153,36 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
-            if not self.repeating:
-                view = ReminderDeliveryView(reminder=self)
-            await dest.send(
-                content=content,
-                embed=embed,
-                view=view,
-                allowed_mentions=discord.AllowedMentions(
+            kwargs = {
+                "content": content,
+                "embed": embed,
+                "allowed_mentions": discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
                 ),
-            )
+            }
+
+            view = None
+            if not self.repeating:
+                view = ReminderDeliveryView(reminder=self)
+                kwargs["view"] = view
+
+            await dest.send(**kwargs)
+            if view:
+                # wait on a response to see if the reminder should be
+                # rescheduled
+                await view.wait()
+
         except discord.HTTPException:
             # In the event of an HTTP exception, the reminder is deleted
             # regardless of its type
             await self.delete()
 
         finally:
-            if self._done is False and self.repeating is False:
+            if (
+                self._done is False
+                and self.repeating is False
+                and self._keepalive is False
+            ):
                 # If the reminder is not a repeating reminder and it is not yet
                 # marked as done, delete it
                 await self.delete()
