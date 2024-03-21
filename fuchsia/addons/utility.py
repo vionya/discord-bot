@@ -77,12 +77,12 @@ class Utility(fuchsia.Addon):
         self.bot.tree.context_menu(name="View Banner")(
             self.banner_context_command
         )
-        # self.bot.tree.context_menu(name="Show Message Info")(
-        #     self.message_info_context_command
-        # )
-        # self.bot.tree.context_menu(name="Show Raw Content")(
-        #     self.raw_msg_context_command
-        # )
+        self.bot.tree.context_menu(name="Show Message Info")(
+            self.message_info_context_command
+        )
+        self.bot.tree.context_menu(name="Show Raw Content")(
+            self.raw_msg_context_command
+        )
         guild_only(
             self.bot.tree.context_menu(name="Steal Sticker")(
                 self.sticker_steal_context_command
@@ -751,6 +751,7 @@ class Utility(fuchsia.Addon):
     async def message_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message
     ):
+        """View information about the selected message"""
         flags_str = ", ".join(
             f"`{flag[0]}`" for flag in filter(lambda p: p[1], message.flags)
         )
@@ -809,6 +810,7 @@ class Utility(fuchsia.Addon):
     async def raw_msg_context_command(
         self, interaction: discord.Interaction, message: discord.Message
     ):
+        """View the raw content of the selected message"""
         if not message.content:
             return await interaction.response.send_message(
                 "Message is empty", ephemeral=True
