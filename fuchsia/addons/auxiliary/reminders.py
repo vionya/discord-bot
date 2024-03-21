@@ -134,6 +134,7 @@ class RemindMeLaterModal(discord.ui.Modal):
             predicate="rescheduled your reminder for <t:{0:.0f}>".format(
                 (self.reminder.epoch + self.reminder.delta).timestamp()
             ),
+            ephemeral=True,
         )
 
 
