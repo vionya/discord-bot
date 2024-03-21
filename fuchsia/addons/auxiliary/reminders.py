@@ -157,5 +157,6 @@ class ReminderDeliveryView(discord.ui.View):
         await interaction.response.send_modal(modal)
         await modal.wait()
 
+        button.label = "Reminder Delayed!"
         button.disabled = True
-        await interaction.response.edit_message(view=self)
+        await interaction.edit_original_response(view=self)

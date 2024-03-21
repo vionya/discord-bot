@@ -151,7 +151,8 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
-            view = ReminderDeliveryView(reminder=self)
+            if not self.repeating:
+                view = ReminderDeliveryView(reminder=self)
             await dest.send(
                 content=content,
                 embed=embed,
