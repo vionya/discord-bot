@@ -32,11 +32,7 @@ from fuchsia.tools.time_parse import (
     parse_relative,
 )
 
-from .auxiliary.reminders import (
-    ReminderDeliveryView,
-    ReminderEditModal,
-    ReminderShowView,
-)
+from .auxiliary.reminders import ReminderEditModal, ReminderShowView
 
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
@@ -58,7 +54,6 @@ class Reminder:
         "deliver_in",
         "bot",
         "_done",
-        "_keepalive",
     )
 
     def __init__(
@@ -83,7 +78,6 @@ class Reminder:
 
         self.bot = bot
         self._done = False
-        self._keepalive = False
 
     @property
     def end_time(self):
@@ -91,13 +85,14 @@ class Reminder:
 
     async def poll(self, poll_time: datetime):
         if poll_time >= self.end_time:
-            if self.repeating:
-                await self.reschedule()
+            await self.update_repeating()
             await self.deliver()
 
-    async def reschedule(self) -> bool:
+    async def update_repeating(self) -> bool:
         """
-        Reschedules this reminder's delivery time based on its internal delta
+        If this reminder is set to repeat, update the epoch and return True.
+
+        Otherwise, return False.
         """
         if self.repeating is False:
             return False
@@ -153,36 +148,20 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
-            kwargs = {
-                "content": content,
-                "embed": embed,
-                "allowed_mentions": discord.AllowedMentions(
+            await dest.send(
+                content=content,
+                embed=embed,
+                allowed_mentions=discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
                 ),
-            }
-
-            view = None
-            if not self.repeating:
-                view = ReminderDeliveryView(reminder=self)
-                kwargs["view"] = view
-
-            await dest.send(**kwargs)
-            if view:
-                # wait on a response to see if the reminder should be
-                # rescheduled
-                await view.wait()
-
+            )
         except discord.HTTPException:
             # In the event of an HTTP exception, the reminder is deleted
             # regardless of its type
             await self.delete()
 
         finally:
-            if (
-                self._done is False
-                and self.repeating is False
-                and self._keepalive is False
-            ):
+            if self._done is False and self.repeating is False:
                 # If the reminder is not a repeating reminder and it is not yet
                 # marked as done, delete it
                 await self.delete()
