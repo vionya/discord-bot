@@ -32,7 +32,11 @@ from fuchsia.tools.time_parse import (
     parse_relative,
 )
 
-from .auxiliary.reminders import ReminderEditModal, ReminderShowView
+from .auxiliary.reminders import (
+    ReminderDeliveryView,
+    ReminderEditModal,
+    ReminderShowView,
+)
 
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
@@ -85,14 +89,13 @@ class Reminder:
 
     async def poll(self, poll_time: datetime):
         if poll_time >= self.end_time:
-            await self.update_repeating()
+            if self.repeating:
+                await self.reschedule()
             await self.deliver()
 
-    async def update_repeating(self) -> bool:
+    async def reschedule(self) -> bool:
         """
-        If this reminder is set to repeat, update the epoch and return True.
-
-        Otherwise, return False.
+        Reschedules this reminder's delivery time based on its internal delta
         """
         if self.repeating is False:
             return False
@@ -148,9 +151,11 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
+            view = ReminderDeliveryView(reminder=self)
             await dest.send(
                 content=content,
                 embed=embed,
+                view=view,
                 allowed_mentions=discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
                 ),
