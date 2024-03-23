@@ -101,7 +101,7 @@ class Reminder:
 
         self.bot = bot
         self._done = False
-        self._kill_at = self.epoch + Reminder.KEEPALIVE_DELTA
+        self._kill_at = self.end_time + Reminder.KEEPALIVE_DELTA
 
     @property
     def end_time(self):
@@ -129,7 +129,7 @@ class Reminder:
         Also updates the kill time and done marker accordingly
         """
         self.epoch += self.delta
-        self._kill_at = self.epoch + Reminder.KEEPALIVE_DELTA
+        self._kill_at = self.end_time + Reminder.KEEPALIVE_DELTA
         self._done = False
         await self.bot.db.execute(
             """
