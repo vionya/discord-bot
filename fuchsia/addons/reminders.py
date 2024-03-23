@@ -32,7 +32,11 @@ from fuchsia.tools.time_parse import (
     parse_relative,
 )
 
-from .auxiliary.reminders import ReminderEditModal, ReminderShowView
+from .auxiliary.reminders import (
+    ReminderDeliveryView,
+    ReminderEditModal,
+    ReminderShowView,
+)
 
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
@@ -44,6 +48,24 @@ class Reminder:
     # Max number of characters in a reminder's content
     MAX_LEN = 1000
 
+    # Number of seconds to keep a reminder alive after it's delivered
+    KEEPALIVE_TIME = 60
+
+    # Delta for KEEPALIVE_TIME seconds
+    KEEPALIVE_DELTA = timedelta(seconds=KEEPALIVE_TIME)
+
+    user_id: int
+    reminder_id: UUID
+    content: str
+    epoch: datetime
+    delta: timedelta
+    repeating: bool
+    deliver_in: int | None
+    bot: fuchsia.Fuchsia
+
+    _done: bool
+    _kill_at: datetime
+
     __slots__ = (
         "user_id",
         "reminder_id",
@@ -54,6 +76,7 @@ class Reminder:
         "deliver_in",
         "bot",
         "_done",
+        "_kill_at",
     )
 
     def __init__(
@@ -78,25 +101,29 @@ class Reminder:
 
         self.bot = bot
         self._done = False
+        self._kill_at = self.epoch + Reminder.KEEPALIVE_DELTA
 
     @property
     def end_time(self):
         return self.epoch + self.delta
 
+    @property
+    def alive(self):
+        return not self._done
+
     async def poll(self, poll_time: datetime):
-        if poll_time >= self.end_time:
-            await self.update_repeating()
+        # the reminder will be kept alive for KEEPALIVE_TIME seconds after it
+        # has reached its epoch
+        if poll_time >= self._kill_at:
+            await self.delete()
+
+        elif poll_time >= self.end_time and not self._done:
+            if self.repeating:
+                await self.reschedule()
             await self.deliver()
 
-    async def update_repeating(self) -> bool:
-        """
-        If this reminder is set to repeat, update the epoch and return True.
-
-        Otherwise, return False.
-        """
-        if self.repeating is False:
-            return False
-
+    async def reschedule(self):
+        """Update the epoch of this reminder"""
         self.epoch += self.delta
         await self.bot.db.execute(
             """
@@ -112,7 +139,6 @@ class Reminder:
             self.user_id,
             self.reminder_id,
         )
-        return True
 
     async def deliver(self):
         try:
@@ -148,13 +174,17 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
-            await dest.send(
-                content=content,
-                embed=embed,
-                allowed_mentions=discord.AllowedMentions(
+            kwargs = {
+                "content": content,
+                "embed": embed,
+                "allowed_mentions": discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
                 ),
-            )
+            }
+            if not self.repeating:
+                kwargs["view"] = ReminderDeliveryView(reminder=self)
+
+            await dest.send(**kwargs)
         except discord.HTTPException:
             # In the event of an HTTP exception, the reminder is deleted
             # regardless of its type
@@ -163,12 +193,11 @@ class Reminder:
         finally:
             if self._done is False and self.repeating is False:
                 # If the reminder is not a repeating reminder and it is not yet
-                # marked as done, delete it
-                await self.delete()
+                # marked as done, mark it as done
+                self._done = True
 
     async def delete(self):
         """Remove this reminder from the database"""
-        self._done = True
         await self.bot.db.execute(
             """
             DELETE FROM
