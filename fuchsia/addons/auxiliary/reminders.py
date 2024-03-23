@@ -142,7 +142,7 @@ class ReminderDeliveryView(discord.ui.View):
     def __init__(self, *, reminder: Reminder):
         self.reminder = reminder
 
-        super().__init__(timeout=Reminder.KEEPALIVE_TIME)
+        super().__init__(timeout=reminder.KEEPALIVE_TIME)
 
     async def interaction_check(self, interaction: discord.Interaction):
         return interaction.user.id == self.reminder.user_id
