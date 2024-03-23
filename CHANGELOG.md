@@ -55,6 +55,7 @@
 - Starboard now shows the server-specific display name and avatar of the user starred (and replied-to user if relevant)
 - Replace custom absolute datetime parser with `python-dateutil` parser for much higher forgiveness with inputs
 - Context menu commands now show in help output
+- Non-repeating reminders can now be rescheduled within a certain length of time after the reminder has been delivered
 
 ## Removals
 

@@ -187,10 +187,15 @@ class Reminder:
                     users=[discord.Object(self.user_id)]
                 ),
             }
-            if not self.repeating:
-                kwargs["view"] = ReminderDeliveryView(reminder=self)
 
-            await dest.send(**kwargs)
+            if not self.repeating:
+                view = ReminderDeliveryView(reminder=self)
+                kwargs["view"] = view
+
+            msg = await dest.send(**kwargs)
+            if not self.repeating:
+                # backpatch the message object for edit on timeout
+                view.message = msg
         except discord.HTTPException:
             # In the event of an HTTP exception, the reminder is deleted
             # regardless of its type

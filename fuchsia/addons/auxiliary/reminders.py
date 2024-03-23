@@ -139,13 +139,21 @@ class RemindMeLaterModal(discord.ui.Modal):
 
 
 class ReminderDeliveryView(discord.ui.View):
+    message: discord.Message | None
+
     def __init__(self, *, reminder: Reminder):
         self.reminder = reminder
+        self.message = None
 
         super().__init__(timeout=reminder.KEEPALIVE_TIME)
 
     async def interaction_check(self, interaction: discord.Interaction):
         return interaction.user.id == self.reminder.user_id
+
+    async def on_timeout(self):
+        self.remind_later.disabled = True
+        if self.message:
+            await self.message.edit(view=self)
 
     @discord.ui.button(
         label="Remind Me Later", emoji="⏰", style=discord.ButtonStyle.primary
