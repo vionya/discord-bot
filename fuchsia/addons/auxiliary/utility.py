@@ -229,6 +229,7 @@ class InfoButtons(discord.ui.View):
 class SwappableEmbedButton(discord.ui.Button):
     def __init__(self, *args, **kwargs):
         kwargs["label"] = "Swap image sizes"
+        kwargs["style"] = discord.ButtonStyle.primary
         super().__init__(*args, **kwargs)
 
     async def callback(self, interaction: discord.Interaction):
