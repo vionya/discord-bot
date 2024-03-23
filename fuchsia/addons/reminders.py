@@ -41,7 +41,7 @@ from .auxiliary.reminders import (
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
 # Minimum number of total seconds in a repeating reminder
-REPEATING_MINIMUM_SECONDS = 60
+REPEATING_MINIMUM_SECONDS = 5
 
 
 class Reminder:
@@ -125,6 +125,8 @@ class Reminder:
     async def reschedule(self):
         """Update the epoch of this reminder"""
         self.epoch += self.delta
+        self._kill_at = self.epoch + Reminder.KEEPALIVE_DELTA
+        self._done = False
         await self.bot.db.execute(
             """
             UPDATE
