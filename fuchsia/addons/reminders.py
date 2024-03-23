@@ -41,7 +41,7 @@ from .auxiliary.reminders import (
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
 # Minimum number of total seconds in a repeating reminder
-REPEATING_MINIMUM_SECONDS = 5
+REPEATING_MINIMUM_SECONDS = 60
 
 
 class Reminder:
@@ -49,7 +49,7 @@ class Reminder:
     MAX_LEN = 1000
 
     # Number of seconds to keep a reminder alive after it's delivered
-    KEEPALIVE_TIME = 60
+    KEEPALIVE_TIME = 180
 
     # Delta for KEEPALIVE_TIME seconds
     KEEPALIVE_DELTA = timedelta(seconds=KEEPALIVE_TIME)
@@ -123,7 +123,11 @@ class Reminder:
             await self.deliver()
 
     async def reschedule(self):
-        """Update the epoch of this reminder"""
+        """
+        Update the epoch of this reminder
+
+        Also updates the kill time and done marker accordingly
+        """
         self.epoch += self.delta
         self._kill_at = self.epoch + Reminder.KEEPALIVE_DELTA
         self._done = False
@@ -432,6 +436,9 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
 
         # sort by next to trigger, ascending
         for reminder in sorted(reminders, key=lambda r: r.end_time):
+            # don't display dying reminders
+            if not reminder.alive:
+                continue
             content = utils.escape_markdown(
                 shorten("".join(reminder.content.splitlines()), 75)
             )
