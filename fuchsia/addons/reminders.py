@@ -49,7 +49,7 @@ class Reminder:
     MAX_LEN = 1000
 
     # Number of seconds to keep a reminder alive after it's delivered
-    KEEPALIVE_TIME = 180
+    KEEPALIVE_TIME = 300
 
     # Delta for KEEPALIVE_TIME seconds
     KEEPALIVE_DELTA = timedelta(seconds=KEEPALIVE_TIME)
