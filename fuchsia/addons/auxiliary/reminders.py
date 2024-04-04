@@ -10,13 +10,12 @@ from typing import TYPE_CHECKING
 import discord
 
 from fuchsia.tools.message_helpers import send_confirmation
-from fuchsia.tools.time_parse import parse_relative
 
 if TYPE_CHECKING:
     from asyncpg import Pool
     from typing_extensions import Self
 
-    from fuchsia.addons.reminders import Reminder, Reminders
+    from fuchsia.addons.reminders import Reminder
 
 
 class ReminderEditModal(discord.ui.Modal):
@@ -105,67 +104,3 @@ class ReminderShowView(discord.ui.View):
         button.disabled = True
 
         await interaction.response.edit_message(view=self)
-
-
-class RemindMeLaterModal(discord.ui.Modal):
-    when: discord.ui.TextInput = discord.ui.TextInput(
-        label="When should this reminder trigger again?",
-        style=discord.TextStyle.short,
-        default="30m",
-        placeholder="30m",
-        min_length=1,
-        max_length=256,
-    )
-
-    def __init__(self, *, reminder: Reminder):
-        self.reminder = reminder
-
-        super().__init__(title="Remind Me Later", timeout=300)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        assert self.when.value
-
-        delta = parse_relative(self.when.value)[0]
-        self.reminder.delta = delta
-        await self.reminder.reschedule()
-
-        await send_confirmation(
-            interaction,
-            predicate="rescheduled your reminder for <t:{0:.0f}>".format(
-                (self.reminder.epoch + self.reminder.delta).timestamp()
-            ),
-            ephemeral=True,
-        )
-
-
-class ReminderDeliveryView(discord.ui.View):
-    message: discord.Message | None
-
-    def __init__(self, *, reminder: Reminder):
-        self.reminder = reminder
-        self.message = None
-
-        super().__init__(timeout=reminder.KEEPALIVE_TIME)
-
-    async def interaction_check(self, interaction: discord.Interaction):
-        return interaction.user.id == self.reminder.user_id
-
-    async def on_timeout(self):
-        self.remind_later.disabled = True
-        if self.message:
-            await self.message.edit(view=self)
-
-    @discord.ui.button(
-        label="Remind Me Later", emoji="⏰", style=discord.ButtonStyle.primary
-    )
-    async def remind_later(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        modal = RemindMeLaterModal(reminder=self.reminder)
-        await interaction.response.send_modal(modal)
-        await modal.wait()
-
-        button.label = "Reminder Delayed!"
-        button.disabled = True
-        await interaction.edit_original_response(view=self)
-        self.stop()

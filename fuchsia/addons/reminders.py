@@ -32,11 +32,7 @@ from fuchsia.tools.time_parse import (
     parse_relative,
 )
 
-from .auxiliary.reminders import (
-    ReminderDeliveryView,
-    ReminderEditModal,
-    ReminderShowView,
-)
+from .auxiliary.reminders import ReminderEditModal, ReminderShowView
 
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
@@ -48,12 +44,6 @@ class Reminder:
     # Max number of characters in a reminder's content
     MAX_LEN = 1000
 
-    # Number of seconds to keep a reminder alive after it's delivered
-    KEEPALIVE_TIME = 300
-
-    # Delta for KEEPALIVE_TIME seconds
-    KEEPALIVE_DELTA = timedelta(seconds=KEEPALIVE_TIME)
-
     user_id: int
     reminder_id: UUID
     content: str
@@ -62,9 +52,6 @@ class Reminder:
     repeating: bool
     deliver_in: int | None
     bot: fuchsia.Fuchsia
-
-    _done: bool
-    _kill_at: datetime
 
     __slots__ = (
         "user_id",
@@ -76,7 +63,6 @@ class Reminder:
         "deliver_in",
         "bot",
         "_done",
-        "_kill_at",
     )
 
     def __init__(
@@ -101,23 +87,13 @@ class Reminder:
 
         self.bot = bot
         self._done = False
-        self._kill_at = self.end_time + Reminder.KEEPALIVE_DELTA
 
     @property
     def end_time(self):
         return self.epoch + self.delta
 
-    @property
-    def alive(self):
-        return not self._done
-
     async def poll(self, poll_time: datetime):
-        # the reminder will be kept alive for KEEPALIVE_TIME seconds after it
-        # has reached its epoch
-        if poll_time >= self._kill_at:
-            await self.delete()
-
-        elif poll_time >= self.end_time and not self._done:
+        if poll_time >= self.end_time:
             if self.repeating:
                 await self.reschedule()
             await self.deliver()
@@ -129,8 +105,6 @@ class Reminder:
         Also updates the kill time and done marker accordingly
         """
         self.epoch += self.delta
-        self._kill_at = self.end_time + Reminder.KEEPALIVE_DELTA
-        self._done = False
         await self.bot.db.execute(
             """
             UPDATE
@@ -180,22 +154,13 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
-            kwargs = {
-                "content": content,
-                "embed": embed,
-                "allowed_mentions": discord.AllowedMentions(
+            msg = await dest.send(
+                content,
+                embed=embed,
+                allowed_mentions=discord.AllowedMentions(
                     users=[discord.Object(self.user_id)]
                 ),
-            }
-
-            if not self.repeating:
-                view = ReminderDeliveryView(reminder=self)
-                kwargs["view"] = view
-
-            msg = await dest.send(**kwargs)
-            if not self.repeating:
-                # backpatch the message object for edit on timeout
-                view.message = msg
+            )
         except discord.HTTPException:
             # In the event of an HTTP exception, the reminder is deleted
             # regardless of its type
@@ -209,6 +174,7 @@ class Reminder:
 
     async def delete(self):
         """Remove this reminder from the database"""
+        self._done = True
         await self.bot.db.execute(
             """
             DELETE FROM
@@ -441,9 +407,6 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
 
         # sort by next to trigger, ascending
         for reminder in sorted(reminders, key=lambda r: r.end_time):
-            # don't display dying reminders
-            if not reminder.alive:
-                continue
             content = utils.escape_markdown(
                 shorten("".join(reminder.content.splitlines()), 75)
             )
