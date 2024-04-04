@@ -56,6 +56,7 @@
 - Starboard now shows the server-specific display name and avatar of the user starred (and replied-to user if relevant)
 - Replace custom absolute datetime parser with `python-dateutil` parser for much higher forgiveness with inputs
 - Context menu commands now show in help output
+- Simplified profile creation with a prompt to create one upon encountering a missing profile
 
 ## Removals
 
