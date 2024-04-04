@@ -2,12 +2,16 @@
 # Copyright (C) 2023 sardonicism-04
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord import app_commands
 
+from fuchsia.classes.exceptions import SilentFail
+
 if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
+
     from fuchsia import Fuchsia
 
 
@@ -31,19 +35,56 @@ def is_owner_or_administrator():
     return app_commands.check(owner_or_admin_predicate)
 
 
-def is_registered_profile_predicate(interaction: discord.Interaction):
+class CreateProfileView(discord.ui.View):
+    edit_original_response: Callable[
+        ..., Coroutine[Any, Any, discord.InteractionMessage]
+    ]
+
+    def __init__(self, invoker_id: int, **kwargs):
+        self.invoker_id = invoker_id
+        super().__init__(**kwargs)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return interaction.user.id == self.invoker_id
+
+    async def on_timeout(self) -> None:
+        self.create_profile_button.disabled = True
+        await self.edit_original_response(view=self)
+
+    @discord.ui.button(
+        label="Create Profile", style=discord.ButtonStyle.primary
+    )
+    async def create_profile_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        bot: Fuchsia = interaction.client  # type: ignore
+        if self.invoker_id in bot.profiles:
+            return await interaction.response.send_message(
+                "Looks like you already have a profile", ephemeral=True
+            )
+        await bot.add_profile(self.invoker_id)
+        await interaction.response.send_message(
+            "Create your profile! Feel free to re-run your command now :)",
+            ephemeral=True,
+        )
+        button.disabled = True
+        await self.edit_original_response(view=self)
+
+
+async def is_registered_profile_predicate(interaction: discord.Interaction):
     assert interaction.command
 
     bot: Fuchsia = interaction.client  # type: ignore
 
     if interaction.user.id not in bot.profiles:
-        raise app_commands.CommandInvokeError(
-            interaction.command,
-            AttributeError(
-                "Looks like you don't have an existing profile! "
-                "You can fix this with the `profile create` command."
-            ),
+        view = CreateProfileView(interaction.user.id)
+        msg = await interaction.response.send_message(
+            "You don't have a profile! Create one now to run this command",
+            view=view,
         )
+        # backpatch the message onto the view
+        view.edit_original_response = interaction.edit_original_response
+        raise SilentFail("Missing a profile. Prompted to create one")
     return True
 
 

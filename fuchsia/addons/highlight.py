@@ -339,7 +339,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
     async def addon_interaction_check(
         self, interaction: discord.Interaction
     ) -> bool:
-        return is_registered_profile_predicate(interaction)
+        return await is_registered_profile_predicate(interaction)
 
     @app_commands.command(name="list")
     async def highlight_list(self, interaction: discord.Interaction):

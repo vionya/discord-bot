@@ -59,7 +59,7 @@ class Todos(fuchsia.Addon, app_group=True, group_name="todo"):
     async def addon_interaction_check(
         self, interaction: discord.Interaction
     ) -> bool:
-        return is_registered_profile_predicate(interaction)
+        return await is_registered_profile_predicate(interaction)
 
     @app_commands.command(name="list")
     async def todo_list(self, interaction: discord.Interaction):

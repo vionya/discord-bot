@@ -269,7 +269,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
     async def addon_interaction_check(
         self, interaction: discord.Interaction
     ) -> bool:
-        return is_registered_profile_predicate(interaction)
+        return await is_registered_profile_predicate(interaction)
 
     @iter_autocomplete(("1d", "1w", "1mo", "1y"), param="repeat")
     @app_commands.command(name="set")
