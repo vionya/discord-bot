@@ -169,8 +169,8 @@ class Reminder:
         finally:
             if self._done is False and self.repeating is False:
                 # If the reminder is not a repeating reminder and it is not yet
-                # marked as done, mark it as done
-                self._done = True
+                # marked as done, delete it
+                await self.delete()
 
     async def delete(self):
         """Remove this reminder from the database"""
