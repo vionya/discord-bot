@@ -669,7 +669,7 @@ class Utility(fuchsia.Addon):
             tz = ZoneInfo(source_tz)
             target = datetime.now(tz)
             time_info = target.strftime(
-                "**Time** %H:%M:%S (%I:%M:%S %p)\n**Date** %d %B, %Y (%x)"
+                "**Time** %H:%M:%S (%I:%M %p)\n**Date** %d %B, %Y"
             )
             await interaction.response.send_message(
                 embed=fuchsia.Embed(
