@@ -9,9 +9,10 @@
   - `View Banner` - shows a user's banner ephemerally
   - `Steal Sticker` - attempts to steal the sticker which was included with the relevant message
 - New command `/banner` shows a user's banner
-- New command `/timestamp` for generating a Discord-formatted timestamp using human-readable inputs
+- New command `/time stamp` for generating a Discord-formatted timestamp using human-readable inputs
   - Parameters accept the exact same syntax as the `when` parameter for the `/remind set` command
   - Also supports a `timezone` parameter to create absolute timestamps in any timezone
+- New command `/time in` for getting information about the current time in a given (valid) timezone
 - New absolute parsing formats for `/remind set` and `/timestamp` supporting 12-hour time
 - The outputs of `/todo view` and `/remind view` now have action buttons for editing and deleting the todo/reminder
 - Relative times can now include months
@@ -55,7 +56,6 @@
 - Starboard now shows the server-specific display name and avatar of the user starred (and replied-to user if relevant)
 - Replace custom absolute datetime parser with `python-dateutil` parser for much higher forgiveness with inputs
 - Context menu commands now show in help output
-- Non-repeating reminders can now be rescheduled within a certain length of time after the reminder has been delivered
 
 ## Removals
 
