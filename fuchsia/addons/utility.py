@@ -11,6 +11,7 @@ from functools import partial
 from io import BytesIO
 from sys import version as py_version
 from typing import Literal, Optional
+from textwrap import dedent
 from zoneinfo import ZoneInfo, available_timezones
 
 import discord
@@ -29,7 +30,7 @@ from fuchsia.modules import (
     dictionary,
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
-from fuchsia.tools.decorators import guild_only
+from fuchsia.tools.decorators import guild_only, instantiate
 from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
@@ -518,72 +519,6 @@ class Utility(fuchsia.Addon):
             embed=embed, view=self.info_buttons()
         )
 
-    @iter_autocomplete(TIMEZONE_STRS, param="source_tz")
-    @app_commands.command(name="timestamp")
-    @app_commands.describe(
-        when="The time the timestamp should point to, see /remind set for more",
-        style="The style for format the timestamp with",
-        source_tz="The timezone to set absolute timestamps in",
-    )
-    @app_commands.rename(source_tz="timezone")
-    async def formatted_timestamp_command(
-        self,
-        interaction: discord.Interaction,
-        when: str,
-        style: Literal[
-            "Short Time",
-            "Long Time",
-            "Short Date",
-            "Long Date",
-            "Short Date/Time",
-            "Long Date/Time",
-            "Relative Time",
-        ] = "Short Date/Time",
-        source_tz: str | None = None,
-    ):
-        """
-        Create a Discord timestamp from a human-readable input
-
-        See the help documentation for `/remind set` to see how to format the
-        input for `when`
-        """
-        if source_tz is not None:
-            if source_tz not in TIMEZONE_STRS:
-                raise ValueError("Invalid timezone provided")
-            tz = ZoneInfo(source_tz)
-        else:
-            tz = timezone.utc
-            if interaction.user.id in self.bot.profiles:
-                tz = self.bot.profiles[interaction.user.id].timezone or tz
-
-        (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
-            when, tz=tz
-        )
-        target = datetime.now(tz)
-
-        if isinstance(time_data, timedelta):
-            target += time_data
-        else:
-            target = time_data
-
-        match style:
-            case "Short Time":
-                formatted = format_dt(target, style="t")
-            case "Long Time":
-                formatted = format_dt(target, style="T")
-            case "Short Date":
-                formatted = format_dt(target, style="d")
-            case "Long Date":
-                formatted = format_dt(target, style="D")
-            case "Long Date/Time":
-                formatted = format_dt(target, style="F")
-            case "Relative Time":
-                formatted = format_dt(target, style="R")
-            case _:  # Short Date/Time is the default
-                formatted = format_dt(target, style="f")
-
-        await interaction.response.send_message(content=formatted)
-
     @app_commands.command(name="upscale")
     @app_commands.describe(emoji="The emoji to upscale")
     async def upscale_emoji_command(
@@ -714,6 +649,102 @@ class Utility(fuchsia.Addon):
             output_lines, per_page=10, use_embed=True
         )
         await menu.start(interaction)
+
+    @instantiate
+    class TimeUtilities(app_commands.Group, name="time"):
+        """Utility commands for doing stuff with time"""
+
+        addon: Utility
+
+        @iter_autocomplete(TIMEZONE_STRS, param="source_tz")
+        @app_commands.command(name="in")
+        @app_commands.describe(source_tz="The timezone to get the time in")
+        @app_commands.rename(source_tz="timezone")
+        async def time_in_command(
+            self, interaction: discord.Interaction, source_tz: str
+        ):
+            """Get the current time in a given timezone"""
+            if source_tz not in TIMEZONE_STRS:
+                raise ValueError("Invalid timezone provided")
+            tz = ZoneInfo(source_tz)
+            target = datetime.now(tz)
+            time_info = target.strftime(
+                "**Time** %H:%M:%S (%I:%M:%S %p)\n**Date** %d %B, %Y (%x)"
+            )
+            await interaction.response.send_message(
+                embed=fuchsia.Embed(
+                    title=f"Time at {source_tz}", description=time_info
+                )
+            )
+
+        @iter_autocomplete(TIMEZONE_STRS, param="source_tz")
+        @app_commands.command(name="stamp")
+        @app_commands.describe(
+            when="The time the timestamp should point to, see /remind set for more",
+            style="The style for format the timestamp with",
+            source_tz="The timezone to set absolute timestamps in",
+        )
+        @app_commands.rename(source_tz="timezone")
+        async def formatted_timestamp_command(
+            self,
+            interaction: discord.Interaction,
+            when: str,
+            style: Literal[
+                "Short Time",
+                "Long Time",
+                "Short Date",
+                "Long Date",
+                "Short Date/Time",
+                "Long Date/Time",
+                "Relative Time",
+            ] = "Short Date/Time",
+            source_tz: str | None = None,
+        ):
+            """
+            Create a Discord timestamp from a human-readable input
+
+            See the help documentation for `/remind set` to see how to format the
+            input for `when`
+            """
+            if source_tz is not None:
+                if source_tz not in TIMEZONE_STRS:
+                    raise ValueError("Invalid timezone provided")
+                tz = ZoneInfo(source_tz)
+            else:
+                tz = timezone.utc
+                if interaction.user.id in self.addon.bot.profiles:
+                    tz = (
+                        self.addon.bot.profiles[interaction.user.id].timezone
+                        or tz
+                    )
+
+            (time_data, _) = try_or_none(
+                parse_relative, when
+            ) or parse_absolute(when, tz=tz)
+            target = datetime.now(tz)
+
+            if isinstance(time_data, timedelta):
+                target += time_data
+            else:
+                target = time_data
+
+            match style:
+                case "Short Time":
+                    formatted = format_dt(target, style="t")
+                case "Long Time":
+                    formatted = format_dt(target, style="T")
+                case "Short Date":
+                    formatted = format_dt(target, style="d")
+                case "Long Date":
+                    formatted = format_dt(target, style="D")
+                case "Long Date/Time":
+                    formatted = format_dt(target, style="F")
+                case "Relative Time":
+                    formatted = format_dt(target, style="R")
+                case _:  # Short Date/Time is the default
+                    formatted = format_dt(target, style="f")
+
+            await interaction.response.send_message(content=formatted)
 
     # CONTEXT MENU COMMANDS #
 
