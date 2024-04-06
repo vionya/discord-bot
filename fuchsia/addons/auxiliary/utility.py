@@ -241,3 +241,71 @@ class SwappableEmbedButton(discord.ui.Button):
         embed = embed.set_image(url=thumbnail.url).set_thumbnail(url=image.url)
         await interaction.response.defer()
         await interaction.edit_original_response(embed=embed)
+
+
+class StickerInfoView(discord.ui.View):
+    def __init__(
+        self,
+        sticker: discord.Sticker,
+        interaction: discord.Interaction,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.sticker = sticker
+        if not all(
+            (
+                # we need to be in a server to steal a sticker
+                interaction.guild is not None,
+                # the user should be able to create new stickers
+                interaction.permissions.create_expressions,
+                # the bot needs permissions to create stickers and manage them
+                interaction.app_permissions.create_expressions,
+                interaction.app_permissions.manage_expressions,
+                # can only steal `GuildSticker`s
+                isinstance(sticker, discord.GuildSticker),
+            )
+        ):
+            self.steal.disabled = True
+
+    @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
+    async def steal(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        assert interaction.guild and isinstance(
+            self.sticker, discord.GuildSticker
+        )
+
+        try:
+            # try to create the sticker
+            new_sticker = await interaction.guild.create_sticker(
+                name=self.sticker.name,
+                description=self.sticker.description,
+                emoji=self.sticker.emoji,
+                file=await self.sticker.to_file(),
+            )
+        except discord.HTTPException as e:
+            match e.code:
+                # sticker limit reached
+                case 30039:
+                    return await interaction.response.send_message(
+                        "This server has no available sticker slots",
+                        ephemeral=True,
+                    )
+                case _:
+                    # default response for anything else
+                    return await interaction.response.send_message(
+                        f"Something went wrong: {e}", ephemeral=True
+                    )
+
+        # create something nice to show to users once sticker created
+        raw_description = (
+            f"**Name** {new_sticker.name}",
+            f"**ID** {new_sticker.id}",
+            f"**Image Format** `{new_sticker.format.name}`",
+            f"**Emoji** :{new_sticker.emoji}:",
+        )
+        embed = fuchsia.Embed(
+            title="Sticker has been stolen!",
+            description="\n".join(raw_description),
+        ).set_thumbnail(url=new_sticker.url)
+        await interaction.response.send_message(embeds=[embed], ephemeral=True)

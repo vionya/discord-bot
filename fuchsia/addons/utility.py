@@ -11,7 +11,6 @@ from functools import partial
 from io import BytesIO
 from sys import version as py_version
 from typing import Literal, Optional
-from textwrap import dedent
 from zoneinfo import ZoneInfo, available_timezones
 
 import discord
@@ -21,7 +20,7 @@ from discord.utils import format_dt
 from googletrans import LANGUAGES, Translator
 
 import fuchsia
-from fuchsia.classes.app_commands import get_ephemeral, no_defer
+from fuchsia.classes.app_commands import no_defer
 from fuchsia.modules import (
     ButtonsMenu,
     DropdownMenu,
@@ -36,6 +35,7 @@ from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
     InfoButtons,
+    StickerInfoView,
     SwappableEmbedButton,
     definitions_to_embed,
     get_browser_links,
@@ -84,10 +84,8 @@ class Utility(fuchsia.Addon):
         self.bot.tree.context_menu(name="Show Raw Content")(
             self.raw_msg_context_command
         )
-        guild_only(
-            self.bot.tree.context_menu(name="Steal Sticker")(
-                self.sticker_steal_context_command
-            )
+        self.bot.tree.context_menu(name="Inspect/Steal Sticker")(
+            self.sticker_info_context_command
         )
 
         asyncio.create_task(self.__ainit__())
@@ -856,13 +854,12 @@ class Utility(fuchsia.Addon):
         menu = fuchsia.ButtonsMenu(pages)
         await menu.start(interaction, force_ephemeral=True)
 
-    @app_commands.default_permissions(create_expressions=True)
-    @app_commands.guild_only()
-    async def sticker_steal_context_command(
+    async def sticker_info_context_command(
         self, interaction: discord.Interaction, message: discord.Message
     ):
         """
-        Steals a sticker from another server and adds it to this one
+        Gets sticker info, and also lets you steal a sticker from another[JOIN]
+        server and add it to this one
 
         This is a convenient (but sometimes finicky) shortcut to easily[JOIN]
         steal stickers.
@@ -879,71 +876,54 @@ class Utility(fuchsia.Addon):
         If the stars align (which they tend to), fuchsia will successfully[JOIN]
         steal the desired sticker and add it to your server.
         """
-        assert interaction.guild
-
-        # check that the bot itself has permission to make a sticker
-        if not (
-            interaction.app_permissions.create_expressions
-            and interaction.app_permissions.manage_expressions
-        ):
-            return await interaction.response.send_message(
-                "fuchsia is missing the `Create Expressions` and/or"
-                " `Manage Expressions` permission(s)",
-                ephemeral=True,
-            )
         # if the message has no stickers on it, there's no point in proceeding
         if not message.stickers:
             return await interaction.response.send_message(
-                "That message has no sticker to steal", ephemeral=True
+                "That message has no sticker!", ephemeral=True
             )
+
+        # get the base sticker
+        sticker = message.stickers[0]
+
+        desc = [
+            f"**Name** {sticker.name}",
+            f"**Image Format** `{sticker.format.name}`",
+            f"[**Sticker URL**]({sticker.url})",
+        ]
+        kwargs: dict = dict(ephemeral=True)
 
         try:
             # fetch the entire sticker data
-            sticker = await message.stickers[0].fetch()
-            # want to make sure it's not a standard sticker
-            if not isinstance(sticker, discord.GuildSticker):
-                return await interaction.response.send_message(
-                    "Standard stickers can't be stolen", ephemeral=True
-                )
-            # try to create the sticker
-            new_sticker = await interaction.guild.create_sticker(
-                name=sticker.name,
-                description=sticker.description,
-                emoji=sticker.emoji,
-                file=await sticker.to_file(),
+            sticker_full = await message.stickers[0].fetch()
+            desc.insert(
+                1,
+                f"**Description** {sticker_full.description or 'No description'}",
             )
-        except discord.HTTPException as e:
-            match e.code:
-                # sticker limit reached
-                case 30039:
-                    return await interaction.response.send_message(
-                        "This server has no available sticker slots",
-                        ephemeral=True,
-                    )
-                # sticker no longer available
-                case 10060:
-                    return await interaction.response.send_message(
-                        "This sticker has been deleted and is no longer available",
-                        ephemeral=True,
-                    )
-            # default response for anything else
-            await interaction.response.send_message(
-                f"Something went wrong: {e}", ephemeral=True
-            )
-            raise
 
-        # create something nice to show to users once sticker created
-        raw_description = (
-            f"**Name** {new_sticker.name}",
-            f"**ID** {new_sticker.id}",
-            f"**Image Format** `{new_sticker.format.name}`",
-            f"**Emoji** :{new_sticker.emoji}:",
-        )
+            if isinstance(sticker_full, discord.GuildSticker):
+                desc.extend(
+                    [
+                        "\n*This sticker comes from a server*",
+                        f"**Associated Emoji** `{sticker_full.emoji}`",
+                    ]
+                )
+            if not interaction.extras.get("context"):
+                kwargs.update(view=StickerInfoView(sticker_full, interaction))
+        except:
+            # i don't actually care what happens if this fails
+            # it just means there was some sort of issue with fetching the
+            # sticker, and there's still useful information that can be gained
+            # from a partial sticker
+            pass
+
         embed = fuchsia.Embed(
-            title="Sticker has been stolen!",
-            description="\n".join(raw_description),
-        ).set_thumbnail(url=new_sticker.url)
-        await interaction.response.send_message(embeds=[embed])
+            title="Sticker Info", description="\n".join(desc)
+        ).set_footer(text=f"Sticker ID: {sticker.id}")
+        if sticker.format != discord.StickerFormatType.lottie:
+            embed.set_thumbnail(url=sticker.url)
+
+        kwargs.update(embed=embed)
+        await interaction.response.send_message(**kwargs)
 
 
 async def setup(bot: fuchsia.Fuchsia):

@@ -25,6 +25,7 @@ command = Patcher(discord.app_commands.commands.Command)
 group = Patcher(discord.app_commands.commands.Group)
 context_menu = Patcher(discord.app_commands.commands.ContextMenu)
 interaction_response = Patcher(discord.interactions)
+interaction = Patcher(discord.Interaction)
 
 
 @guild.attribute()
@@ -133,6 +134,12 @@ interaction_response.attribute(
     name="InteractionResponse", value=AutoEphemeralInteractionResponse
 )
 
+old_from_data = discord.Interaction._from_data
+@interaction.attribute()
+def _from_data(self, payload):
+    self.extras["context"] = payload.get("context")
+    return old_from_data(self, payload)
+
 
 def patch_all() -> None:
     guild.patch()
@@ -143,3 +150,4 @@ def patch_all() -> None:
     context_menu.patch()
     app_command.patch()
     interaction_response.patch()
+    interaction.patch()
