@@ -920,7 +920,7 @@ class Utility(fuchsia.Addon):
             title="Sticker Info", description="\n".join(desc)
         ).set_footer(text=f"Sticker ID: {sticker.id}")
         if sticker.format != discord.StickerFormatType.lottie:
-            embed.set_thumbnail(url=sticker.url)
+            embed.set_image(url=sticker.url)
 
         kwargs.update(embed=embed)
         await interaction.response.send_message(**kwargs)
