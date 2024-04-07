@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2023 sardonicism-04
+# Copyright (C) 2024 sardonicism-04
 from typing import Optional
 
 from aiohttp import ClientSession
