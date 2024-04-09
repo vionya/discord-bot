@@ -14,15 +14,24 @@ from fuchsia.classes.app_commands import no_defer
 from fuchsia.classes.containers import TimedCache
 from fuchsia.tools.checks import is_registered_profile_predicate
 
+TAG_NAME_MIN_LEN = 2
+TAG_NAME_MAX_LEN = 100
+
+TAG_CONT_MIN_LEN = 1
+TAG_CONT_MAX_LEN = 2000
+
 
 class TagEditModal(discord.ui.Modal):
     name = discord.ui.TextInput(
-        label="Name", min_length=1, max_length=100, placeholder="The name of this tag"
+        label="Name",
+        min_length=TAG_NAME_MIN_LEN,
+        max_length=TAG_NAME_MAX_LEN,
+        placeholder="The name of this tag",
     )
     content = discord.ui.TextInput(
         label="Content",
-        min_length=1,
-        max_length=2000,
+        min_length=TAG_CONT_MIN_LEN,
+        max_length=TAG_CONT_MAX_LEN,
         placeholder="The content of this tag",
         style=discord.TextStyle.paragraph,
     )
@@ -120,7 +129,9 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
     @app_commands.command(name="get")
     @app_commands.describe(name="The name of the tag to get")
     async def tag_get(
-        self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100]
+        self,
+        interaction: discord.Interaction,
+        name: app_commands.Range[str, TAG_NAME_MIN_LEN, TAG_NAME_MAX_LEN],
     ):
         """Get the content of a tag"""
         content = await self.getch_tag(interaction.user.id, name)
@@ -137,7 +148,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
     async def tag_edit(
         self,
         interaction: discord.Interaction,
-        name: app_commands.Range[str, 1, 100],
+        name: app_commands.Range[str, TAG_NAME_MIN_LEN, TAG_NAME_MAX_LEN],
     ):
         """Edit the name and/or content of an existing tag"""
         content = await self.getch_tag(interaction.user.id, name)
@@ -177,7 +188,9 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
     @app_commands.command(name="delete")
     @app_commands.describe(name="The name of the tag to delete")
     async def tag_delete(
-        self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100]
+        self,
+        interaction: discord.Interaction,
+        name: app_commands.Range[str, TAG_NAME_MIN_LEN, TAG_NAME_MAX_LEN],
     ):
         """Delete a tag"""
         was_deleted = await self.bot.db.fetchval(
