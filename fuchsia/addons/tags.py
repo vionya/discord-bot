@@ -91,7 +91,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         if await modal.wait():
             return  # the modal timed out
         name = modal.name.value
-        content = modal.name.value
+        content = modal.content.value
         response = modal.response
         try:
             await self.bot.db.execute(
