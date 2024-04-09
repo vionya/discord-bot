@@ -65,7 +65,7 @@ class DeleteAllTagsButton(discord.ui.Button):
         self.user_id = user_id
 
     async def on_submit(self, interaction: discord.Interaction):
-        await self.stmt.executemany(self.user_id)
+        await self.stmt.executemany((self.user_id,))
         await interaction.response.send_message("Deleted all tags", ephemeral=True)
         self.disabled = True
         await interaction.edit_original_response(view=self.view)
@@ -181,7 +181,10 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         """List your existing tags"""
         await self.fetch_tag_names(interaction.user.id)
         pages = fuchsia.Pages(
-            self.tag_name_cache[interaction.user.id], per_page=25, joiner=", "
+            [f"`{n}`" for n in self.tag_name_cache[interaction.user.id]],
+            per_page=25,
+            joiner=", ",
+            use_embed=True,
         )
         menu = fuchsia.ButtonsMenu(pages)
         async with self.bot.db.acquire() as conn:
