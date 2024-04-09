@@ -182,7 +182,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         """List your existing tags"""
         await self.fetch_tag_names(interaction.user.id)
         pages = fuchsia.Pages(
-            [f"`{n}`" for n in self.tag_name_cache[interaction.user.id]],
+            [f"`{n}`" for n in self.tag_name_cache[interaction.user.id]] or ["No tags"],
             per_page=25,
             joiner=", ",
             use_embed=True,
