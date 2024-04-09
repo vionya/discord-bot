@@ -181,6 +181,9 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             per_page=25,
             joiner=", ",
             use_embed=True,
+            template_embed=fuchsia.Embed().set_author(
+                name=f"{interaction.user}'s tags'", url=interaction.user.display_avatar
+            ),
         )
         menu = fuchsia.ButtonsMenu(pages)
         menu.add_item(
