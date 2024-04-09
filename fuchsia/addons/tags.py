@@ -27,7 +27,6 @@ class TagEditModal(discord.ui.Modal):
         min_length=TAG_NAME_MIN_LEN,
         max_length=TAG_NAME_MAX_LEN,
         placeholder="The name of this tag",
-        default="",
     )
     content = discord.ui.TextInput(
         label="Content",
@@ -35,20 +34,15 @@ class TagEditModal(discord.ui.Modal):
         max_length=TAG_CONT_MAX_LEN,
         placeholder="The content of this tag",
         style=discord.TextStyle.paragraph,
-        default="",
     )
     title = "Edit Tag"
 
     editing: bool
     response: discord.InteractionResponse
 
-    def __init__(
-        self, *, name: str | None = None, content: str | None = None, **kwargs
-    ):
-        if name:
-            self.name.default = name
-        if content:
-            self.content.default = content
+    def __init__(self, *, name: str = "", content: str = "", **kwargs):
+        self.name.default = name
+        self.content.default = content
         self.editing = (name or content) is not None
         if self.editing:
             self.name.label = "New Name"
