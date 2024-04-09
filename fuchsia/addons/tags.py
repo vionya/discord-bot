@@ -65,7 +65,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         self.tags: dict[int, TimedCache[str, str]] = defaultdict(
             partial(TimedCache, timeout=300)
         )
-        self.tag_name_cache: TimedCache[int, list[str]] = TimedCache()
+        self.tag_name_cache: TimedCache[int, list[str]] = TimedCache(timeout=30)
 
         self.bot.tree.context_menu(name="Create tag from message")(
             self.tag_create_ctx_menu
