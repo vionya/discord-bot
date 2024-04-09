@@ -78,14 +78,10 @@ CREATE TABLE reminders (
 CREATE TABLE tags (
     -- tags will exist on a per-user level
     user_id BIGINT NOT NULL,
-    -- tags must all have a name
+    -- tags have a name
     name    VARCHAR(100) NOT NULL,
-    -- tags can have content
-    content TEXT DEFAULT NULL,
-    -- tags can also point to other tags
-    pointer VARCHAR(100) DEFAULT NULL,
-    -- tags must either contain content OR point to another tag, but cannot be neither nor both
-    CONSTRAINT content_or_pointer CHECK ((content IS NULL) <> (pointer IS NULL)),
+    -- tags have content
+    content VARCHAR(2000) DEFAULT NULL,
     PRIMARY KEY (user_id, name),
     FOREIGN KEY (user_id) REFERENCES profiles (user_id) ON DELETE CASCADE
-)
+);
