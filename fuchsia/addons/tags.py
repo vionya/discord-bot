@@ -7,6 +7,7 @@ from functools import partial
 
 import asyncpg
 import discord
+from asyncpg.prepared_stmt import PreparedStatement
 from discord import app_commands
 
 import fuchsia
@@ -58,13 +59,13 @@ class TagEditModal(discord.ui.Modal):
 
 
 class DeleteAllTagsButton(discord.ui.Button):
-    def __init__(self, db: asyncpg.Pool, user_id: int):
+    def __init__(self, stmt: PreparedStatement, user_id: int):
         super().__init__(label="Delete all tags", style=discord.ButtonStyle.red, row=0)
-        self.db = db
+        self.stmt = stmt
         self.user_id = user_id
 
-    async def on_submit(self, interaction: discord.Interaction):
-        await self.db.execute("DELETE FROM tags WHERE user_id=$1", self.user_id)
+    async def callback(self, interaction: discord.Interaction):
+        await self.stmt.executemany((self.user_id,))
         await interaction.response.send_message("Deleted all tags", ephemeral=True)
         self.disabled = True
         await interaction.edit_original_response(view=self.view)
@@ -186,13 +187,14 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             use_embed=True,
         )
         menu = fuchsia.ButtonsMenu(pages)
-        menu.add_item(
-            DeleteAllTagsButton(
-                self.bot.db,
-                interaction.user.id,
+        async with self.bot.db.acquire() as conn:
+            menu.add_item(
+                DeleteAllTagsButton(
+                    await conn.prepare("DELETE FROM tags WHERE user_id=$1"),
+                    interaction.user.id,
+                )
             )
-        )
-        await menu.start(interaction)
+            await menu.start(interaction)
 
     @app_commands.command(name="edit")
     @app_commands.describe(name="The name of the tag to edit")
