@@ -91,6 +91,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             )
             if not isinstance(tag_content, str):
                 return None
+            self.tags[user_id][name] = tag_content
         return self.tags[user_id][name]
 
     @app_commands.command(name="create")
