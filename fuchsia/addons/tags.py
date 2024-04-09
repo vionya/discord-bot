@@ -181,6 +181,8 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                 interaction.user.id,
                 name,
             )
+            self.tags[interaction.user.id].pop(name, None)
+            self.tags[interaction.user.id][new_name] = new_content
             await response.send_message("Successfully edited this tag", ephemeral=True)
         except asyncpg.UniqueViolationError:
             await response.send_message(
@@ -201,6 +203,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             name,
         )
         if was_deleted is True:
+            self.tags[interaction.user.id].pop(name, None)
             return await interaction.response.send_message(
                 "Successfully deleted this tag"
             )
