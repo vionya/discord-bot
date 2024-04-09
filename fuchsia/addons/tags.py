@@ -7,6 +7,7 @@ from functools import partial
 
 import asyncpg
 import discord
+from asyncpg.prepared_stmt import PreparedStatement
 from discord import app_commands
 
 import fuchsia
@@ -55,6 +56,19 @@ class TagEditModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.response = interaction.response
+
+
+class DeleteAllTagsButton(discord.ui.Button):
+    def __init__(self, stmt: PreparedStatement, user_id: int):
+        super().__init__(label="Delete all tags", style=discord.ButtonStyle.red, row=0)
+        self.stmt = stmt
+        self.user_id = user_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await self.stmt.executemany(self.user_id)
+        await interaction.response.send_message("Deleted all tags", ephemeral=True)
+        self.disabled = True
+        await interaction.edit_original_response(view=self.view)
 
 
 class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
@@ -127,6 +141,14 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                 f"You already have a tag named `{name}`", ephemeral=True
             )
 
+    async def fetch_tag_names(self, user_id: int) -> None:
+        """Fetch the tag names of a user, storing it in the internal cache"""
+        if user_id not in self.tag_name_cache:
+            rows = await self.bot.db.fetch(
+                "SELECT name FROM tags WHERE user_id=$1", user_id
+            )
+            self.tag_name_cache[user_id] = [r["name"] for r in rows]
+
     @app_commands.command(name="create")
     @no_defer
     async def tag_create(self, interaction: discord.Interaction):
@@ -139,7 +161,6 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             interaction.user.id, modal.response, modal.name.value, modal.content.value
         )
 
-    # TODO: this should probably have autocomplete
     @app_commands.command(name="get")
     @app_commands.describe(name="The name of the tag to get")
     async def tag_get(
@@ -155,7 +176,23 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             )
         await interaction.response.send_message(content)
 
-    # TODO: this should probably have autocomplete
+    @app_commands.command(name="list")
+    async def tag_list(self, interaction: discord.Interaction):
+        """List your existing tags"""
+        await self.fetch_tag_names(interaction.user.id)
+        pages = fuchsia.Pages(
+            self.tag_name_cache[interaction.user.id], per_page=25, joiner=", "
+        )
+        menu = fuchsia.ButtonsMenu(pages)
+        async with self.bot.db.acquire() as conn:
+            menu.add_item(
+                DeleteAllTagsButton(
+                    await conn.prepare("DELETE FROM tags WHERE user_id=$1"),
+                    interaction.user.id,
+                )
+            )
+            await menu.start(interaction)
+
     @app_commands.command(name="edit")
     @app_commands.describe(name="The name of the tag to edit")
     @no_defer
@@ -234,11 +271,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
 
         # autocomplete events are debounced by discord, so this isn't too
         # expensive
-        if interaction.user.id not in self.tag_name_cache:
-            rows = await self.bot.db.fetch(
-                "SELECT name FROM tags WHERE user_id=$1", interaction.user.id
-            )
-            self.tag_name_cache[interaction.user.id] = [r["name"] for r in rows]
+        await self.fetch_tag_names(interaction.user.id)
 
         choices = self.tag_name_cache[interaction.user.id]
         return [
