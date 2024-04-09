@@ -65,6 +65,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         self.tags: dict[int, TimedCache[str, str]] = defaultdict(
             partial(TimedCache, timeout=300)
         )
+        self.tag_name_cache: TimedCache[int, list[str]] = TimedCache()
 
     async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)
@@ -205,6 +206,30 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         await interaction.response.send_message(
             "There was no tag by this name to delete"
         )
+
+    @tag_get.autocomplete("name")
+    @tag_edit.autocomplete("name")
+    @tag_delete.autocomplete("name")
+    async def tag_name_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ):
+        if interaction.user.id not in self.bot.profiles:
+            return []
+
+        # autocomplete events are debounced by discord, so this isn't too
+        # expensive
+        if interaction.user.id not in self.tag_name_cache:
+            rows = await self.bot.db.fetch(
+                "SELECT name FROM tags WHERE user_id=$1", interaction.user.id
+            )
+            self.tag_name_cache[interaction.user.id] = [r["name"] for r in rows]
+
+        choices = self.tag_name_cache[interaction.user.id]
+        return [
+            app_commands.Choice(name=n, value=n)
+            for n in choices
+            if current.casefold() in n.casefold()
+        ]
 
 
 async def setup(bot: fuchsia.Fuchsia):
