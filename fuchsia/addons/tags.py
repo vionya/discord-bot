@@ -63,7 +63,7 @@ class DeleteAllTagsButton(discord.ui.Button):
         self.db = db
         self.user_id = user_id
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         await self.db.execute("DELETE FROM tags WHERE user_id=$1", self.user_id)
         await interaction.response.send_message("Deleted all tags", ephemeral=True)
         self.disabled = True
