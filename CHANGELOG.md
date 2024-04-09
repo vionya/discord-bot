@@ -7,7 +7,8 @@
 
 - New context menu commands:
   - `View Banner` - shows a user's banner ephemerally
-  - `Steal Sticker` - attempts to steal the sticker which was included with the relevant message
+  - `Inspect/Steal Sticker` - attempts to steal the sticker which was included with the relevant message
+  - `Create Tag` - create a tag from a message's content
 - New command `/banner` shows a user's banner
 - New command `/time stamp` for generating a Discord-formatted timestamp using human-readable inputs
   - Parameters accept the exact same syntax as the `when` parameter for the `/remind set` command
@@ -26,6 +27,7 @@
 - New command `/unicode` to get the codepoints and names of all inputted characters
 - Added `Super Reaction Multiplier` starboard setting, allowing super reactions to contribute more stars to a message
 - Added `/emoji upscale` command which upscales an emoji by making a request to a locally hosted API
+- Added tags system
 
 ## Improvements
 
