@@ -177,7 +177,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
     ):
         """Delete a tag"""
         was_deleted = await self.bot.db.fetchval(
-            "DELETE FROM tags WHERE user_id=$1 AND name=$1 RETURNING true",
+            "DELETE FROM tags WHERE user_id=$1 AND name=$2 RETURNING true",
             interaction.user.id,
             name,
         )
