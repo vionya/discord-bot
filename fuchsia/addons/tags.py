@@ -83,9 +83,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         )
         self.tag_name_cache: TimedCache[int, list[str]] = TimedCache(timeout=30)
 
-        self.bot.tree.context_menu(name="Create tag from message")(
-            self.tag_create_ctx_menu
-        )
+        self.bot.tree.context_menu(name="Create Tag")(self.tag_create_ctx_menu)
 
     async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)
