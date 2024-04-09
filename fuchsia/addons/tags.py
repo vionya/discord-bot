@@ -67,6 +67,10 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         )
         self.tag_name_cache: TimedCache[int, list[str]] = TimedCache()
 
+        self.bot.tree.context_menu(name="Create tag from message")(
+            self.tag_create_ctx_menu
+        )
+
     async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)
 
@@ -94,17 +98,13 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             self.tags[user_id][name] = tag_content
         return self.tags[user_id][name]
 
-    @app_commands.command(name="create")
-    @no_defer
-    async def tag_create(self, interaction: discord.Interaction):
-        """Create a new tag"""
-        modal = TagEditModal()
-        await interaction.response.send_modal(modal)
-        if await modal.wait():
-            return  # the modal timed out
-        name = modal.name.value
-        content = modal.content.value
-        response = modal.response
+    async def create_tag(
+        self,
+        user_id: int,
+        response: discord.InteractionResponse,
+        name: str,
+        content: str,
+    ):
         try:
             await self.bot.db.execute(
                 """
@@ -116,16 +116,28 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                     $1, $2, $3
                 ) RETURNING *
                 """,
-                interaction.user.id,
+                user_id,
                 name,
                 content,
             )
-            self.tags[interaction.user.id][name] = content
+            self.tags[user_id][name] = content
             await response.send_message(f"Created a new tag `{name}`", ephemeral=True)
         except asyncpg.UniqueViolationError:
             await response.send_message(
                 f"You already have a tag named `{name}`", ephemeral=True
             )
+
+    @app_commands.command(name="create")
+    @no_defer
+    async def tag_create(self, interaction: discord.Interaction):
+        """Create a new tag"""
+        modal = TagEditModal()
+        await interaction.response.send_modal(modal)
+        if await modal.wait():
+            return  # the modal timed out
+        await self.create_tag(
+            interaction.user.id, modal.response, modal.name.value, modal.content.value
+        )
 
     # TODO: this should probably have autocomplete
     @app_commands.command(name="get")
@@ -233,7 +245,23 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             app_commands.Choice(name=n, value=n)
             for n in choices
             if current.casefold() in n.casefold()
-        ]
+        ][:25]
+
+    async def tag_create_ctx_menu(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        """Create a tag from the content of the selected message"""
+        if not message.content:
+            return await interaction.response.send_message(
+                "Message must have content to add it as a tag", ephemeral=True
+            )
+        modal = TagEditModal(content=message.content)
+        await interaction.response.send_modal(modal)
+        if await modal.wait():
+            return  # the modal timed out
+        await self.create_tag(
+            interaction.user.id, modal.response, modal.name.value, modal.content.value
+        )
 
 
 async def setup(bot: fuchsia.Fuchsia):
