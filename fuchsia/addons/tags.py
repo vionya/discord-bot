@@ -110,9 +110,11 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                 content,
             )
             self.tags[interaction.user.id][name] = content
-            await response.send_message(f"Created a new tag `{name}`")
+            await response.send_message(f"Created a new tag `{name}`", ephemeral=True)
         except asyncpg.UniqueViolationError:
-            raise ValueError(f"You already have a tag named `{name}`")
+            await response.send_message(
+                f"You already have a tag named `{name}`", ephemeral=True
+            )
 
     # TODO: this should probably have autocomplete
     @app_commands.command(name="get")
@@ -166,9 +168,11 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                 interaction.user.id,
                 name,
             )
-            await response.send_message("Successfully edited this tag")
+            await response.send_message("Successfully edited this tag", ephemeral=True)
         except asyncpg.UniqueViolationError:
-            raise ValueError("You already have a tag by this name")
+            await response.send_message(
+                "You already have a tag by this name", ephemeral=True
+            )
 
     @app_commands.command(name="delete")
     @app_commands.describe(name="The name of the tag to delete")
