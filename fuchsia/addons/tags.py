@@ -24,6 +24,7 @@ class TagEditModal(discord.ui.Modal):
         max_length=2000,
         placeholder="The content of this tag",
     )
+    title = "Edit Tag"
 
     editing: bool
     response: discord.InteractionResponse
