@@ -249,6 +249,7 @@ class Utility(fuchsia.Addon):
         limit="The number of messages to delete",
         before="Delete only messages sent before this message ID or URL",
         after="Delete only messages sent after this message ID or URL",
+        contains="Delete only messages containing this text",
         user="Delete only messages sent by this user",
     )
     @app_commands.checks.bot_has_permissions(manage_messages=True)
@@ -260,9 +261,10 @@ class Utility(fuchsia.Addon):
         limit: discord.app_commands.Range[int, 0, 2000],
         before: Optional[str],
         after: Optional[str],
+        contains: Optional[str],
         user: Optional[discord.Member],
     ):
-        """Clear messages from the current channel"""
+        """Clear messages from the current channel - checks are ANDed together"""
         if not hasattr(interaction.channel, "purge"):
             raise RuntimeError("`clear` command called in invalid context")
         assert isinstance(  # guaranteed by check above
@@ -273,7 +275,10 @@ class Utility(fuchsia.Addon):
 
         purged = await interaction.channel.purge(
             limit=limit,
-            check=(lambda m: m.author == user if user else True),
+            check=(
+                lambda m: (m.author == user if user else True)
+                and (contains in m.content if contains else True)
+            ),
             before=discord.Object(parse_id(before)) if before else None,
             after=discord.Object(parse_id(after)) if after else None,
         )
