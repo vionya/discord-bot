@@ -10,6 +10,7 @@ import discord
 from discord import app_commands
 
 import fuchsia
+from fuchsia.classes.app_commands import no_defer
 from fuchsia.classes.containers import TimedCache
 from fuchsia.tools.checks import is_registered_profile_predicate
 
@@ -82,6 +83,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         return self.tags[user_id][name]
 
     @app_commands.command(name="create")
+    @no_defer
     async def tag_create(self, interaction: discord.Interaction):
         """Create a new tag"""
         modal = TagEditModal()
@@ -128,6 +130,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
     # TODO: this should probably have autocomplete
     @app_commands.command(name="edit")
     @app_commands.describe(name="The name of the tag to edit")
+    @no_defer
     async def tag_edit(
         self,
         interaction: discord.Interaction,
