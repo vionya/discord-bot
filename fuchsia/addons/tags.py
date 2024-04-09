@@ -57,17 +57,19 @@ class TagEditModal(discord.ui.Modal):
         self.response = interaction.response
 
 
-class DeleteAllTagsButton(discord.ui.Button):
+class DeleteAllTagsButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.Pages]]):
     def __init__(self, db: asyncpg.Pool, user_id: int):
         super().__init__(label="Delete all tags", style=discord.ButtonStyle.red, row=0)
         self.db = db
         self.user_id = user_id
 
     async def callback(self, interaction: discord.Interaction):
+        if not self.view:
+            return
+
         await self.db.execute("DELETE FROM tags WHERE user_id=$1", self.user_id)
         await interaction.response.send_message("Deleted all tags", ephemeral=True)
-        self.disabled = True
-        await interaction.edit_original_response(view=self.view)
+        await self.view.close(manual=True)
 
 
 class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
