@@ -87,7 +87,7 @@ class Devel(fuchsia.Addon):
             joiner="",
             prefix="```py\n",
             suffix="\n```",
-            use_embed=True,
+            use_embed=False,
         )
         menu = ButtonsMenu(pages)
 
