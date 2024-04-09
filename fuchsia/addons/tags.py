@@ -68,7 +68,7 @@ class DeleteAllTagsButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.Pages]])
             return
 
         await self.db.execute("DELETE FROM tags WHERE user_id=$1", self.user_id)
-        await interaction.response.send_message("Deleted all tags", ephemeral=True)
+        await interaction.followup.send("Deleted all tags", ephemeral=True)
         await self.view.close(interaction=interaction, manual=True)
 
 
