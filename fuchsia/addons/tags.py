@@ -24,6 +24,7 @@ class TagEditModal(discord.ui.Modal):
         min_length=1,
         max_length=2000,
         placeholder="The content of this tag",
+        style=discord.TextStyle.paragraph,
     )
     title = "Edit Tag"
 
