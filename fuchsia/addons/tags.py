@@ -172,7 +172,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                 f"You have no tag named `{name}`", ephemeral=True
             )
         plausible_deniability = fuchsia.Embed(
-            title="🛈 Heads up!",
+            title="\u2139\uFE0F Heads up!",
             description="Tags are user-generated content, and are not endorsed by fuchsia or its developer",
         )
         await interaction.response.send_message(
