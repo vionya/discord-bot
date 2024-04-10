@@ -40,8 +40,11 @@ class CreateProfileView(discord.ui.View):
         ..., Coroutine[Any, Any, discord.InteractionMessage]
     ]
 
-    def __init__(self, invoker_id: int, **kwargs):
+    def __init__(
+        self, invoker_id: int, original_interaction: discord.Interaction, **kwargs
+    ):
         self.invoker_id = invoker_id
+        self.original_interaction = original_interaction
         super().__init__(**kwargs)
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -52,7 +55,7 @@ class CreateProfileView(discord.ui.View):
         await self.edit_original_response(view=self)
 
     @discord.ui.button(
-        label="Create Profile", style=discord.ButtonStyle.primary
+        label="Create Profile & Run Command!", style=discord.ButtonStyle.primary
     )
     async def create_profile_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
@@ -63,10 +66,13 @@ class CreateProfileView(discord.ui.View):
                 "Looks like you already have a profile", ephemeral=True
             )
         await bot.add_profile(self.invoker_id)
-        await interaction.response.send_message(
-            "Create your profile! Feel free to re-run your command now :)",
-            ephemeral=True,
-        )
+        # swap out the interaction tokens
+        interaction.data = self.original_interaction.data
+        interaction.type = self.original_interaction.type
+        # reinvoke the original interaction
+        bot.tree._from_interaction(interaction)  # type: ignore
+        # re-dispatch the interaction event
+        bot.dispatch("interaction", interaction)
         button.disabled = True
         await self.edit_original_response(view=self)
 
@@ -77,7 +83,7 @@ async def is_registered_profile_predicate(interaction: discord.Interaction):
     bot: Fuchsia = interaction.client  # type: ignore
 
     if interaction.user.id not in bot.profiles:
-        view = CreateProfileView(interaction.user.id)
+        view = CreateProfileView(interaction.user.id, interaction)
         msg = await interaction.response.send_message(
             "You don't have a profile! Create one now to run this command",
             view=view,
