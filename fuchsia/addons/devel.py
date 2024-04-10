@@ -184,7 +184,8 @@ class Devel(fuchsia.Addon):
             self.bot.tree.clear_commands(guild=None if glob else ctx.guild)
         else:
             self.bot.tree.copy_global_to(guild=ctx.guild)
-        await self.bot.tree.sync(guild=None if glob else ctx.guild)
+        server = await self.bot.tree.sync(guild=None if glob else ctx.guild)
+        self.bot.command_ids |= {c.name: c.id for c in server}
         await ctx.send_confirmation()
 
 

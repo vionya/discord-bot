@@ -48,13 +48,14 @@ intents = discord.Intents(
 class Fuchsia(commands.Bot):
     db: Pool
     session: ClientSession
-    cogs: Mapping[str, Addon]
+    cogs: Mapping[str, Addon]  # type: ignore
 
     def __init__(self, config: FuchsiaConfig, **kwargs):
         self.cfg = config
         self.boot_time = int(time.time())
         self.profiles: dict[int, containers.FuchsiaUser] = {}
         self.configs: dict[int, containers.FuchsiaGuildConfig] = {}
+        self.command_ids: dict[str, int] = {}
 
         kwargs["command_prefix"] = self.cfg["bot"]["prefix"]
         kwargs["activity"] = discord.Activity(
@@ -186,7 +187,8 @@ class Fuchsia(commands.Bot):
     async def on_ready(self):
         log.info(f"{self.user} has received ready event")
         if self.cfg["bot"]["sync_app_commands"]:
-            await self.tree.sync()
+            server = await self.tree.sync()
+            self.command_ids |= {c.name: c.id for c in server}
             log.info("Synchronized command tree")
 
     async def on_message_edit(
