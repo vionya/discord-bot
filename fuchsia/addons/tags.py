@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import partial
+from random import randint
 
 import asyncpg
 import discord
@@ -170,7 +171,16 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             return await interaction.followup.send(
                 f"You have no tag named `{name}`", ephemeral=True
             )
-        await interaction.response.send_message(content)
+        plausible_deniability = fuchsia.Embed(
+            title="🛈 Heads up!",
+            description="Tags are user-generated content, and are not endorsed by fuchsia or its developer",
+        )
+        await interaction.response.send_message(
+            content,
+            embed=(
+                plausible_deniability if randint(1, 10) == 1 else discord.utils.MISSING
+            ),
+        )
 
     @app_commands.command(name="list")
     async def tag_list(self, interaction: discord.Interaction):
