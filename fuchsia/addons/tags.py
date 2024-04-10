@@ -178,7 +178,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         await interaction.response.send_message(
             content,
             embed=(
-                plausible_deniability if randint(1, 10) == 1 else discord.utils.MISSING
+                plausible_deniability if randint(1, 10) <= 3 else discord.utils.MISSING
             ),
         )
 
