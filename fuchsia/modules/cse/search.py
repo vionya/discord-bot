@@ -12,10 +12,6 @@ SEARCH_BASE = URL("https://www.googleapis.com/customsearch/v1")
 GoogleError = type("GoogleError", (Exception,), {})
 
 
-def _safe(_input):
-    return "active" if _input else "off"
-
-
 class Search:
     __slots__ = ("keys", "engine_id", "session")
 
@@ -38,7 +34,9 @@ class Search:
         image: bool = False,
         results: int = 10,
     ) -> list[SearchResult]:
-        params = dict(q=query, cx=self.engine_id, safe=_safe(safesearch))
+        params = dict(
+            q=query, cx=self.engine_id, safe="active" if safesearch else "off"
+        )
         if image:
             params.update(searchType="image")
 

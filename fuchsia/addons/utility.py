@@ -155,7 +155,7 @@ class Utility(fuchsia.Addon):
     async def google_command_callback(
         self, interaction: discord.Interaction, query: str, image: bool = False
     ):
-        resp = await self.google.search(query, image=image, results=30)
+        resp = await self.google.search(query, image=image, results=10)
 
         embeds = [
             *map(
@@ -895,8 +895,8 @@ class Utility(fuchsia.Addon):
             f"**Image Format** `{sticker.format.name}`",
             f"[**Sticker URL**]({sticker.url})",
         ]
-        kwargs: dict = dict(ephemeral=True)
 
+        view = discord.utils.MISSING
         try:
             # fetch the entire sticker data
             sticker_full = await message.stickers[0].fetch()
@@ -913,7 +913,7 @@ class Utility(fuchsia.Addon):
                     ]
                 )
             if not interaction.extras.get("context"):
-                kwargs.update(view=StickerInfoView(sticker_full, interaction))
+                view = StickerInfoView(sticker_full, interaction)
         except:
             # i don't actually care what happens if this fails
             # it just means there was some sort of issue with fetching the
@@ -927,8 +927,9 @@ class Utility(fuchsia.Addon):
         if sticker.format != discord.StickerFormatType.lottie:
             embed.set_image(url=sticker.url)
 
-        kwargs.update(embed=embed)
-        await interaction.response.send_message(**kwargs)
+        await interaction.response.send_message(
+            embed=embed, ephemeral=True, view=view
+        )
 
 
 async def setup(bot: fuchsia.Fuchsia):
