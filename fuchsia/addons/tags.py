@@ -171,15 +171,15 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             return await interaction.followup.send(
                 f"You have no tag named `{name}`", ephemeral=True
             )
-        plausible_deniability = fuchsia.Embed(
-            title="\u2139\uFE0F Heads up!",
-            description="Tags are user-generated content, and are not endorsed by fuchsia or its developer",
-        )
+        # plausible_deniability = fuchsia.Embed(
+        #     title="\u2139\uFE0F Heads up!",
+        #     description="Tags are user-generated content, and are not endorsed by fuchsia or its developer",
+        # )
         await interaction.response.send_message(
             content,
-            embed=(
-                plausible_deniability if randint(1, 10) <= 3 else discord.utils.MISSING
-            ),
+            # embed=(
+            #     plausible_deniability if randint(1, 10) <= 3 else discord.utils.MISSING
+            # ),
         )
 
     @app_commands.command(name="list")
