@@ -156,13 +156,8 @@ class BaseMenu(Generic[T], discord.ui.View):
 
     @page_index.setter
     def page_index(self, index: int):
-        # Logic for when menu is at the first/last page, allows pages to
-        # "wrap around"
-        if index < 0:
-            index = len(self.pages) - 1
-        elif index > len(self.pages) - 1:
-            index = 0
-        self._page_index = index
+        # wraparound
+        self._page_index = index % len(self.pages)
 
     @property
     def current_page(self):
