@@ -241,9 +241,7 @@ class BaseMenu(Generic[T], discord.ui.View):
                 return
 
             async with self.update_lock:
-                if self.update_lock.locked():
-                    await asyncio.sleep(1)
-                self.bot.loop.create_task(self.refresh_page())
+                await self.refresh_page()
 
         self.bot.loop.create_task(inner())
 
