@@ -14,7 +14,7 @@ from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
     add_setting_autocomplete,
     convert_setting,
-    instantiate,
+    singleton,
     is_registered_guild,
     prompt_user,
     guild_only,
@@ -90,7 +90,7 @@ class ServerConfig(
     ) -> bool:
         return await owner_or_admin_predicate(interaction)
 
-    @instantiate
+    @singleton
     class ServerSettings(app_commands.Group, name="settings"):
         """Commands for managing server settings"""
 

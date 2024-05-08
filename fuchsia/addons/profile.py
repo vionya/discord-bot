@@ -14,7 +14,7 @@ from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
     add_setting_autocomplete,
     convert_setting,
-    instantiate,
+    singleton,
     is_registered_profile,
     prompt_user,
 )
@@ -72,7 +72,7 @@ class Profile(fuchsia.Addon, app_group=True):
         await profile.reset_attribute(setting)
         self.bot.broadcast("user_settings_update", interaction.user, profile)
 
-    @instantiate
+    @singleton
     class ProfileSettings(app_commands.Group, name="settings"):
         """Commands for managing profile settings"""
 

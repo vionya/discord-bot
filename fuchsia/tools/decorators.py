@@ -12,16 +12,17 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-def instantiate(cls: type[T]) -> T:
-    """Instantiates a class, allowing it to be accessed as an instance in the class's type attributes
+def singleton(cls: type[T]) -> T:
+    """
+    Decorates a class definition, creating an eagerly-evaluated singleton
 
     ```py
     class Foo:
-        @instantiate
+        @singleton
         class Bar:
             pass
 
-    # Foo.Bar is now an instantiated Bar
+    # Foo.Bar is now an instantiated Bar singleton
     ```
     """
     return cls()

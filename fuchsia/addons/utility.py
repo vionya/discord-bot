@@ -29,7 +29,7 @@ from fuchsia.modules import (
     dictionary,
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
-from fuchsia.tools.decorators import guild_only, instantiate
+from fuchsia.tools.decorators import guild_only, singleton
 from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
@@ -653,7 +653,7 @@ class Utility(fuchsia.Addon):
         )
         await menu.start(interaction)
 
-    @instantiate
+    @singleton
     class TimeUtilities(app_commands.Group, name="time"):
         """Utility commands for doing stuff with time"""
 

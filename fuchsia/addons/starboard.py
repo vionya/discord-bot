@@ -15,7 +15,7 @@ from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
     add_setting_autocomplete,
     convert_setting,
-    instantiate,
+    singleton,
     parse_id,
     shorten,
     guild_only
@@ -540,7 +540,7 @@ class StarboardAddon(
     ) -> bool:
         return is_valid_starboard_env(interaction)
 
-    @instantiate
+    @singleton
     class StarboardSettings(app_commands.Group, name="settings"):
         """Commands for managing your starboard"""
 
