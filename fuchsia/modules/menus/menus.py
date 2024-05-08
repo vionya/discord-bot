@@ -273,7 +273,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         ...
 
 
-class ButtonsMenu(BaseMenu, Generic[T]):
+class ButtonsMenu(BaseMenu[T]):
     @discord.ui.button(label="ᐊ", row=4)
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
