@@ -22,6 +22,8 @@ from fuchsia.tools import shorten
 from .pages import EmbedPages, Pages
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from fuchsia import Fuchsia
 
 
@@ -272,6 +274,33 @@ class BaseMenu(Generic[T], discord.ui.View):
         """
         ...
 
+class PageSelectModal(discord.ui.Modal, title="Go to page"):
+    page: discord.ui.TextInput[PageSelectModal] = discord.ui.TextInput(
+        label="Page number",
+        placeholder="1",
+        required=True,
+        style=discord.TextStyle.short,
+    )
+    menu: BaseMenu
+    index: int | None = None
+
+    def __init__(self, menu: BaseMenu) -> None:
+        self.menu = menu
+        super().__init__(timeout=30)
+
+    async def on_submit(self, interaction: discord.Interaction, /) -> None:
+        if not self.page.value.isdecimal():
+            return await interaction.response.send_message(
+                "You need to provide a valid number", ephemeral=True
+            )
+        index = int(self.page.value) - 1
+        if index < 0 or index > (len(self.menu.pages) - 1):
+            return await interaction.response.send_message(
+                "The page number must be in the range of the menu",
+                ephemeral=True
+            )
+        self.menu.page_index = index
+        await self.menu.update_page(interaction)
 
 class ButtonsMenu(BaseMenu[T]):
     @discord.ui.button(label="ᐊ", row=4)
@@ -287,6 +316,13 @@ class ButtonsMenu(BaseMenu[T]):
     ):
         self.stop()
         await self.close(interaction=interaction, manual=True)
+
+    @discord.ui.button(label="✎", row=4)
+    async def page_button(
+            self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        modal = PageSelectModal(self)
+        await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="ᐅ", row=4)
     async def next_button(
