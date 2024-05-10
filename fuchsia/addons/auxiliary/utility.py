@@ -223,10 +223,16 @@ class InfoButtons(discord.ui.View):
 
 
 class AvatarsView(discord.ui.View):
-    def __init__(self, user_avatar: discord.Asset, guild_avatar: discord.Asset):
+    def __init__(
+        self, user_id: int, user_avatar: discord.Asset, guild_avatar: discord.Asset
+    ):
+        self.user_id = user_id
         self.user_avatar = user_avatar
         self.guild_avatar = guild_avatar
         super().__init__()
+
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+        return interaction.user.id == self.user_id
 
     @discord.ui.button(label="Server Avatar", style=discord.ButtonStyle.blurple)
     async def guild_avatar_button(

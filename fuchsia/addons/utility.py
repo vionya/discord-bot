@@ -356,7 +356,7 @@ class Utility(fuchsia.Addon):
             isinstance(user_object, discord.Member)
             and user_object.guild_avatar is not None
         ):
-            view = AvatarsView(avatar, user_object.guild_avatar)
+            view = AvatarsView(interaction.user.id, avatar, user_object.guild_avatar)
             avatar = user_object.guild_avatar
 
         embed.description += "**View in browser**\n" + get_browser_links(avatar)
