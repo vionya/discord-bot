@@ -457,6 +457,8 @@ class Utility(fuchsia.Addon):
             f"\n**Hoisted** {role.hoist}"
             + f"\n**Icon** [View]({role.icon})" * bool(role.icon),
         ).set_thumbnail(url=role.icon or "")
+        if role.color.value:
+            embed.color = role.color
 
         content = None
         if not interaction.app_permissions.use_external_emojis:
