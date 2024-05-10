@@ -547,7 +547,12 @@ class Utility(fuchsia.Addon):
         dim = 256 if partial.animated else 512
         async with session.post(
             f"http://{self.bot.cfg['api']}/actions/resize",
-            params={"width": dim, "height": dim, "frames": 250},
+            params={
+                "width": dim,
+                "height": dim,
+                "frames": 250,
+                "keep_aspect": True,
+            },
             data=form,
         ) as resp:
             upscaled_data = await resp.read()
