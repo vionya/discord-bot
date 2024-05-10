@@ -63,9 +63,7 @@ def definitions_to_embed(
                         definition.thumbs_up,
                         definition.thumbs_down,
                         # want timestamp relative
-                        discord.utils.format_dt(
-                            definition.written_on, style="R"
-                        ),
+                        discord.utils.format_dt(definition.written_on, style="R"),
                     ),
                     inline=False,
                 )
@@ -210,9 +208,7 @@ class InfoButtons(discord.ui.View):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
         self.add_item(
-            InviteButton(
-                view_kwargs=invite_menu_kwargs, disabled=invite_disabled
-            )
+            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
         )
         for button in buttons:
             self.add_item(button)
@@ -226,21 +222,45 @@ class InfoButtons(discord.ui.View):
         )
 
 
-class SwappableEmbedButton(discord.ui.Button):
-    def __init__(self, *args, **kwargs):
-        kwargs["label"] = "Swap image sizes"
-        kwargs["style"] = discord.ButtonStyle.primary
-        super().__init__(*args, **kwargs)
+class AvatarsView(discord.ui.View):
+    def __init__(self, user_avatar: discord.Asset, guild_avatar: discord.Asset):
+        self.user_avatar = user_avatar
+        self.guild_avatar = guild_avatar
+        super().__init__()
 
-    async def callback(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Server Avatar", style=discord.ButtonStyle.blurple)
+    async def guild_avatar_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         if not interaction.message:
             return
 
-        embed = interaction.message.embeds[0]
-        image, thumbnail = embed.image, embed.thumbnail
-        embed = embed.set_image(url=thumbnail.url).set_thumbnail(url=image.url)
-        await interaction.response.defer()
-        await interaction.edit_original_response(embed=embed)
+        embed = interaction.message.embeds[0].set_image(url=self.guild_avatar.url)
+        embed.description = "**View in browser**\n" + get_browser_links(
+            self.guild_avatar
+        )
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.style = discord.ButtonStyle.grey
+        button.style = discord.ButtonStyle.blurple
+        await interaction.response.edit_message(view=self, embed=embed)
+
+    @discord.ui.button(label="User Avatar", style=discord.ButtonStyle.grey)
+    async def user_avatar_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if not interaction.message:
+            return
+
+        embed = interaction.message.embeds[0].set_image(url=self.user_avatar.url)
+        embed.description = "**View in browser**\n" + get_browser_links(
+            self.user_avatar
+        )
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.style = discord.ButtonStyle.grey
+        button.style = discord.ButtonStyle.blurple
+        await interaction.response.edit_message(view=self, embed=embed)
 
 
 class StickerInfoView(discord.ui.View):
@@ -268,12 +288,8 @@ class StickerInfoView(discord.ui.View):
             self.steal.disabled = True
 
     @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
-    async def steal(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        assert interaction.guild and isinstance(
-            self.sticker, discord.GuildSticker
-        )
+    async def steal(self, interaction: discord.Interaction, button: discord.ui.Button):
+        assert interaction.guild and isinstance(self.sticker, discord.GuildSticker)
 
         try:
             # try to create the sticker

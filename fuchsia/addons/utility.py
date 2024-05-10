@@ -36,7 +36,7 @@ from fuchsia.tools.time_parse import parse_absolute, parse_relative
 from .auxiliary.utility import (
     InfoButtons,
     StickerInfoView,
-    SwappableEmbedButton,
+    AvatarsView,
     definitions_to_embed,
     get_browser_links,
     result_to_embed,
@@ -338,7 +338,7 @@ class Utility(fuchsia.Addon):
         user: Optional[discord.User | discord.Member] = None,
     ):
         """Retrieves the avatar of yourself, or a specified user"""
-        kwargs = {}
+        view = None
         embed = fuchsia.Embed()
         embed.description = ""
 
@@ -351,30 +351,22 @@ class Utility(fuchsia.Addon):
         else:
             user_object = user
 
+        avatar = user_object.avatar or user_object.default_avatar
         if (
             isinstance(user_object, discord.Member)
             and user_object.guild_avatar is not None
         ):
-            embed.set_thumbnail(url=user_object.guild_avatar.url)
-            embed.description += (
-                "**View server avatar in browser**\n"
-                + get_browser_links(user_object.guild_avatar)
-                + "\n\n"
-            )
-            view = discord.ui.View()
-            view.add_item(SwappableEmbedButton())
-            kwargs["view"] = view
+            view = AvatarsView(avatar, user_object.guild_avatar)
+            avatar = user_object.guild_avatar
 
-        avatar = user_object.avatar or user_object.default_avatar
-
-        embed.description += "**View user avatar in browser**\n" + get_browser_links(
-            avatar
-        )
+        embed.description += "**View in browser**\n" + get_browser_links(avatar)
         embed = embed.set_image(url=avatar).set_author(
             name=f"{user_object.display_name} ({user_object})"
         )
 
-        await interaction.response.send_message(embed=embed, **kwargs)
+        await interaction.response.send_message(
+            embed=embed, view=view or discord.utils.MISSING
+        )
 
     @app_commands.command(name="banner")
     @app_commands.describe(user="The user to get the banner of. Yourself if empty")
