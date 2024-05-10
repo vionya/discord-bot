@@ -551,7 +551,7 @@ class Utility(fuchsia.Addon):
                 "width": dim,
                 "height": dim,
                 "frames": 250,
-                "keep_aspect": True,
+                "keep_aspect": "true",
             },
             data=form,
         ) as resp:
