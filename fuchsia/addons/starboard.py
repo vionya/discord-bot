@@ -225,10 +225,10 @@ class Starboard:
                         # don't want the message to look weird if there's not
                         # a URL associated with an embed (e.g. it's a bot-
                         # generated embed)
-                        ("[{fn}]({url})" if attachment.url else "{fn}").format(
-                            fn=discord.utils.escape_markdown(
-                                getattr(attachment, "filename", "Embed")
-                            ),
+                        (
+                            "[`{fn}`]({url})" if attachment.url else "{fn}"
+                        ).format(
+                            fn=getattr(attachment, "filename", "Embed"),
                             url=attachment.url,
                         )
                         for attachment in attachments
