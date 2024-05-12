@@ -185,30 +185,6 @@ class Starboard:
                     inline=False,
                 )
 
-            if attachments := (*message.attachments, *message.embeds):
-                if not embed.image:
-                    prev = attachments[0]
-                    # Don't add spoilered images to embed
-                    if not getattr(prev, "filename", "").startswith("SPOILER_"):
-                        embed.set_image(url=prev.url)
-
-                embed.add_field(
-                    name=f"Attachments/Embeds [x{len(attachments)}]",
-                    value="\n".join(
-                        # don't want the message to look weird if there's not
-                        # a URL associated with an embed (e.g. it's a bot-
-                        # generated embed)
-                        ("[{fn}]({url})" if attachment.url else "{fn}").format(
-                            fn=discord.utils.escape_markdown(
-                                getattr(attachment, "filename", "Embed")
-                            ),
-                            url=attachment.url,
-                        )
-                        for attachment in attachments
-                    ),
-                    inline=False,
-                )
-
             if (ref := message.reference) and isinstance(
                 ref.resolved, discord.Message
             ):
@@ -234,6 +210,30 @@ class Starboard:
                 )
                 view.add_item(
                     discord.ui.Button(url=ref.jump_url, label="Jump to reply")
+                )
+
+            if attachments := (*message.attachments, *message.embeds):
+                if not embed.image:
+                    prev = attachments[0]
+                    # Don't add spoilered images to embed
+                    if not getattr(prev, "filename", "").startswith("SPOILER_"):
+                        embed.set_image(url=prev.url)
+
+                embed.add_field(
+                    name=f"Attachments/Embeds [x{len(attachments)}]",
+                    value="\n".join(
+                        # don't want the message to look weird if there's not
+                        # a URL associated with an embed (e.g. it's a bot-
+                        # generated embed)
+                        ("[{fn}]({url})" if attachment.url else "{fn}").format(
+                            fn=discord.utils.escape_markdown(
+                                getattr(attachment, "filename", "Embed")
+                            ),
+                            url=attachment.url,
+                        )
+                        for attachment in attachments
+                    ),
+                    inline=False,
                 )
 
             if message.content:
