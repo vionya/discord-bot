@@ -212,6 +212,16 @@ class Starboard:
                     discord.ui.Button(url=ref.jump_url, label="Jump to reply")
                 )
 
+            if message.content:
+                if ref:
+                    embed.add_field(
+                        name=author.display_name,
+                        value=shorten(message.content, 1024),
+                        inline=False,
+                    )
+                else:
+                    embed.description = shorten(message.content, 1900)
+
             if attachments := (*message.attachments, *message.embeds):
                 if not embed.image:
                     prev = attachments[0]
@@ -235,16 +245,6 @@ class Starboard:
                     ),
                     inline=False,
                 )
-
-            if message.content:
-                if ref:
-                    embed.add_field(
-                        name=author.display_name,
-                        value=shorten(message.content, 1024),
-                        inline=False,
-                    )
-                else:
-                    embed.description = shorten(message.content, 1900)
 
             starboard_message = await self.channel.send(
                 self.format.format(stars=stars), embed=embed, view=view
