@@ -443,7 +443,7 @@
 
 ## Initial Slash Commands
 
-- fuchsia phoenix has been updated to support slash commands
+- fuchsia has been updated to support slash commands
   - Support is currently limited to several commands
   - More commands should become slash commands as time progresses
 - To accomodate some code limitations in having commands function as both text and slash commands, the inputs for several commands has been changed slightly:
@@ -496,7 +496,7 @@
 ## Additions
 
 - `serversettings disable`/`serversettings reenable` system
-  - Allows server administrators to disable fuchsia phoenix's commands within their server
+  - Allows server administrators to disable fuchsia's commands within their server
   - Disabled commands will not be acknowledged, unless invoked by administrators
   - Running `serversettings disable` with no arguments will display a list of all currently ignored commands
 - `choose` command
@@ -554,7 +554,7 @@
   - Purges a variable number of messages from the channel in which it is invoked
   - Restrictions:
     - Invoking member must have `manage_messages` channel permission
-    - fuchsia phoenix must have `manage_messages` channel permission
+    - fuchsia must have `manage_messages` channel permission
     - Command may only be invoked within a server
   - Flag command to allow for powerful specification:
     - `--after` and `--before` flag to purge within certain timeframes
@@ -689,7 +689,7 @@ Release v0.10.0 implements a couple of utility commands.
 
 # **Release v0.9.0** (July 17, 2021)
 
-Release v0.9.0 cleans up and slightly enhances fuchsia phoenix.
+Release v0.9.0 cleans up and slightly enhances fuchsia.
 
 ## Legal
 
@@ -769,9 +769,9 @@ In large part, this release extends and improves existing features.
 
 - Added `Support Server` button to `info` command output
   - Added corresponding key to config file, along with key for configuring whether the button is enabled or not
-- Overhauled flow of `Invite fuchsia phoenix` button on the `info` command
+- Overhauled flow of `Invite fuchsia` button on the `info` command
   - Responds ephemerally now
-  - Uses dropdown menus to allow users to select permission presets for inviting fuchsia phoenix
+  - Uses dropdown menus to allow users to select permission presets for inviting fuchsia
 
 ## Other
 
@@ -780,7 +780,7 @@ In large part, this release extends and improves existing features.
 
 # **Release v0.6.0** (June 25, 2021)
 
-This release fleshes out fuchsia phoenix's feature set further.
+This release fleshes out fuchsia's feature set further.
 
 ## Highlight Collection
 
@@ -791,13 +791,13 @@ This release fleshes out fuchsia phoenix's feature set further.
 
 ## Other
 
-- Implemented a developer `addon` command for loading, unloading, and reloading fuchsia phoenix addons post-runtime
+- Implemented a developer `addon` command for loading, unloading, and reloading fuchsia addons post-runtime
 - Implemented a `PeriodicTimer` class to support the highlight collection feature
   - Also added an accompanying decorator to simplify the creation of timers
 
 # **Release v0.5.0** (June 24, 2021)
 
-This release implements features to bring fuchsia phoenix closer to a stable 1.0.0 release.
+This release implements features to bring fuchsia closer to a stable 1.0.0 release.
 
 ## Front-End Changes/Additions
 
@@ -892,7 +892,7 @@ This release mainly targets the profile system, and improves upon it significant
 This release implements the `Starboard` feature, and its full functionality. It functions largely identically to its predecessor, with several key improvements:
 
 - Management of starboard settings has been consolidated to a single, extensible system, utilizing SQL comments for logical, standardized documentation
-- fuchsia phoenix's starboard features the ability to ignore/unignore message and channel IDs, preventing them from reaching starboard
+- fuchsia's starboard features the ability to ignore/unignore message and channel IDs, preventing them from reaching starboard
 - Code style and fluency has also been improved all-around
 
 # **Release v0.1.0** (June 6, 2021)
