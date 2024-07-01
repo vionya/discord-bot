@@ -33,10 +33,9 @@ formatter = FuchsiaLoggingFormatter(
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 
-[
-    (logger.setLevel(logging.INFO), logger.addHandler(handler))
-    for logger in loggers
-]
+for logger in loggers:
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
 
 # /Sect: Logging
 
