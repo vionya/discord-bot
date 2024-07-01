@@ -21,13 +21,14 @@
   - Added new `reminders_in_channel` user setting which toggles whether reminders will be delivered in their source channel by default, value defaults to `False`
   - Added new `send-here` parameter to `/remind set` which overrides user settings and toggles this option
 - Implemented support for custom status
-- New command `/emoji create` for more conveniently creating custom emoji
+- New command `/steal` for more conveniently creating custom emoji
   - Can steal custom emoji from other servers via the `emoji` parameter
   - Can create custom emoji from an image file using the `file` and `name` parameters
 - New command `/unicode` to get the codepoints and names of all inputted characters
 - Added `Super Reaction Multiplier` starboard setting, allowing super reactions to contribute more stars to a message
-- Added `/emoji upscale` command which upscales an emoji by making a request to a locally hosted API
+- Added `/upscale` command which upscales an emoji by making a request to a locally hosted API
 - Added tags system
+  - Tags are stored at the user level, so they can be used in any server
 
 ## Improvements
 
@@ -44,7 +45,7 @@
   - Max todos: 100 -> 1000
   - Max reminders: 15 -> 100
   - Max highlights: 10 -> 100
-- Web search now shows up to 30 results
+- ~~Web search now shows up to 30 results~~
 - Use new markdown in various places
 - The output of the `/clear` command is now always ephemeral
 - Starboard embeds now show the source channel of the starred message
