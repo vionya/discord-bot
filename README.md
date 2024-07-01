@@ -15,8 +15,7 @@
 * [x] Add large features
 * [x] `1.0.0` stable release
 * [x] Deploy and publicize
-* [x] Deprecate legacy `fuchsia`
-* [ ] ???
+* [ ] Continued development or something
 
 ## License
 
