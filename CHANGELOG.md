@@ -1,4 +1,4 @@
-# **Release v1.x.x** (TBD)
+# **Release v2.0.0** (July 2, 2024)
 
 - Renamed from "neo phoenix" to "fuchsia"
 - fuchsia can now be installed to user accounts. This functionality is questionably implemented and very untested. But it's cool so it's being pushed to production
