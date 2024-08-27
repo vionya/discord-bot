@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from .types.config import FuchsiaConfig
 
 
-__version__ = "1.7.2a"
+__version__ = "2.0.0"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(

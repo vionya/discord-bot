@@ -18,7 +18,7 @@ from fuchsia.tools import (
     singleton,
     parse_id,
     shorten,
-    guild_only
+    guild_only,
 )
 from fuchsia.tools.checks import is_valid_starboard_env
 
@@ -158,11 +158,11 @@ class Starboard:
 
             embed = (
                 fuchsia.Embed(description="", timestamp=message.created_at)
+                .set_footer(text=f"#{message.channel.name}")
                 .set_author(
                     name=f"{author.display_name} ({message.author})",
                     icon_url=author.display_avatar,
                 )
-                .set_footer(text=f"#{message.channel.name}")
             )
 
             view = discord.ui.View(timeout=0)
@@ -176,9 +176,6 @@ class Starboard:
                     text=f"#{message.channel.parent.name} > {message.channel.name}"
                 )
 
-            if message.content:
-                embed.description = shorten(message.content, 1900) + "\n\n"
-
             if message.stickers:
                 embed.add_field(
                     name=f"Stickers [x{len(message.stickers)}]",
@@ -187,6 +184,43 @@ class Starboard:
                     ),
                     inline=False,
                 )
+
+            if (ref := message.reference) and isinstance(
+                ref.resolved, discord.Message
+            ):
+                # if the replied-to user and author are the same, save a req
+                if ref.resolved.author.id == author.id:
+                    reply_display = "self"
+                else:
+                    # otherwise we have to fetch it
+                    try:
+                        replied_to = await message.guild.fetch_member(
+                            ref.resolved.author.id
+                        )
+                    except discord.DiscordException:
+                        replied_to = ref.resolved.author
+                    reply_display = (
+                        f"{replied_to.display_name} ({ref.resolved.author})"
+                    )
+
+                embed.add_field(
+                    name="Replying to " + reply_display,
+                    value=shorten(ref.resolved.content, 500),
+                    inline=False,
+                )
+                view.add_item(
+                    discord.ui.Button(url=ref.jump_url, label="Jump to reply")
+                )
+
+            if message.content:
+                if ref:
+                    embed.add_field(
+                        name=author.display_name,
+                        value=shorten(message.content, 1024),
+                        inline=False,
+                    )
+                else:
+                    embed.description = shorten(message.content, 1900)
 
             if attachments := (*message.attachments, *message.embeds):
                 if not embed.image:
@@ -201,39 +235,15 @@ class Starboard:
                         # don't want the message to look weird if there's not
                         # a URL associated with an embed (e.g. it's a bot-
                         # generated embed)
-                        ("[{fn}]({url})" if attachment.url else "{fn}").format(
-                            fn=discord.utils.escape_markdown(
-                                getattr(attachment, "filename", "Embed")
-                            ),
+                        (
+                            "[`{fn}`]({url})" if attachment.url else "{fn}"
+                        ).format(
+                            fn=getattr(attachment, "filename", "Embed"),
                             url=attachment.url,
                         )
                         for attachment in attachments
                     ),
                     inline=False,
-                )
-
-            if (ref := message.reference) and isinstance(
-                ref.resolved, discord.Message
-            ):
-                # if the replied-to user and author are the same, save a req
-                if ref.resolved.author.id == author.id:
-                    replied_to = author
-                else:
-                    # otherwise we have to fetch it
-                    try:
-                        replied_to = await message.guild.fetch_member(
-                            ref.resolved.author.id
-                        )
-                    except discord.DiscordException:
-                        replied_to = ref.resolved.author
-
-                embed.add_field(
-                    name=f"Replying to {replied_to.display_name} ({ref.resolved.author})",
-                    value=shorten(ref.resolved.content, 500),
-                    inline=False,
-                )
-                view.add_item(
-                    discord.ui.Button(url=ref.jump_url, label="Jump to reply")
                 )
 
             starboard_message = await self.channel.send(
