@@ -820,7 +820,7 @@ class StarboardAddon(
         # ignore natural stars
         if star is not None and star.forced is False:
             await interaction.response.send_message(
-                "Cannot force-star an already-starred message."
+                "Cannot force-star an already-starred message.", ephemeral=True
             )
             return
 
@@ -829,7 +829,9 @@ class StarboardAddon(
         elif star is not None and star.forced is True:
             await starboard.delete_star(star.message_id)
 
-        await interaction.response.send_message("Toggled force-star status.")
+        await interaction.response.send_message(
+            "Toggled force-star status.", ephemeral=True
+        )
 
 
 async def setup(bot: fuchsia.Fuchsia):
