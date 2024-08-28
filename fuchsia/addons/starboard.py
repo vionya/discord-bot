@@ -825,7 +825,7 @@ class StarboardAddon(
             return
 
         if star is None:
-            star = await starboard.create_star(message, 0, forced=True)
+            star = await starboard.create_star(await message.fetch(), 0, forced=True)
         elif star is not None and star.forced is True:
             await starboard.delete_star(star.message_id)
 
