@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class Star:
-    __slots__ = ("message_id", "starboard_message", "stars")
+    __slots__ = ("message_id", "starboard_message", "stars", "forced")
 
     def __init__(
         self,
@@ -37,10 +37,12 @@ class Star:
         message_id: int,
         starboard_message: discord.PartialMessage,
         stars: int,
+        forced: bool,
     ):
         self.message_id = message_id
         self.starboard_message = starboard_message
         self.stars = stars
+        self.forced = forced
 
     def __repr__(self):
         return (
@@ -131,12 +133,13 @@ class Starboard:
                 message_id=id,
                 starboard_message=starboard_msg,
                 stars=star_data["stars"],
+                forced=star_data["forced"],
             )
             self.cached_stars[id] = star
             return star
         return None
 
-    async def create_star(self, message: discord.Message, stars: int):
+    async def create_star(self, message: discord.Message, stars: int, *, forced=False):
         if (
             not message.guild
             or not self.channel
@@ -144,9 +147,7 @@ class Starboard:
         ):
             return
 
-        assert isinstance(
-            message.channel, discord.abc.GuildChannel | discord.Thread
-        )
+        assert isinstance(message.channel, discord.abc.GuildChannel | discord.Thread)
 
         async with self.lock:
             try:
@@ -185,9 +186,7 @@ class Starboard:
                     inline=False,
                 )
 
-            if (ref := message.reference) and isinstance(
-                ref.resolved, discord.Message
-            ):
+            if (ref := message.reference) and isinstance(ref.resolved, discord.Message):
                 # if the replied-to user and author are the same, save a req
                 if ref.resolved.author.id == author.id:
                     reply_display = "self"
@@ -199,9 +198,7 @@ class Starboard:
                         )
                     except discord.DiscordException:
                         replied_to = ref.resolved.author
-                    reply_display = (
-                        f"{replied_to.display_name} ({ref.resolved.author})"
-                    )
+                    reply_display = f"{replied_to.display_name} ({ref.resolved.author})"
 
                 embed.add_field(
                     name="Replying to " + reply_display,
@@ -235,9 +232,7 @@ class Starboard:
                         # don't want the message to look weird if there's not
                         # a URL associated with an embed (e.g. it's a bot-
                         # generated embed)
-                        (
-                            "[`{fn}`]({url})" if attachment.url else "{fn}"
-                        ).format(
+                        ("[`{fn}`]({url})" if attachment.url else "{fn}").format(
                             fn=getattr(attachment, "filename", "Embed"),
                             url=attachment.url,
                         )
@@ -246,13 +241,17 @@ class Starboard:
                     inline=False,
                 )
 
-            starboard_message = await self.channel.send(
-                self.format.format(stars=stars), embed=embed, view=view
+            content = (
+                "*This message was force-starred by a moderator*"
+                if forced
+                else self.format.format(stars=stars)
             )
+            starboard_message = await self.channel.send(content, embed=embed, view=view)
             star = Star(
                 message_id=message.id,
                 stars=stars,
                 starboard_message=starboard_message,
+                forced=forced,
             )
 
             await self.pool.execute(
@@ -262,9 +261,10 @@ class Starboard:
                     message_id,
                     channel_id,
                     stars,
-                    starboard_message_id
+                    starboard_message_id,
+                    forced
                 ) VALUES (
-                    $1, $2, $3, $4, $5
+                    $1, $2, $3, $4, $5, $6
                 )
                 """,
                 message.guild.id,
@@ -272,6 +272,7 @@ class Starboard:
                 message.channel.id,
                 stars,
                 star.starboard_message.id,
+                forced,
             )
 
             self.star_ids.add(message.id)
@@ -335,7 +336,11 @@ class StarboardAddon(
         self.ready = False
         self.starboards: dict[int, Starboard] = {}
 
-        self.__cog_app_commands_group__
+        guild_only(
+            self.bot.tree.context_menu(name="Toggle Forced Starboard")(
+                self.force_star_ctx
+            )
+        )
 
         asyncio.create_task(self.__ainit__())
 
@@ -352,9 +357,7 @@ class StarboardAddon(
                 continue
 
             settings = starboard_settings[guild_id]
-            self.starboards[guild_id] = await self.create_starboard(
-                guild_id, settings
-            )
+            self.starboards[guild_id] = await self.create_starboard(guild_id, settings)
         self.ready = True
 
         # Initialize settings
@@ -410,9 +413,7 @@ class StarboardAddon(
 
     @fuchsia.Addon.listener("on_raw_reaction_add")
     @fuchsia.Addon.listener("on_raw_reaction_remove")
-    async def handle_individual_reaction(
-        self, payload: discord.RawReactionActionEvent
-    ):
+    async def handle_individual_reaction(self, payload: discord.RawReactionActionEvent):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
         starboard = self.starboards[payload.guild_id]
@@ -462,7 +463,8 @@ class StarboardAddon(
                 return
 
             star = await starboard.get_star(payload.message_id)
-            if not star:
+            # if the star doesn't exist or it's been force-starred then skip
+            if star is None or star.forced is True:
                 return
 
             multiplier = starboard.super_mult if payload.burst else 1
@@ -503,9 +505,7 @@ class StarboardAddon(
             await starboard.delete_star(payload.message_id)
 
     @fuchsia.Addon.listener("on_guild_channel_delete")
-    async def handle_starboard_channel_delete(
-        self, channel: discord.abc.GuildChannel
-    ):
+    async def handle_starboard_channel_delete(self, channel: discord.abc.GuildChannel):
         if channel.guild.id not in self.starboards:
             return
 
@@ -545,9 +545,7 @@ class StarboardAddon(
     # /Sect: Event Handling
     # Sect: Commands
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return is_valid_starboard_env(interaction)
 
     @singleton
@@ -624,9 +622,7 @@ class StarboardAddon(
     ):
         assert interaction.guild
 
-        value = await convert_setting(
-            interaction, SETTINGS_MAPPING, setting, new_value
-        )
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
         starboard = self.starboards[interaction.guild.id]
         setattr(starboard, setting, value)
 
@@ -689,9 +685,7 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError(
-                "You must provide at least one valid argument to ignore."
-            )
+            raise TypeError("You must provide at least one valid argument to ignore.")
 
         starboard = self.starboards[interaction.guild.id]
 
@@ -711,9 +705,9 @@ class StarboardAddon(
                 interaction.guild.id,
             )
 
-            if isinstance(
-                snowflake, discord.PartialMessage
-            ) and await starboard.exists(id):
+            if isinstance(snowflake, discord.PartialMessage) and await starboard.exists(
+                id
+            ):
                 await starboard.delete_star(id)
 
         await interaction.response.send_message(
@@ -754,17 +748,13 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError(
-                "You must provide at least one valid argument to unignore."
-            )
+            raise TypeError("You must provide at least one valid argument to unignore.")
 
         starboard = self.starboards[interaction.guild.id]
         target_id = int(id) if id.isdigit() else None
 
         for obj in filter(None, [target_id, channel, message_obj]):
-            object_id = (
-                obj.id if isinstance(obj, discord.abc.Snowflake) else obj
-            )
+            object_id = obj.id if isinstance(obj, discord.abc.Snowflake) else obj
 
             starboard.ignored.discard(object_id)
             await self.bot.db.execute(
@@ -810,6 +800,36 @@ class StarboardAddon(
             ),
         )
         await menu.start(interaction)
+
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def force_star_ctx(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        """
+        Sends a message directly to the starboard, regardless of reactions
+
+        If the message has already been force-starred, then this unstars it.
+
+        Messages that are already on the starboard cannot be force-starred.
+        """
+        assert interaction.guild
+
+        starboard = self.starboards[interaction.guild.id]
+        star = await starboard.get_star(message.id)
+        # ignore natural stars
+        if star is not None and star.forced is False:
+            await interaction.response.send_message(
+                "Cannot force-star an already-starred message."
+            )
+            return
+
+        if star is None:
+            star = await starboard.create_star(message, 0, forced=True)
+        elif star is not None and star.forced is True:
+            await starboard.delete_star(star.message_id)
+
+        await interaction.response.send_message("Toggled force-star status.")
 
 
 async def setup(bot: fuchsia.Fuchsia):

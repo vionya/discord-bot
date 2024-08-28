@@ -56,6 +56,7 @@ CREATE TABLE stars (
     channel_id           BIGINT NOT NULL,
     stars                INT NOT NULL,
     starboard_message_id BIGINT NOT NULL,
+    forced               BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (guild_id, message_id, channel_id),
     FOREIGN KEY (guild_id) REFERENCES starboards (guild_id) ON DELETE CASCADE
 );
