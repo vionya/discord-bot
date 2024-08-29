@@ -863,10 +863,12 @@ class StarboardAddon(
         if starboard.channel is None:
             raise RuntimeError("This server hasn't set its starboard channel")
 
+        assert self.bot.user
         star = await starboard.get_star(
             message.id,
             from_starboard_message=(
                 interaction.channel_id == starboard.channel.id
+                and message.author.id == self.bot.user.id
             ),
         )
         # ignore natural stars
