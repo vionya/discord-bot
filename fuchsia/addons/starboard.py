@@ -128,7 +128,7 @@ class Starboard:
         if not self.channel:
             return None
 
-        if id in self.cached_stars:
+        if from_starboard_message is False and id in self.cached_stars:
             return self.cached_stars[id]
 
         query = "SELECT * FROM stars WHERE {0}=$1".format(
@@ -143,12 +143,13 @@ class Starboard:
                 star_data["starboard_message_id"]
             )
             star = Star(
-                message_id=id,
+                message_id=star_data["message_id"],
                 starboard_message=starboard_msg,
                 stars=star_data["stars"],
                 forced=star_data["forced"],
             )
-            self.cached_stars[id] = star
+            self.star_ids.add(star_data["message_id"])
+            self.cached_stars[star_data["message_id"]] = star
             return star
         return None
 
