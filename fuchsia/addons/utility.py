@@ -99,12 +99,6 @@ class Utility(fuchsia.Addon):
         )
         self.dictionary = dictionary.Define(self.bot.session)
 
-        self.appinfo = await self.bot.application_info()
-        if team := self.appinfo.team:
-            self.owner = team.owner or team.members[0]
-        else:
-            self.owner = self.appinfo.owner
-
         buttons = [
             discord.ui.Button(
                 url=self.bot.cfg["support"]["url"],
@@ -121,7 +115,7 @@ class Utility(fuchsia.Addon):
         self.info_buttons = partial(
             InfoButtons,
             self.privacy_embed,
-            not self.appinfo.bot_public,
+            not (await self.bot.application_info()).bot_public,
             buttons=buttons,
             presets=self.bot.cfg["invite_presets"],
             application_id=self.bot.user.id,
@@ -472,23 +466,31 @@ class Utility(fuchsia.Addon):
     @app_commands.command(name="info")
     async def fuchsia_info_command(self, interaction: discord.Interaction):
         """Show information about fuchsia"""
+        appinfo = await self.bot.application_info()
+        if team := appinfo.team:
+            owner = team.owner or team.members[0]
+        else:
+            owner = appinfo.owner
+
         embed = fuchsia.Embed(
             description=(
                 "**fuchsia Version** {0}"
-                "\n**Server Count** {1}"
-                "\n**Startup Time** <t:{2}>"
-                "\n\n**Python Version** {3}"
-                "\n**discord.py Version** {4}"
+                "\n**Server Install Count** {1}"
+                "\n**User Install Count** {2}"
+                "\n**Startup Time** <t:{3}>"
+                "\n\n**Python Version** {4}"
+                "\n**discord.py Version** {5}"
             ).format(
                 fuchsia.__version__,
-                len(self.bot.guilds),
+                appinfo.approximate_guild_count,
+                appinfo.approximate_user_install_count,
                 self.bot.boot_time,
                 py_version.split(" ", 1)[0],
                 discord.__version__,
             )
         ).set_author(
-            name=f"Developed by {self.owner.display_name} ({self.owner})",
-            icon_url=self.owner.avatar,
+            name=f"Developed by {owner.display_name} ({owner})",
+            icon_url=owner.avatar,
         )
 
         if self.bot.user:
