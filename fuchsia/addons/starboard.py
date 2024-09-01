@@ -18,7 +18,6 @@ from fuchsia.tools import (
     singleton,
     parse_id,
     shorten,
-    guild_only,
 )
 from fuchsia.tools.checks import is_valid_starboard_env
 
@@ -315,7 +314,8 @@ class Starboard:
         return star
 
 
-@guild_only
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+@app_commands.allowed_installs(guilds=True, users=False)
 class StarboardAddon(
     fuchsia.Addon,
     name="Starboard",
@@ -336,11 +336,7 @@ class StarboardAddon(
         self.ready = False
         self.starboards: dict[int, Starboard] = {}
 
-        guild_only(
-            self.bot.tree.context_menu(name="Toggle Forced Starboard")(
-                self.force_star_ctx
-            )
-        )
+        self.bot.tree.context_menu(name="Toggle Forced Starboard")(self.force_star_ctx)
 
         asyncio.create_task(self.__ainit__())
 
@@ -801,6 +797,8 @@ class StarboardAddon(
         )
         await menu.start(interaction)
 
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def force_star_ctx(

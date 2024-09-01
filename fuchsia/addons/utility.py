@@ -29,7 +29,7 @@ from fuchsia.modules import (
     dictionary,
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
-from fuchsia.tools.decorators import guild_only, singleton
+from fuchsia.tools.decorators import singleton
 from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
@@ -225,8 +225,9 @@ class Utility(fuchsia.Addon):
         )
         await interaction.response.send_message(embeds=[embed])
 
-    @guild_only
     @app_commands.command(name="clear")
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.describe(
         limit="The number of messages to delete",
         before="Delete only messages sent before this message ID or URL",
@@ -394,8 +395,9 @@ class Utility(fuchsia.Addon):
         )
         await interaction.response.send_message(embed=embed)
 
-    @guild_only
     @app_commands.command(name="serverinfo")
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.allowed_installs(guilds=True, users=False)
     async def guild_info_command(self, interaction: discord.Interaction):
         """Retrieves information about the current server"""
         # The guild_only check guarantees that this will always work
@@ -426,10 +428,9 @@ class Utility(fuchsia.Addon):
 
         await interaction.response.send_message(content=content, embed=embed)
 
-    @app_commands.guild_only()
-    @app_commands.command(
-        name="roleinfo", extras={"integration_types": [0], "contexts": [0]}
-    )
+    @app_commands.command(name="roleinfo")
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.describe(role="The role to get info about")
     async def role_info_command(
         self, interaction: discord.Interaction, *, role: discord.Role
@@ -546,8 +547,9 @@ class Utility(fuchsia.Addon):
                 file=discord.File(BytesIO(upscaled_data), f"upscaled.{content_type}"),
             )
 
-    @guild_only
     @app_commands.command(name="steal")
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.default_permissions(create_expressions=True)
     @app_commands.rename(source_emoji="emoji", new_name="name")
     @app_commands.describe(
@@ -878,7 +880,7 @@ class Utility(fuchsia.Addon):
                         f"**Associated Emoji** `{sticker_full.emoji}`",
                     ]
                 )
-            if not interaction.extras.get("context"):
+            if interaction.context.guild:
                 view = StickerInfoView(sticker_full, interaction)
         except:
             # i don't actually care what happens if this fails

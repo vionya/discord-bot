@@ -28,22 +28,8 @@ def singleton(cls: type[T]) -> T:
     return cls()
 
 
-def guild_only(fn: T) -> T:
-    if isinstance(fn, Command | Group | ContextMenu):
-        fn.extras |= {"integration_types": [0], "contexts": [0]}
-    else:
-        setattr(
-            fn,
-            "__cog_group_extras__",
-            {"integration_types": [0], "contexts": [0]},
-        )
-    return fn
-
-
 @overload
-def deprecate(
-    *, reason: str
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
+def deprecate(*, reason: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
 
 @overload

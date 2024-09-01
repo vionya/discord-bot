@@ -17,7 +17,6 @@ from fuchsia.tools import (
     singleton,
     is_registered_guild,
     prompt_user,
-    guild_only,
 )
 from fuchsia.tools.checks import owner_or_admin_predicate
 from fuchsia.types.commands import AnyCommand
@@ -29,7 +28,8 @@ from .auxiliary.server_settings import (
 )
 
 
-@guild_only
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+@app_commands.allowed_installs(guilds=True, users=False)
 class ServerConfig(
     fuchsia.Addon,
     name="Server Settings",

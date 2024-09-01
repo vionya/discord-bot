@@ -39,9 +39,7 @@ __version__ = "2.0.0"
 
 log = logging.getLogger(__name__)
 intents = discord.Intents(
-    **dict.fromkeys(
-        ["messages", "guilds", "guild_reactions", "message_content"], True
-    )
+    **dict.fromkeys(["messages", "guilds", "guild_reactions", "message_content"], True)
 )
 
 
@@ -69,6 +67,12 @@ class Fuchsia(commands.Bot):
         kwargs["help_command"] = None
         kwargs["intents"] = intents
         kwargs["case_insensitive"] = True
+        kwargs["allowed_contexts"] = app_commands.AppCommandContext(
+            guild=True, dm_channel=True, private_channel=True
+        )
+        kwargs["allowed_installs"] = app_commands.AppInstallationType(
+            guild=True, user=True
+        )
 
         super().__init__(**kwargs)
 
@@ -191,9 +195,7 @@ class Fuchsia(commands.Bot):
             self.command_ids |= {c.name: c.id for c in server}
             log.info("Synchronized command tree")
 
-    async def on_message_edit(
-        self, before: discord.Message, after: discord.Message
-    ):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if after.content != before.content:
             await self.process_commands(after)
 
@@ -219,9 +221,7 @@ class Fuchsia(commands.Bot):
         try:
             if isinstance(original_error, AssertionError):
                 level = logging.ERROR
-                return await send(
-                    "Something weird happened. Please report this!"
-                )
+                return await send("Something weird happened. Please report this!")
 
             if (
                 original_error.__class__.__name__
