@@ -117,7 +117,7 @@ class Fuchsia(commands.Bot):
             if not self.get_guild(guild_id):
                 await self.delete_config(guild_id)
 
-    async def add_profile(self, user_id, *, record=None):
+    async def add_profile(self, user_id: int, *, record=None):
         if not record:
             record = await self.db.fetchrow(
                 """
@@ -131,6 +131,7 @@ class Fuchsia(commands.Bot):
             )
         profile = containers.FuchsiaUser(pool=self.db, **record)
         self.profiles[user_id] = profile
+        self.broadcast("user_settings_update", user_id, profile)
         return profile
 
     async def delete_profile(self, user_id: int):

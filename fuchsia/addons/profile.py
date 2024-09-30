@@ -177,8 +177,7 @@ class Profile(fuchsia.Addon, app_group=True):
         if interaction.user.id in self.bot.profiles:
             raise RuntimeError("You already have a profile!")
 
-        profile = await self.bot.add_profile(interaction.user.id)
-        self.bot.broadcast("user_settings_update", interaction.user, profile)
+        await self.bot.add_profile(interaction.user.id)
         await interaction.response.send_message(
             "Successfully initialized your profile!"
         )

@@ -317,12 +317,12 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
                 self.bot.profiles[hl.user_id].receive_highlights = False
 
     @fuchsia.Addon.recv("user_settings_update")
-    async def handle_update_profile(self, user: discord.User, profile: FuchsiaUser):
-        if self.grace_periods.get(user.id):
-            current_timeout = self.grace_periods[user.id].timeout
+    async def handle_update_profile(self, user_id: int, profile: FuchsiaUser):
+        if self.grace_periods.get(user_id):
+            current_timeout = self.grace_periods[user_id].timeout
             if (profile.hl_timeout * 60) == current_timeout:
                 return
-            self.grace_periods.pop(user.id).clear()
+            self.grace_periods.pop(user_id).clear()
 
         self.grace_periods[profile.user_id] = TimedSet(
             timeout=profile.hl_timeout * 60
