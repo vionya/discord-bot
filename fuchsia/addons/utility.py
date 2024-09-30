@@ -25,6 +25,7 @@ from fuchsia.modules import (
     ButtonsMenu,
     DropdownMenu,
     EmbedPages,
+    Interactors,
     cse,
     dictionary,
 )
@@ -152,7 +153,10 @@ class Utility(fuchsia.Addon):
 
         pages = EmbedPages(embeds)
         menu = DropdownMenu.from_pages(
-            pages, embed_auto_label=True, embed_auto_desc=True
+            pages,
+            embed_auto_label=True,
+            embed_auto_desc=True,
+            private_interactors=Interactors.EVERYONE,
         )
         await menu.start(interaction)
 

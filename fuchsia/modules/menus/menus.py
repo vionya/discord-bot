@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from enum import Flag, auto
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,6 +37,13 @@ class SendKwargs(TypedDict):
 T = TypeVar("T", bound=Pages)
 
 
+class Interactors(Flag):
+    AUTHOR = auto()
+    EVERYONE = auto()
+    GUILD_OWNER = auto()
+    BOT_OWNER = auto()
+
+
 class BaseMenu(Generic[T], discord.ui.View):
     bot: Fuchsia
 
@@ -47,12 +55,25 @@ class BaseMenu(Generic[T], discord.ui.View):
         "origin",
         "bot",
         "author",
+        "dm_interactors",
+        "private_interactors",
+        "guild_interactors",
         "_current_page",
     )
 
-    def __init__(self, pages: T):
+    def __init__(
+        self,
+        pages: T,
+        *,
+        dm_interactors: Interactors = Interactors.AUTHOR,
+        private_interactors: Interactors = Interactors.AUTHOR,
+        guild_interactors: Interactors = Interactors.AUTHOR,
+    ):
         super().__init__()
         self.pages = pages
+        self.dm_interactors = dm_interactors
+        self.private_interactors = private_interactors
+        self.guild_interactors = guild_interactors
 
         self.message = None
         self.origin: Optional[FuchsiaContext | discord.Interaction] = None
@@ -242,12 +263,47 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         self.bot.loop.create_task(inner())
 
-    async def interaction_check(self, interaction):
+    @final
+    def _get_interactors_predicate(
+        self, interaction: discord.Interaction, interactors: Interactors
+    ) -> bool:
+        """
+        Given an Interactors flag, validates if an interactor is allowed to
+        use this menu
+        """
+        valid_interactors: list[int] = []
+        if Interactors.EVERYONE in interactors:
+            return True
+        if Interactors.AUTHOR in interactors:
+            valid_interactors.append(self.author.id)
+        if Interactors.BOT_OWNER in interactors:
+            if self.bot.owner_ids:
+                valid_interactors.extend(self.bot.owner_ids)
+            if self.bot.owner_id:
+                valid_interactors.append(self.bot.owner_id)
+        if Interactors.GUILD_OWNER in interactors and interaction.guild:
+            if interaction.guild.owner_id:
+                valid_interactors.append(interaction.guild.owner_id)
+        return interaction.user.id in valid_interactors
+
+    async def interaction_check(self, interaction: discord.Interaction):
         # Check that the interaction is valid for affecting the menu
-        (predicates := []).append(
-            interaction.user.id
-            in (self.author.id, *(self.bot.owner_ids or []), self.bot.owner_id)
-        )
+        predicates = []
+
+        # an incoming interaction will only have 1 context so elif ladder works
+        if interaction.context.guild:
+            predicates.append(
+                self._get_interactors_predicate(interaction, self.guild_interactors)
+            )
+        elif interaction.context.dm_channel:
+            predicates.append(
+                self._get_interactors_predicate(interaction, self.dm_interactors)
+            )
+        elif interaction.context.private_channel:
+            predicates.append(
+                self._get_interactors_predicate(interaction, self.private_interactors)
+            )
+
         return all(predicates)
 
     @final
@@ -274,6 +330,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         """
         ...
 
+
 class PageSelectModal(discord.ui.Modal, title="Go to page"):
     page: discord.ui.TextInput[PageSelectModal] = discord.ui.TextInput(
         label="Page number",
@@ -296,11 +353,11 @@ class PageSelectModal(discord.ui.Modal, title="Go to page"):
         index = int(self.page.value) - 1
         if index < 0 or index > (len(self.menu.pages) - 1):
             return await interaction.response.send_message(
-                "The page number must be in the range of the menu",
-                ephemeral=True
+                "The page number must be in the range of the menu", ephemeral=True
             )
         self.menu.page_index = index
         await self.menu.update_page(interaction)
+
 
 class ButtonsMenu(BaseMenu[T]):
     @discord.ui.button(label="ᐊ", row=4)
@@ -319,7 +376,7 @@ class ButtonsMenu(BaseMenu[T]):
 
     @discord.ui.button(label="✎", row=4)
     async def page_button(
-            self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         modal = PageSelectModal(self)
         await interaction.response.send_modal(modal)
@@ -369,9 +426,7 @@ class DropdownMenuItem(discord.ui.Select):
         # the right and (24 - the number of elements on the left if there are
         # less than 12 on the left, otherwise 12)
         slice_end = (
-            cur_index
-            + 1
-            + min(len_right, 25 - len_left if len_left < 12 else 12)
+            cur_index + 1 + min(len_right, 25 - len_left if len_left < 12 else 12)
         )
         self.options = (
             self.all_options[slice_start:cur_index]
@@ -389,6 +444,7 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
         *,
         embed_auto_label: bool = False,
         embed_auto_desc: bool = False,
+        **kwargs,
     ):
         options: list[discord.SelectOption] = []
         for index, page in enumerate(pages.items, 1):
@@ -411,15 +467,15 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
                 )
             )
 
-        return cls.from_options(options=options, pages=pages)
+        return cls.from_options(options=options, pages=pages, **kwargs)
 
     @classmethod
-    def from_options(cls, *, options: list[discord.SelectOption], pages: Pages):
+    def from_options(
+        cls, *, options: list[discord.SelectOption], pages: Pages, **kwargs
+    ):
         if not all(option.value.isdecimal() for option in options):
-            raise TypeError(
-                f"{cls.__name__} options must all have integer values"
-            )
-        instance = cls(pages)
+            raise TypeError(f"{cls.__name__} options must all have integer values")
+        instance = cls(pages, **kwargs)
 
         instance.select = DropdownMenuItem(instance, options=options, row=0)
         instance.add_item(instance.select)
