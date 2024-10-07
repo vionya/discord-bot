@@ -6,6 +6,8 @@ An auxiliary module for the `Utility` addon
 from __future__ import annotations
 
 import asyncio
+import random
+from collections import Counter
 import re
 from typing import TYPE_CHECKING, Optional
 
@@ -16,7 +18,7 @@ from fuchsia.modules.dictionary import (
     StandardDictionaryResponse,
     UrbanDictionaryResponse,
 )
-from fuchsia.tools.formatters import shorten
+from fuchsia.tools.formatters import Table, shorten
 
 if TYPE_CHECKING:
     from googletrans import Translator
@@ -331,3 +333,30 @@ class StickerInfoView(discord.ui.View):
             description="\n".join(raw_description),
         ).set_thumbnail(url=new_sticker.url)
         await interaction.response.send_message(embeds=[embed], ephemeral=True)
+
+
+def get_choice(options: list[str]) -> tuple[str, str]:
+    data = Counter(random.choice(options) for _ in range(1000))
+    table = Table()
+    table.init_columns("Item", "%")
+    for item, hits in data.most_common():
+        table.add_row(shorten(item, 19), f"{(hits / 1000) * 100:.1f}%")
+    return (data.most_common(1)[0][0], table.display())
+
+
+class ChooseOutputView(discord.ui.View):
+    def __init__(self, options: list[str], **kwargs):
+        self.options = options
+        super().__init__(**kwargs)
+
+    @discord.ui.button(label="Reroll", style=discord.ButtonStyle.primary)
+    async def reroll_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        (selection, table) = get_choice(self.options)
+        assert interaction.message
+        embed = interaction.message.embeds[0]
+        embed.description = "```\n" + table + "\n```"
+        embed.clear_fields()
+        embed.add_field(name="Selection", value=f"`{shorten(selection, 250)}`")
+        await interaction.response.edit_message(embeds=[embed])

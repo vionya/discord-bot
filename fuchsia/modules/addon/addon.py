@@ -32,8 +32,6 @@ def is_receiver(val: Callable[P, ReceiverRet]) -> TypeGuard[Receiver[P]]:
 
 
 class AddonMeta(commands.CogMeta):
-    __receivers__: dict[str, Receiver]
-
     def __new__(cls, _name, bases, attrs, **kwargs):
         is_app_group = kwargs.pop("app_group", None)
 

@@ -35,11 +35,13 @@ from fuchsia.tools.formatters import Table, full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
+    ChooseOutputView,
     InfoButtons,
     StickerInfoView,
     AvatarsView,
     definitions_to_embed,
     get_browser_links,
+    get_choice,
     result_to_embed,
     translate,
 )
@@ -305,27 +307,22 @@ class Utility(fuchsia.Addon):
     ):
         """Make a (pseudo-)random choice from up to 5 different options"""
         options = [opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt]
-
-        data = Counter(random.choice(options) for _ in range(1000))
-
-        table = Table()
-        table.init_columns("Item", "%")
-        for item, hits in data.most_common():
-            table.add_row(shorten(item, 19), f"{(hits / 1000) * 100:.1f}%")
-        rendered = table.display()
+        (selection, table) = get_choice(options)
 
         embed = (
-            fuchsia.Embed(description="```\n" + rendered + "\n```")
+            fuchsia.Embed(description="```\n" + table + "\n```")
             .add_field(
                 name="Selection",
-                value=f"`{shorten(data.most_common(1)[0][0], 250)}`",
+                value=f"`{shorten(selection, 250)}`",
             )
             .set_author(
                 name=f"{interaction.user.display_name}'s choice results",
                 icon_url=interaction.user.display_avatar,
             )
         )
-        await interaction.response.send_message(embed=embed)
+
+        view = ChooseOutputView(options)
+        await interaction.response.send_message(embed=embed, view=view)
 
     # Information commands below
 
