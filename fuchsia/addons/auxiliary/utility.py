@@ -345,9 +345,13 @@ def get_choice(options: list[str]) -> tuple[str, str]:
 
 
 class ChooseOutputView(discord.ui.View):
-    def __init__(self, options: list[str], **kwargs):
+    def __init__(self, options: list[str], user_id: int, **kwargs):
         self.options = options
+        self.user_id = user_id
         super().__init__(**kwargs)
+
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+        return interaction.user.id == self.user_id
 
     @discord.ui.button(label="Reroll", style=discord.ButtonStyle.primary)
     async def reroll_button(

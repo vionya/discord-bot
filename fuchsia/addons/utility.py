@@ -321,7 +321,7 @@ class Utility(fuchsia.Addon):
             )
         )
 
-        view = ChooseOutputView(options)
+        view = ChooseOutputView(options, interaction.user.id)
         await interaction.response.send_message(embed=embed, view=view)
 
     # Information commands below
