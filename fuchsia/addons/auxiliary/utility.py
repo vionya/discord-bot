@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import random
 from collections import Counter
+from enum import Enum, auto
 import re
 from typing import TYPE_CHECKING, Optional
 
@@ -224,14 +225,37 @@ class InfoButtons(discord.ui.View):
         )
 
 
+class AvatarState(Enum):
+    USER = auto()
+    GUILD = auto()
+
+
 class AvatarsView(discord.ui.View):
+    state: AvatarState
+    user_id: int
+    user_avatar: discord.Asset
+    guild_avatar: discord.Asset | None
+
     def __init__(
-        self, user_id: int, user_avatar: discord.Asset, guild_avatar: discord.Asset
+        self,
+        user_id: int,
+        user_avatar: discord.Asset,
+        guild_avatar: discord.Asset | None,
+        block_save: bool = False,
     ):
         self.user_id = user_id
         self.user_avatar = user_avatar
         self.guild_avatar = guild_avatar
+        self.state = AvatarState.GUILD if guild_avatar is not None else AvatarState.USER
+
         super().__init__()
+
+        if block_save is True:
+            self.save_current_avatar.disabled = True
+
+        if guild_avatar is None:
+            self.remove_item(self.guild_avatar_button)
+            self.user_avatar_button.style = discord.ButtonStyle.blurple
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         return interaction.user.id == self.user_id
@@ -240,6 +264,9 @@ class AvatarsView(discord.ui.View):
     async def guild_avatar_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
+        assert (
+            self.guild_avatar is not None
+        )  # this button will not exist if this isn't true
         if not interaction.message:
             return
 
@@ -247,6 +274,7 @@ class AvatarsView(discord.ui.View):
         embed.description = "**View in browser**\n" + get_browser_links(
             self.guild_avatar
         )
+        self.state = AvatarState.GUILD
         for child in self.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
@@ -264,11 +292,45 @@ class AvatarsView(discord.ui.View):
         embed.description = "**View in browser**\n" + get_browser_links(
             self.user_avatar
         )
+        self.state = AvatarState.USER
         for child in self.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
         button.style = discord.ButtonStyle.blurple
         await interaction.response.edit_message(view=self, embed=embed)
+
+    @discord.ui.button(label="💾", style=discord.ButtonStyle.grey)
+    async def save_current_avatar(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if not interaction.message:
+            return
+
+        avatar: discord.Asset
+        match self.state:
+            case AvatarState.USER:
+                avatar = self.user_avatar
+            case AvatarState.GUILD:
+                assert self.guild_avatar is not None
+                avatar = self.guild_avatar
+
+        file = await avatar.to_file()
+        embed = interaction.message.embeds[0].set_image(
+            url=f"attachment://{file.filename}"
+        )
+        embed.description = None
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        button.style = discord.ButtonStyle.green
+        await interaction.response.edit_message(
+            view=self, embed=embed, attachments=[file]
+        )
+        await interaction.followup.send(
+            "The selected avatar has been saved in this message for future reference!",
+            ephemeral=True,
+        )
+        self.stop()
 
 
 class StickerInfoView(discord.ui.View):
