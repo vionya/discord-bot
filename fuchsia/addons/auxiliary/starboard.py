@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2024 vionya
+# Copyright (C) 2025 vionya
 """
 An auxiliary module for the `Starboard` addon
 """
