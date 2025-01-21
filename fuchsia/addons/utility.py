@@ -857,6 +857,9 @@ class Utility(fuchsia.Addon):
         steal the desired sticker and add it to your server.
         """
         # if the message has no stickers on it, there's no point in proceeding
+        if message.reference and message.reference.type == discord.MessageReferenceType.forward:
+            message = message.message_snapshots[0]  # type: ignore
+
         if not message.stickers:
             return await interaction.response.send_message(
                 "That message has no sticker!", ephemeral=True
