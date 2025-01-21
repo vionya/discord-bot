@@ -20,8 +20,13 @@ from fuchsia.tools import (
     shorten,
 )
 from fuchsia.tools.checks import is_valid_starboard_env
+from fuchsia.tools.formatters import humanize_snake_case
 
-from .auxiliary.starboard import SETTINGS_MAPPING, ChangeSettingButton
+from .auxiliary.starboard import (
+    SETTINGS_MAPPING,
+    ChangeSettingButton,
+    extract_tenor_gif,
+)
 
 if TYPE_CHECKING:
     from asyncpg import Pool
@@ -131,9 +136,7 @@ class Starboard:
             return self.cached_stars[id]
 
         query = "SELECT * FROM stars WHERE {0}=$1".format(
-            "starboard_message_id"
-            if from_starboard_message is True
-            else "message_id"
+            "starboard_message_id" if from_starboard_message is True else "message_id"
         )
         star_data = await self.pool.fetchrow(query, id)
 
@@ -152,9 +155,7 @@ class Starboard:
             return star
         return None
 
-    async def create_star(
-        self, message: discord.Message, stars: int, *, forced=False
-    ):
+    async def create_star(self, message: discord.Message, stars: int, *, forced=False):
         if (
             not message.guild
             or not self.channel
@@ -162,9 +163,7 @@ class Starboard:
         ):
             return
 
-        assert isinstance(
-            message.channel, discord.abc.GuildChannel | discord.Thread
-        )
+        assert isinstance(message.channel, discord.abc.GuildChannel | discord.Thread)
 
         async with self.lock:
             try:
@@ -194,69 +193,95 @@ class Starboard:
                     text=f"#{message.channel.parent.name} > {message.channel.name}"
                 )
 
-            if message.stickers:
+            display_message = message
+            if ref := message.reference:
+                if ref.type == discord.MessageReferenceType.forward:
+                    display_message = message.message_snapshots[0]
+                    if ref.guild_id == message.guild.id:
+                        view.add_item(
+                            discord.ui.Button(url=ref.jump_url, label="Jump to forward")
+                        )
+                elif ref.type == discord.MessageReferenceType.reply and isinstance(
+                    ref.resolved, discord.Message
+                ):
+                    # if the replied-to user and author are the same, save a req
+                    if ref.resolved.author.id == author.id:
+                        reply_display = "self"
+                    else:
+                        # otherwise we have to fetch it
+                        try:
+                            replied_to = await message.guild.fetch_member(
+                                ref.resolved.author.id
+                            )
+                        except discord.DiscordException:
+                            replied_to = ref.resolved.author
+                        reply_display = (
+                            f"{replied_to.display_name} ({ref.resolved.author})"
+                        )
+
+                    embed.add_field(
+                        name="Replying to " + reply_display,
+                        value=shorten(ref.resolved.content, 500),
+                        inline=False,
+                    )
+                    view.add_item(
+                        discord.ui.Button(url=ref.jump_url, label="Jump to reply")
+                    )
+
+            if ref:
+                if (
+                    ref.type == discord.MessageReferenceType.reply
+                    and display_message.content
+                ):
+                    embed.add_field(
+                        name=author.display_name,
+                        value=shorten(display_message.content, 1024),
+                        inline=False,
+                    )
+                elif ref.type == discord.MessageReferenceType.forward:
+                    embed.add_field(
+                        name="\U000021B1 Forwarded",
+                        value=shorten(display_message.content, 1024),
+                        inline=False,
+                    )
+            else:
+                embed.description = shorten(display_message.content, 1900)
+
+            if display_message.stickers:
                 embed.add_field(
-                    name=f"Stickers [x{len(message.stickers)}]",
+                    name=f"Stickers [x{len(display_message.stickers)}]",
                     value="\n".join(
-                        f"`{sticker.name}`" for sticker in message.stickers
+                        f"`{sticker.name}`" for sticker in display_message.stickers
                     ),
                     inline=False,
                 )
 
-            if (ref := message.reference) and isinstance(
-                ref.resolved, discord.Message
-            ):
-                # if the replied-to user and author are the same, save a req
-                if ref.resolved.author.id == author.id:
-                    reply_display = "self"
-                else:
-                    # otherwise we have to fetch it
-                    try:
-                        replied_to = await message.guild.fetch_member(
-                            ref.resolved.author.id
-                        )
-                    except discord.DiscordException:
-                        replied_to = ref.resolved.author
-                    reply_display = (
-                        f"{replied_to.display_name} ({ref.resolved.author})"
-                    )
-
-                embed.add_field(
-                    name="Replying to " + reply_display,
-                    value=shorten(ref.resolved.content, 500),
-                    inline=False,
-                )
-                view.add_item(
-                    discord.ui.Button(url=ref.jump_url, label="Jump to reply")
-                )
-
-            if message.content:
-                if ref:
-                    embed.add_field(
-                        name=author.display_name,
-                        value=shorten(message.content, 1024),
-                        inline=False,
-                    )
-                else:
-                    embed.description = shorten(message.content, 1900)
-
-            if attachments := (*message.attachments, *message.embeds):
-                if not embed.image:
-                    prev = attachments[0]
+            if attachments := (*display_message.attachments, *display_message.embeds):
+                prev = attachments[0]
+                if isinstance(prev, discord.Attachment):
                     # Don't add spoilered images to embed
-                    if not getattr(prev, "filename", "").startswith("SPOILER_"):
+                    if not prev.is_spoiler() and not prev.is_voice_message():
                         embed.set_image(url=prev.url)
+                elif isinstance(prev, discord.Embed):
+                    match prev.type:
+                        case "gifv":
+                            if prev.provider.name == "Tenor":
+                                embed.set_image(url=extract_tenor_gif(prev))
+                        case "image":
+                            embed.set_image(url=prev.url)
+                        case "rich" | "article":
+                            if prev.image:
+                                embed.set_image(url=prev.image.url)
 
                 embed.add_field(
                     name=f"Attachments/Embeds [x{len(attachments)}]",
                     value="\n".join(
-                        # don't want the message to look weird if there's not
-                        # a URL associated with an embed (e.g. it's a bot-
-                        # generated embed)
-                        (
-                            "[`{fn}`]({url})" if attachment.url else "{fn}"
-                        ).format(
-                            fn=getattr(attachment, "filename", "Embed"),
+                        ("[`{fn}`]({url})" if attachment.url else "{fn}").format(
+                            fn=(
+                                attachment.filename
+                                if isinstance(attachment, discord.Attachment)
+                                else f"{humanize_snake_case(attachment.type)} Embed"
+                            ),
                             url=attachment.url,
                         )
                         for attachment in attachments
@@ -269,9 +294,7 @@ class Starboard:
                 if forced
                 else self.format.format(stars=stars)
             )
-            starboard_message = await self.channel.send(
-                content, embed=embed, view=view
-            )
+            starboard_message = await self.channel.send(content, embed=embed, view=view)
             star = Star(
                 message_id=message.id,
                 stars=stars,
@@ -379,9 +402,7 @@ class StarboardAddon(
                 continue
 
             settings = starboard_settings[guild_id]
-            self.starboards[guild_id] = await self.create_starboard(
-                guild_id, settings
-            )
+            self.starboards[guild_id] = await self.create_starboard(guild_id, settings)
         self.ready = True
 
         # Initialize settings
@@ -437,9 +458,7 @@ class StarboardAddon(
 
     @fuchsia.Addon.listener("on_raw_reaction_add")
     @fuchsia.Addon.listener("on_raw_reaction_remove")
-    async def handle_individual_reaction(
-        self, payload: discord.RawReactionActionEvent
-    ):
+    async def handle_individual_reaction(self, payload: discord.RawReactionActionEvent):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
         starboard = self.starboards[payload.guild_id]
@@ -531,9 +550,7 @@ class StarboardAddon(
             await starboard.delete_star(payload.message_id)
 
     @fuchsia.Addon.listener("on_guild_channel_delete")
-    async def handle_starboard_channel_delete(
-        self, channel: discord.abc.GuildChannel
-    ):
+    async def handle_starboard_channel_delete(self, channel: discord.abc.GuildChannel):
         if channel.guild.id not in self.starboards:
             return
 
@@ -573,9 +590,7 @@ class StarboardAddon(
     # /Sect: Event Handling
     # Sect: Commands
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return is_valid_starboard_env(interaction)
 
     @singleton
@@ -652,9 +667,7 @@ class StarboardAddon(
     ):
         assert interaction.guild
 
-        value = await convert_setting(
-            interaction, SETTINGS_MAPPING, setting, new_value
-        )
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
         starboard = self.starboards[interaction.guild.id]
         setattr(starboard, setting, value)
 
@@ -717,9 +730,7 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError(
-                "You must provide at least one valid argument to ignore."
-            )
+            raise TypeError("You must provide at least one valid argument to ignore.")
 
         starboard = self.starboards[interaction.guild.id]
 
@@ -739,9 +750,9 @@ class StarboardAddon(
                 interaction.guild.id,
             )
 
-            if isinstance(
-                snowflake, discord.PartialMessage
-            ) and await starboard.exists(id):
+            if isinstance(snowflake, discord.PartialMessage) and await starboard.exists(
+                id
+            ):
                 await starboard.delete_star(id)
 
         await interaction.response.send_message(
@@ -782,17 +793,13 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError(
-                "You must provide at least one valid argument to unignore."
-            )
+            raise TypeError("You must provide at least one valid argument to unignore.")
 
         starboard = self.starboards[interaction.guild.id]
         target_id = int(id) if id.isdigit() else None
 
         for obj in filter(None, [target_id, channel, message_obj]):
-            object_id = (
-                obj.id if isinstance(obj, discord.abc.Snowflake) else obj
-            )
+            object_id = obj.id if isinstance(obj, discord.abc.Snowflake) else obj
 
             starboard.ignored.discard(object_id)
             await self.bot.db.execute(
@@ -877,9 +884,7 @@ class StarboardAddon(
             return
 
         if star is None:
-            star = await starboard.create_star(
-                await message.fetch(), 0, forced=True
-            )
+            star = await starboard.create_star(await message.fetch(), 0, forced=True)
         elif star is not None and star.forced is True:
             await starboard.delete_star(star.message_id)
 

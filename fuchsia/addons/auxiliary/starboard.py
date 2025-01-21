@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
+from yarl import URL
 
 import fuchsia
 from fuchsia.classes.containers import Setting, SettingsMapping
@@ -49,9 +50,16 @@ SETTINGS_MAPPING = SettingsMapping(
 )
 
 
-class ChangeSettingButton(
-    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]
-):
+def extract_tenor_gif(embed: discord.Embed):
+    assert embed.thumbnail.url
+    url = URL(embed.thumbnail.url)
+    part = url.parts[1]
+    return URL(f"https://media1.tenor.com/m/{part[:-1] + 'C'}/{url.name}").with_suffix(
+        ".gif"
+    )
+
+
+class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]):
     def __init__(self, *, addon: StarboardAddon, **kwargs):
         self.addon = addon
 
@@ -66,9 +74,7 @@ class ChangeSettingButton(
 
         outer_self = self
 
-        class ChangeSettingModal(
-            discord.ui.Modal, title="Edit starboard settings"
-        ):
+        class ChangeSettingModal(discord.ui.Modal, title="Edit starboard settings"):
             new_value = discord.ui.TextInput(
                 label=f"Changing {current_setting.display_name}",
                 placeholder="New value",
