@@ -17,7 +17,6 @@ import discord
 from aiohttp import FormData
 from discord import app_commands
 from discord.utils import format_dt
-from googletrans import LANGUAGES, Translator
 
 import fuchsia
 from fuchsia.classes.app_commands import get_ephemeral, no_defer
@@ -43,7 +42,6 @@ from .auxiliary.utility import (
     get_browser_links,
     get_choice,
     result_to_embed,
-    translate,
 )
 
 PREMIUM_ICON_MAPPING = {
@@ -71,7 +69,6 @@ class Utility(fuchsia.Addon):
             header = header.lstrip("# ")
             body = body.replace("  \n", "\n")  # Ensure proper formatting on mobile
         self.privacy_embed = fuchsia.Embed(title=header, description=body)
-        self.translator = Translator(raise_exception=True)
 
         self.bot.tree.context_menu(name="View Avatar")(self.avatar_context_command)
         self.bot.tree.context_menu(name="View Banner")(self.banner_context_command)
@@ -199,37 +196,6 @@ class Utility(fuchsia.Addon):
             pages, embed_auto_label=True, embed_auto_desc=True
         )
         await menu.start(interaction)
-
-    @app_commands.command(name="translate")
-    @app_commands.describe(
-        source="The language to translate from. Default 'en'",
-        destination="The language to translate to. Default 'en'",
-        content="The content to translate",
-    )
-    @app_commands.rename(source="from", destination="to")
-    async def translate_command(
-        self,
-        interaction: discord.Interaction,
-        content: str,
-        source: Optional[str] = "en",
-        destination: Optional[str] = "en",
-    ):
-        """
-        Translate some text
-        """
-        translated = await translate(
-            self.translator, content, dest=destination, src=source
-        )
-        embed = fuchsia.Embed(
-            description=f"**Source Language** `{source}` "
-            f"[{LANGUAGES.get(translated.src, 'Auto-Detected').title()}]"
-            f"\n**Destination Language** {LANGUAGES.get(translated.dest, 'Unknown').title()}"
-        ).add_field(
-            name="Translated Content",
-            value=shorten(translated.text, 1024),
-            inline=False,
-        )
-        await interaction.response.send_message(embeds=[embed])
 
     @app_commands.command(name="clear")
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
@@ -857,7 +823,10 @@ class Utility(fuchsia.Addon):
         steal the desired sticker and add it to your server.
         """
         # if the message has no stickers on it, there's no point in proceeding
-        if message.reference and message.reference.type == discord.MessageReferenceType.forward:
+        if (
+            message.reference
+            and message.reference.type == discord.MessageReferenceType.forward
+        ):
             message = message.message_snapshots[0]  # type: ignore
 
         if not message.stickers:

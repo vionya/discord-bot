@@ -9,7 +9,6 @@ import asyncio
 import random
 from collections import Counter
 from enum import Enum, auto
-import re
 from typing import TYPE_CHECKING, Optional
 
 import discord
@@ -22,14 +21,7 @@ from fuchsia.modules.dictionary import (
 from fuchsia.tools.formatters import Table, shorten
 
 if TYPE_CHECKING:
-    from googletrans import Translator
-
     from fuchsia.modules.cse import SearchResult
-
-
-TRANSLATION_DIRECTIVE = re.compile(
-    r"((?P<src>[a-zA-Z\*\_]+|auto)->(?P<dest>[a-zA-Z]+))?"
-)
 
 
 def result_to_embed(result: SearchResult):
@@ -91,44 +83,6 @@ def definitions_to_embed(
                         )
 
                     yield embed
-
-
-def get_translation_kwargs(content: str) -> tuple[str, dict[str, str]]:
-    kwargs = {"dest": "en", "src": "auto"}
-
-    match = TRANSLATION_DIRECTIVE.match(content)
-    if match:
-        content = content.replace(match[0], "")
-        kwargs = match.groupdict()
-        if kwargs["src"] in {"*", "_"}:
-            kwargs["src"] = "auto"
-
-    return content.casefold().strip(), kwargs
-
-
-def do_translate(
-    translator: Translator,
-    content: str,
-    *,
-    dest: Optional[str],
-    src: Optional[str],
-):
-    try:
-        translation = translator.translate(
-            content, dest=dest or "en", src=src or "auto"
-        )
-    except ValueError as e:
-        e.args = (f"An {e.args[0]} was provided",)
-        raise
-    except Exception:
-        raise RuntimeError(
-            "Something went wrong with translation. Maybe try again later?"
-        )
-    return translation
-
-
-async def translate(translator, *args, **kwargs):  # Lazy async wrapper
-    return await asyncio.to_thread(do_translate, translator, *args, **kwargs)
 
 
 def get_browser_links(avatar: discord.Asset):
