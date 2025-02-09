@@ -811,7 +811,7 @@ class StarboardAddon(
         id="A generic ID to unignore (use when unsure what the ID type is)",
         channel="The channel to unignore, can be a channel mention or ID",
         message="The message to unignore, can be a message link or ID",
-        user="The user to ignore messages from",
+        user="The user to unignore messages from",
     )
     async def starboard_unignore(
         self,
