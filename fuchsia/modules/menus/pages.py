@@ -2,6 +2,7 @@
 # Copyright (C) 2025 vionya
 from __future__ import annotations
 
+from math import ceil
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,6 +27,11 @@ if TYPE_CHECKING:
 class Pages:
     """
     A base class for handling paginated objects.
+
+    This is a lazy view of the internal items, and computes pages as-needed,
+    avoiding storing chunked pages in memory.
+
+    Pages are accessed via ``__getitem__``.
 
     Parameters
     ----------
@@ -54,12 +60,6 @@ class Pages:
     :param template_embed: An embed that will be used as a template for all
     pages when `use_embed` is True
     :type template_embed: ``discord.Embed``
-
-    Attributes
-    ----------
-
-    :property pages: Returns the partitioning of all pages
-    :type pages: ``list``
     """
 
     __slots__ = (
@@ -106,36 +106,29 @@ class Pages:
             self.template_embed = template_embed.to_dict()
 
     def __repr__(self):
-        return "<{0.__class__.__name__} pages={1}>".format(
-            self, len(self.pages)
-        )
+        return "<{0.__class__.__name__} pages={1}>".format(self, len(self))
 
     @final
     def link(self, menu: BaseMenu):
         self.menu = menu
 
     @final
-    def _split_pages(self):
-        _items = self.items
-        _pages = []
-        while _items:
+    def _compute_page(self, index: int) -> str | list[str]:
+        """
+        Computes the value of the page at the given index
 
-            if (self.suffix or self.prefix) and isinstance(_items, str):
-                to_append = self.prefix + _items[: self.per_page] + self.suffix
+        :param index: the index of the page to get
+        :type index: ``int``
+        """
+        actual_index = index * self.per_page
+        page = self.items[actual_index : (actual_index + self.per_page)]
+        if (self.suffix or self.prefix) and isinstance(page, str):
+            return self.prefix + page + self.suffix
+        else:
+            return page
 
-            else:
-                to_append = _items[: self.per_page]
-            _pages.append(to_append)
-            _items = _items[self.per_page :]
-
-        return _pages
-
-    @property
-    def pages(self):
-        return self._split_pages()
-
-    def __getitem__(self, index: SupportsIndex):
-        content = self.joiner.join(self.pages[index])
+    def __getitem__(self, index: SupportsIndex) -> str | BaseEmbed:
+        content = self.joiner.join(self._compute_page(int(index)))
         if self.use_embed:
             return Embed.from_dict(
                 cast(dict, self.template_embed | {"description": content})
@@ -144,7 +137,7 @@ class Pages:
 
     @final
     def append(self, new: Any):
-        self._old_page_count = len(self.pages)
+        self._old_page_count = len(self)
 
         if isinstance(self.items, str) and isinstance(new, str):
             self.items += new
@@ -156,7 +149,7 @@ class Pages:
 
     @final
     def prepend(self, new: Any):
-        self._old_page_count = len(self.pages)
+        self._old_page_count = len(self)
 
         if isinstance(self.items, str) and isinstance(new, str):
             self.items = new + self.items
@@ -166,8 +159,8 @@ class Pages:
         if self.menu and self.menu.running is True:
             self.menu.dispatch_update()
 
-    def __len__(self):
-        return len(self.pages)
+    def __len__(self) -> int:
+        return ceil(len(self.items) / self.per_page)
 
 
 T = TypeVar("T", bound=BaseEmbed)
@@ -187,5 +180,5 @@ class EmbedPages(Pages, Generic[T]):
     def pages(self):
         return self.items
 
-    def __getitem__(self, index: SupportsIndex):
+    def __getitem__(self, index: SupportsIndex) -> BaseEmbed:
         return self.pages[index]
