@@ -191,19 +191,22 @@ class AssetState(Enum):
 class AssetsView(discord.ui.View):
     state: AssetState
     user_id: int
-    user_asset: discord.Asset
+    user_asset: discord.Asset | None
     guild_asset: discord.Asset | None
     asset_name: str
 
     def __init__(
         self,
         user_id: int,
-        user_asset: discord.Asset,
-        guild_asset: discord.Asset | None,
         *,
+        user_asset: discord.Asset | None,
+        guild_asset: discord.Asset | None,
         asset_name: str,
         block_save: bool = False,
     ):
+        if user_asset is None and guild_asset is None:
+            raise ValueError("At least one asset must be provided")
+
         self.user_id = user_id
         self.user_asset = user_asset
         self.guild_asset = guild_asset
@@ -219,9 +222,16 @@ class AssetsView(discord.ui.View):
 
         self.guild_asset_button.label = f"Server {asset_name.title()}"
         self.user_asset_button.label = f"User {asset_name.title()}"
+
+        # remove the button for the asset that doesn't exist and set the other
+        # to blurple
         if guild_asset is None:
             self.remove_item(self.guild_asset_button)
             self.user_asset_button.style = discord.ButtonStyle.blurple
+
+        if user_asset is None:
+            self.remove_item(self.user_asset_button)
+            self.guild_asset_button.style = discord.ButtonStyle.blurple
 
     async def interaction_check(
         self, interaction: discord.Interaction, /
@@ -255,6 +265,9 @@ class AssetsView(discord.ui.View):
     async def user_asset_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
+        assert (
+            self.user_asset is not None
+        )  # this button will not exist if this isn't true
         if not interaction.message:
             return
 
@@ -279,6 +292,7 @@ class AssetsView(discord.ui.View):
         avatar: discord.Asset
         match self.state:
             case AssetState.USER:
+                assert self.user_asset is not None
                 avatar = self.user_asset
             case AssetState.GUILD:
                 assert self.guild_asset is not None

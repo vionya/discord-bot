@@ -339,8 +339,8 @@ class Utility(fuchsia.Addon):
         ):
             view = AssetsView(
                 interaction.user.id,
-                avatar,
-                user_object.guild_avatar,
+                user_asset=avatar,
+                guild_asset=user_object.guild_avatar,
                 block_save=allow_save,
                 asset_name="Avatar",
             )
@@ -348,8 +348,8 @@ class Utility(fuchsia.Addon):
         else:
             view = AssetsView(
                 interaction.user.id,
-                avatar,
-                None,
+                user_asset=avatar,
+                guild_asset=None,
                 block_save=allow_save,
                 asset_name="Avatar",
             )
@@ -374,18 +374,17 @@ class Utility(fuchsia.Addon):
         embed = fuchsia.Embed()
         embed.description = ""
 
-        if isinstance(user, fuchsia.partials.PartialUser) or user is None:
-            id = (user or interaction.user).id
-            try:
-                user_object = await interaction.guild.fetch_member(id)  # type: ignore
-            except (discord.HTTPException, AttributeError):
-                user_object = await self.bot.fetch_user(id)
-        else:
-            user_object = user
+        id = (user or interaction.user).id
+        try:
+            user_object = await interaction.guild.fetch_member(id)  # type: ignore
+        except (discord.HTTPException, AttributeError):
+            user_object = await self.bot.fetch_user(id)
 
-        if user_object.banner is None or (
+        if (
+            isinstance(user_object, discord.User) and user_object.banner is None
+        ) or (
             isinstance(user_object, discord.Member)
-            and user_object.guild_banner is None
+            and user_object.display_avatar is None
         ):
             return await interaction.response.send_message(
                 "User does not have a banner."
@@ -399,8 +398,8 @@ class Utility(fuchsia.Addon):
         ):
             view = AssetsView(
                 interaction.user.id,
-                banner,
-                user_object.guild_banner,
+                user_asset=banner,
+                guild_asset=user_object.guild_banner,
                 block_save=allow_save,
                 asset_name="Banner",
             )
@@ -408,13 +407,13 @@ class Utility(fuchsia.Addon):
         else:
             view = AssetsView(
                 interaction.user.id,
-                banner,
-                None,
+                user_asset=banner,
+                guild_asset=None,
                 block_save=allow_save,
                 asset_name="Banner",
             )
 
-        embed.description += "**View in browser**\n" + get_browser_links(banner)
+        embed.description += "**View in browser**\n" + get_browser_links(banner)  # type: ignore
         embed = embed.set_image(url=banner).set_author(
             name=f"{user_object.display_name} ({user_object})"
         )
