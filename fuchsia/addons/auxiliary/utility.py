@@ -53,12 +53,14 @@ def definitions_to_embed(
                 )
                 .add_field(
                     name="Sourced from Urban Dictionary",
-                    value="[Link]({0}) | \U0001F44D {1} | \U0001F44E {2} | {3}".format(
+                    value="[Link]({0}) | \U0001f44d {1} | \U0001f44e {2} | {3}".format(
                         definition.permalink,
                         definition.thumbs_up,
                         definition.thumbs_down,
                         # want timestamp relative
-                        discord.utils.format_dt(definition.written_on, style="R"),
+                        discord.utils.format_dt(
+                            definition.written_on, style="R"
+                        ),
                     ),
                     inline=False,
                 )
@@ -165,7 +167,9 @@ class InfoButtons(discord.ui.View):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
         self.add_item(
-            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
+            InviteButton(
+                view_kwargs=invite_menu_kwargs, disabled=invite_disabled
+            )
         )
         for button in buttons:
             self.add_item(button)
@@ -179,74 +183,86 @@ class InfoButtons(discord.ui.View):
         )
 
 
-class AvatarState(Enum):
+class AssetState(Enum):
     USER = auto()
     GUILD = auto()
 
 
-class AvatarsView(discord.ui.View):
-    state: AvatarState
+class AssetsView(discord.ui.View):
+    state: AssetState
     user_id: int
-    user_avatar: discord.Asset
-    guild_avatar: discord.Asset | None
+    user_asset: discord.Asset
+    guild_asset: discord.Asset | None
+    asset_name: str
 
     def __init__(
         self,
         user_id: int,
-        user_avatar: discord.Asset,
-        guild_avatar: discord.Asset | None,
+        user_asset: discord.Asset,
+        guild_asset: discord.Asset | None,
+        *,
+        asset_name: str,
         block_save: bool = False,
     ):
         self.user_id = user_id
-        self.user_avatar = user_avatar
-        self.guild_avatar = guild_avatar
-        self.state = AvatarState.GUILD if guild_avatar is not None else AvatarState.USER
+        self.user_asset = user_asset
+        self.guild_asset = guild_asset
+        self.asset_name = asset_name
+        self.state = (
+            AssetState.GUILD if guild_asset is not None else AssetState.USER
+        )
 
         super().__init__()
 
         if block_save is True:
-            self.save_current_avatar.disabled = True
+            self.save_current_asset.disabled = True
 
-        if guild_avatar is None:
-            self.remove_item(self.guild_avatar_button)
-            self.user_avatar_button.style = discord.ButtonStyle.blurple
+        self.guild_asset_button.label = f"Server {asset_name.title()}"
+        self.user_asset_button.label = f"User {asset_name.title()}"
+        if guild_asset is None:
+            self.remove_item(self.guild_asset_button)
+            self.user_asset_button.style = discord.ButtonStyle.blurple
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(
+        self, interaction: discord.Interaction, /
+    ) -> bool:
         return interaction.user.id == self.user_id
 
-    @discord.ui.button(label="Server Avatar", style=discord.ButtonStyle.blurple)
-    async def guild_avatar_button(
+    @discord.ui.button(style=discord.ButtonStyle.blurple)
+    async def guild_asset_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         assert (
-            self.guild_avatar is not None
+            self.guild_asset is not None
         )  # this button will not exist if this isn't true
         if not interaction.message:
             return
 
-        embed = interaction.message.embeds[0].set_image(url=self.guild_avatar.url)
-        embed.description = "**View in browser**\n" + get_browser_links(
-            self.guild_avatar
+        embed = interaction.message.embeds[0].set_image(
+            url=self.guild_asset.url
         )
-        self.state = AvatarState.GUILD
+        embed.description = "**View in browser**\n" + get_browser_links(
+            self.guild_asset
+        )
+        self.state = AssetState.GUILD
         for child in self.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
         button.style = discord.ButtonStyle.blurple
         await interaction.response.edit_message(view=self, embed=embed)
 
-    @discord.ui.button(label="User Avatar", style=discord.ButtonStyle.grey)
-    async def user_avatar_button(
+    @discord.ui.button(style=discord.ButtonStyle.grey)
+    async def user_asset_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         if not interaction.message:
             return
 
-        embed = interaction.message.embeds[0].set_image(url=self.user_avatar.url)
+        embed = interaction.message.embeds[0].set_image(url=self.user_asset.url)
         embed.description = "**View in browser**\n" + get_browser_links(
-            self.user_avatar
+            self.user_asset
         )
-        self.state = AvatarState.USER
+        self.state = AssetState.USER
         for child in self.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
@@ -254,7 +270,7 @@ class AvatarsView(discord.ui.View):
         await interaction.response.edit_message(view=self, embed=embed)
 
     @discord.ui.button(label="💾", style=discord.ButtonStyle.grey)
-    async def save_current_avatar(
+    async def save_current_asset(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         if not interaction.message:
@@ -262,11 +278,11 @@ class AvatarsView(discord.ui.View):
 
         avatar: discord.Asset
         match self.state:
-            case AvatarState.USER:
-                avatar = self.user_avatar
-            case AvatarState.GUILD:
-                assert self.guild_avatar is not None
-                avatar = self.guild_avatar
+            case AssetState.USER:
+                avatar = self.user_asset
+            case AssetState.GUILD:
+                assert self.guild_asset is not None
+                avatar = self.guild_asset
 
         file = await avatar.to_file()
         embed = interaction.message.embeds[0].set_image(
@@ -281,7 +297,7 @@ class AvatarsView(discord.ui.View):
             view=self, embed=embed, attachments=[file]
         )
         await interaction.followup.send(
-            "The selected avatar has been saved in this message for future reference!",
+            f"The selected {self.asset_name.lower()} has been saved in this message for future reference!",
             ephemeral=True,
         )
         self.stop()
@@ -312,8 +328,12 @@ class StickerInfoView(discord.ui.View):
             self.steal.disabled = True
 
     @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
-    async def steal(self, interaction: discord.Interaction, button: discord.ui.Button):
-        assert interaction.guild and isinstance(self.sticker, discord.GuildSticker)
+    async def steal(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        assert interaction.guild and isinstance(
+            self.sticker, discord.GuildSticker
+        )
 
         try:
             # try to create the sticker
@@ -366,7 +386,9 @@ class ChooseOutputView(discord.ui.View):
         self.user_id = user_id
         super().__init__(**kwargs)
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(
+        self, interaction: discord.Interaction, /
+    ) -> bool:
         return interaction.user.id == self.user_id
 
     @discord.ui.button(label="Reroll", style=discord.ButtonStyle.primary)
