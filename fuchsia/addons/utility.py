@@ -383,7 +383,7 @@ class Utility(fuchsia.Addon):
         else:
             user_object = user
 
-        if user_object.banner is None and (
+        if user_object.banner is None or (
             isinstance(user_object, discord.Member)
             and user_object.guild_banner is None
         ):
@@ -391,7 +391,6 @@ class Utility(fuchsia.Addon):
                 "User does not have a banner."
             )
 
-        assert user_object.banner  # we know it's not None now
         banner = user_object.banner
         allow_save = get_ephemeral(interaction, interaction.namespace)
         if (
