@@ -58,7 +58,7 @@ class RecordContainer(metaclass=ABCMeta):
 
         super().__setattr__("ready", True)
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         object.__setattr__(instance, "hooks", {})
 
