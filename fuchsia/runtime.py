@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 import discord
 
@@ -11,9 +10,6 @@ from fuchsia.classes.app_commands import AutoEphemeralAppCommand
 from fuchsia.classes.interaction import AutoEphemeralInteractionResponse
 from fuchsia.tools import Patcher
 from fuchsia.tools.formatters import format_exception
-
-if TYPE_CHECKING:
-    from typing import Any
 
 logger = logging.getLogger("fuchsia")
 

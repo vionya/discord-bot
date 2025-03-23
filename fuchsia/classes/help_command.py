@@ -128,7 +128,6 @@ def generate_param_help(command: app_commands.Command) -> str:
 
 class AppHelpCommand(AutoEphemeralAppCommand):
     """Displays help for the bot.
-
     ## Command Lists
     In a list of commands, command types are identified symbolically:
     - A `⑄` symbol next to a listed command identifies it as a standalone[JOIN]
@@ -136,7 +135,6 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     - A `⑃` symbol next to a listed command identifies it as a command group
     - A `≡` symbol next to a listed command identifies it as a context[JOIN]
     menu command
-
     ## Using Slash Commands
     fuchsia uses a custom system for slash commands which lets you[JOIN]
     customize your experience. Each command automatically includes a[JOIN]
@@ -160,12 +158,10 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     def __init__(self, bot: Fuchsia):
         self.bot = bot
 
-        # Copy the __doc__ from the class to the actual callback
-        self._callback_impl.__func__.__doc__ = self.__class__.__doc__
         super().__init__(
             name="help",
-            description=(self.__class__.__doc__ or "").splitlines()[0],
-            callback=self._callback_impl,  # type: ignore
+            description=(self.__class__.__doc__ or ""),
+            callback=self._callback_impl,
         )
         self.binding = self
         self.autocomplete("command")(self._autocomplete_impl)
@@ -179,9 +175,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
         cmd = (
             self.bot.tree.get_command(command, type=discord.AppCommandType.user)
-            or self.bot.tree.get_command(
-                command, type=discord.AppCommandType.message
-            )
+            or self.bot.tree.get_command(command, type=discord.AppCommandType.message)
             or recursive_get_command(self.bot.tree, command)
         )
         if not cmd:
@@ -189,9 +183,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         else:
             return await self.send_command_help(interaction, cmd)
 
-    async def _autocomplete_impl(
-        self, interaction: discord.Interaction, current: str
-    ):
+    async def _autocomplete_impl(self, _: discord.Interaction, current: str):
         all_commands = chain(
             self.bot.tree.walk_commands(),
             self.bot.tree.get_commands(type=discord.AppCommandType.user),
@@ -205,8 +197,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 value=k.qualified_name,
             )
             for k in all_commands
-            if current.casefold().removeprefix("/")
-            in k.qualified_name.casefold()
+            if current.casefold().removeprefix("/") in k.qualified_name.casefold()
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
