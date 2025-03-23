@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
-from typing import Optional
 
 import discord
 from discord import app_commands
@@ -18,7 +16,6 @@ from fuchsia.tools import (
     is_registered_profile,
     prompt_user,
 )
-from fuchsia.tools.checks import is_registered_profile_predicate
 
 from .auxiliary.profile import (
     SETTINGS_MAPPING,

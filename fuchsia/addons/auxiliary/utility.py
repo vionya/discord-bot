@@ -5,11 +5,10 @@ An auxiliary module for the `Utility` addon
 """
 from __future__ import annotations
 
-import asyncio
 import random
 from collections import Counter
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 
@@ -177,7 +176,7 @@ class InfoButtons(discord.ui.View):
     @discord.ui.button(
         custom_id="fuchsia:privacy policy", label="Privacy Policy", row=1
     )
-    async def callback(self, interaction: discord.Interaction, button):
+    async def callback(self, interaction: discord.Interaction, _):
         await interaction.response.send_message(
             embed=self.privacy_embed, ephemeral=True
         )
@@ -343,7 +342,7 @@ class StickerInfoView(discord.ui.View):
 
     @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
     async def steal(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         assert interaction.guild and isinstance(
             self.sticker, discord.GuildSticker
@@ -407,7 +406,7 @@ class ChooseOutputView(discord.ui.View):
 
     @discord.ui.button(label="Reroll", style=discord.ButtonStyle.primary)
     async def reroll_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         (selection, table) = get_choice(self.options)
         assert interaction.message

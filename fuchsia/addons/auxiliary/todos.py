@@ -110,7 +110,7 @@ class TodoShowView(discord.ui.View):
         label="Edit Todo", emoji="✏️", style=discord.ButtonStyle.primary
     )
     async def edit_todo(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         modal = TodoEditModal(self.addon, todo=self.todo)
         await interaction.response.send_modal(modal)

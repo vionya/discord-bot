@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import partial
-from random import randint
 
 import asyncpg
 import discord

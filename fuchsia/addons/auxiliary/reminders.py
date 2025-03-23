@@ -72,7 +72,7 @@ class ReminderShowView(discord.ui.View):
         label="Edit Reminder", emoji="✏️", style=discord.ButtonStyle.primary
     )
     async def edit_reminder(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         modal = ReminderEditModal(self.db, reminder=self.reminder)
         await interaction.response.send_modal(modal)

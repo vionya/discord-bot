@@ -7,7 +7,7 @@ import zoneinfo
 from abc import ABCMeta, abstractmethod
 from collections.abc import Mapping, MutableMapping, MutableSet
 from functools import cache
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from fuchsia.tools import humanize_snake_case
 
@@ -58,7 +58,7 @@ class RecordContainer(metaclass=ABCMeta):
 
         super().__setattr__("ready", True)
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls):
         instance = super().__new__(cls)
         object.__setattr__(instance, "hooks", {})
 
@@ -226,7 +226,7 @@ class FuchsiaGuildConfig(RecordContainer):
 T = TypeVar("T")
 
 
-class TimedSet(MutableSet, Generic[T]):
+class TimedSet(MutableSet[T]):
     __slots__ = ("__underlying_set", "__running_store", "loop", "timeout")
 
     def __init__(
@@ -248,27 +248,27 @@ class TimedSet(MutableSet, Generic[T]):
         await asyncio.sleep(self.timeout)
         self.discard(element)
 
-    def add(self, element: T):
-        if element in self:
-            active = self.__running_store.pop(element)
+    def add(self, value: T):
+        if value in self:
+            active = self.__running_store.pop(value)
             active.cancel()
 
-        self.__underlying_set.add(element)
-        self.__running_store[element] = self.loop.create_task(
-            self.invalidate(element)
+        self.__underlying_set.add(value)
+        self.__running_store[value] = self.loop.create_task(
+            self.invalidate(value)
         )
 
-    def discard(self, element: T):
-        self.__running_store[element].cancel()
-        del self.__running_store[element]
-        self.__underlying_set.discard(element)
+    def discard(self, value: T):
+        self.__running_store[value].cancel()
+        del self.__running_store[value]
+        self.__underlying_set.discard(value)
 
     def clear(self):
         for task in self.__running_store.values():
             task.cancel()
         self.__underlying_set.clear()
 
-    def __contains__(self, o: T) -> bool:
+    def __contains__(self, o: object) -> bool:
         return self.__underlying_set.__contains__(o)
 
     def __iter__(self):
@@ -282,7 +282,7 @@ KT = TypeVar("KT")
 VT = TypeVar("VT")
 
 
-class TimedCache(MutableMapping, Generic[KT, VT]):
+class TimedCache(MutableMapping[KT, VT]):
     __slots__ = ("_store", "loop", "timeout")
 
     loop: asyncio.AbstractEventLoop
@@ -356,7 +356,7 @@ class Setting(MutableMapping):
     def __setitem__(self, key: str, value: Any):
         self.__setting_data[key] = value
 
-    def __delitem__(self, key: Never):
+    def __delitem__(self, _: Never):
         raise NotImplementedError
 
     def __iter__(self):

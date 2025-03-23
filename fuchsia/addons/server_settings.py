@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
 
 import discord
 from discord import app_commands
 
 import fuchsia
-from fuchsia.classes.transformers import command_transformer
 from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
     add_setting_autocomplete,
@@ -19,7 +17,6 @@ from fuchsia.tools import (
     prompt_user,
 )
 from fuchsia.tools.checks import owner_or_admin_predicate
-from fuchsia.types.commands import AnyCommand
 
 from .auxiliary.server_settings import (
     SETTINGS_MAPPING,

@@ -2,7 +2,7 @@
 # Copyright (C) 2025 vionya
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, cast
 
 from discord import AppCommandOptionType, Interaction, app_commands
 from discord.ext.commands import Cog
@@ -25,10 +25,7 @@ def get_ephemeral(
     namespace: Optional[app_commands.Namespace | dict[str, Any]] = None,
 ) -> bool:
     """Given an Interaction and a namespace, determines whether or not the output should be ephemeral"""
-    if TYPE_CHECKING:
-        bot = cast(Fuchsia, interaction.client)
-    else:
-        bot = interaction.client
+    bot = cast(Fuchsia, interaction.client)
 
     user = interaction.user
 

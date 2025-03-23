@@ -39,7 +39,7 @@ class PeriodicTimer:
         self.is_stopped = False
         self.logger = logging.getLogger(callback.__module__)
 
-    def __get__(self, instance: object | None, cls):
+    def __get__(self, instance: object | None, _):
         if instance is None:
             return self
 

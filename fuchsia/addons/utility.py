@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import random
 import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -30,7 +29,7 @@ from fuchsia.modules import (
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
 from fuchsia.tools.decorators import singleton
-from fuchsia.tools.formatters import Table, full_timestamp
+from fuchsia.tools.formatters import full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
@@ -419,29 +418,6 @@ class Utility(fuchsia.Addon):
         )
 
         await interaction.response.send_message(embed=embed, view=view)
-        # id = (user or interaction.user).id
-        # try:
-        #     user_object = await interaction.guild.fetch_member(id)  # type: ignore
-        # except (discord.HTTPException, AttributeError):
-        #     user_object = await self.bot.fetch_user(id)
-
-        # if not user_object.banner:
-        #     return await interaction.response.send_message(
-        #         "User does not have a banner."
-        #     )
-
-        # embed = (
-        #     fuchsia.Embed(
-        #         description=(
-        #             "**View banner in browser**\n"
-        #             + get_browser_links(user_object.banner)
-        #             + "\n\n"
-        #         )
-        #     )
-        #     .set_image(url=user_object.banner.with_size(4096).url)
-        #     .set_author(name=f"{user_object.display_name} ({user_object})")
-        # )
-        # await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="serverinfo")
     @app_commands.allowed_contexts(

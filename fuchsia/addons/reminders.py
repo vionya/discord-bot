@@ -150,7 +150,7 @@ class Reminder:
             ):
                 content = f"<@{self.user_id}> {content}"
 
-            msg = await dest.send(
+            await dest.send(
                 content,
                 embed=embed,
                 allowed_mentions=discord.AllowedMentions(
@@ -223,7 +223,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             for reminder in reminder_list:
                 await reminder.poll(now)
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.poll_reminders.shutdown()
 
     async def add_reminder(

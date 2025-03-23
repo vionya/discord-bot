@@ -247,7 +247,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
 
         self.send_queued_highlights.start()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.send_queued_highlights.shutdown()
 
     @cached_property  # Cache to avoid being re-computed after every message

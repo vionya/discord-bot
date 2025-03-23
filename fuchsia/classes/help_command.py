@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from operator import attrgetter
 from typing import TYPE_CHECKING, Any, Optional
 from itertools import chain
 
