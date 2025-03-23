@@ -55,7 +55,7 @@ class CreateProfileView(discord.ui.View):
         await self.edit_original_response(view=self)
 
     @discord.ui.button(
-        label="Create Profile & Run Command!", style=discord.ButtonStyle.primary
+        label="Create a Profile & Run Command", style=discord.ButtonStyle.primary
     )
     async def create_profile_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
@@ -84,8 +84,14 @@ async def is_registered_profile_predicate(interaction: discord.Interaction):
 
     if interaction.user.id not in bot.profiles:
         view = CreateProfileView(interaction.user.id, interaction)
-        msg = await interaction.response.send_message(
-            "You don't have a profile! Create one now to run this command",
+        await interaction.response.send_message(
+            "You don't have a profile! Press the button below to create a"
+            " profile and immediately run this command"
+            "\n-# Creating a profile doesn't store any data other than your"
+            " publicly-available Discord user ID, and any custom content that"
+            " you explicitly provide via using fuchsia. You can delete this"
+            " profile at any time via `/profile delete`, and all data related"
+            " to you will be immediately removed from the database",
             view=view,
         )
         # backpatch the message onto the view
