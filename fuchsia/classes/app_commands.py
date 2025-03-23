@@ -25,7 +25,10 @@ def get_ephemeral(
     namespace: Optional[app_commands.Namespace | dict[str, Any]] = None,
 ) -> bool:
     """Given an Interaction and a namespace, determines whether or not the output should be ephemeral"""
-    bot = cast(Fuchsia, interaction.client)
+    if TYPE_CHECKING:
+        bot = cast(Fuchsia, interaction.client)
+    else:
+        bot = interaction.client
 
     user = interaction.user
 
