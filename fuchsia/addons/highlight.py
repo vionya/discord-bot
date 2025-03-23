@@ -41,7 +41,7 @@ class DefaultAvatars(Enum):
     Pink = "<:_:863449887403147314>"
 
 
-MAX_TRIGGERS = 100
+MAX_TRIGGERS = 256
 CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
 
 
