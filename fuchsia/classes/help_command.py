@@ -158,9 +158,11 @@ class AppHelpCommand(AutoEphemeralAppCommand):
     def __init__(self, bot: Fuchsia):
         self.bot = bot
 
+        # Copy the __doc__ from the class to the actual callback
+        self._callback_impl.__func__.__doc__ = self.__class__.__doc__  # type: ignore
         super().__init__(
             name="help",
-            description=(self.__class__.__doc__ or ""),
+            description=(self.__class__.__doc__ or "").splitlines()[0],
             callback=self._callback_impl,
         )
         self.binding = self
