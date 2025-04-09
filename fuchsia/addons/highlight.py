@@ -43,6 +43,7 @@ class DefaultAvatars(Enum):
 
 MAX_TRIGGERS = 256
 CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
+SPOILER_PATTERN = re.compile(r"\\\|\\\|.*?\\\|\\\|")
 
 
 def format_hl_context(message: discord.Message, is_trigger=False):
@@ -53,12 +54,13 @@ def format_hl_context(message: discord.Message, is_trigger=False):
     )
     # strip markdown and replace custom emoji
     message.content = CUSTOM_EMOJI.sub(
-        "❔", discord.utils.escape_markdown(message.content)
+        "❔",
+        SPOILER_PATTERN.sub(
+            "*[Spoiler]*", discord.utils.escape_markdown(message.content)
+        ),
     )
     if message.attachments:
-        message.content += " *[Attachment x{}]*".format(
-            len(message.attachments)
-        )
+        message.content += " *[Attachment x{}]*".format(len(message.attachments))
     if message.embeds:
         message.content += " *[Embed x{}]*".format(len(message.embeds))
     if message.stickers:
@@ -95,8 +97,7 @@ class Highlight:
 
     def __repr__(self):
         return (
-            "<{0.__class__.__name__} user_id={0.user_id!r} "
-            "content={0.content!r}>"
+            "<{0.__class__.__name__} user_id={0.user_id!r} " "content={0.content!r}>"
         ).format(self)
 
     async def predicate(self, message: discord.Message) -> bool:
@@ -197,13 +198,12 @@ class Highlight:
         )
 
         view = discord.ui.View(timeout=0)
-        view.add_item(
-            discord.ui.Button(url=message.jump_url, label="Jump to message")
-        )
+        view.add_item(discord.ui.Button(url=message.jump_url, label="Jump to message"))
 
         return {
             "content": "{0}: {1}".format(
-                message.author, shorten(message.content, 75)
+                message.author,
+                shorten(SPOILER_PATTERN.sub("*[Spoiler]*", message.content), 75),
             ),
             "embed": embed,
             "view": view,
@@ -236,9 +236,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         for record in await self.bot.db.fetch(
             "SELECT * FROM highlights ORDER BY content ASC"
         ):
-            self.highlights[record["user_id"]].append(
-                Highlight(self.bot, **record)
-            )
+            self.highlights[record["user_id"]].append(Highlight(self.bot, **record))
 
         for profile in self.bot.profiles.values():
             self.grace_periods[profile.user_id] = TimedSet(
@@ -280,9 +278,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
             self.grace_periods[message.author.id].add(message.channel.id)
 
         # Loop over every highlight that matches the message content
-        for hl in filter(
-            lambda hl: hl.matches(message.content), self.flat_highlights
-        ):
+        for hl in filter(lambda hl: hl.matches(message.content), self.flat_highlights):
             # If the channel is in a grace period, ignore
             if message.channel.id in self.grace_periods[hl.user_id]:
                 continue
@@ -324,9 +320,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
                 return
             self.grace_periods.pop(user_id).clear()
 
-        self.grace_periods[profile.user_id] = TimedSet(
-            timeout=profile.hl_timeout * 60
-        )
+        self.grace_periods[profile.user_id] = TimedSet(timeout=profile.hl_timeout * 60)
 
     # Need to dynamically account for deleted profiles
     @fuchsia.Addon.recv("profile_delete")
@@ -336,9 +330,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)
 
     @app_commands.command(name="list")
@@ -360,9 +352,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
                 name=f"{interaction.user}'s highlights",
                 icon_url=interaction.user.display_avatar,
             )
-            .set_footer(
-                text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"
-            ),
+            .set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"),
         )
         await menu.start(interaction)
 
@@ -390,9 +380,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         if content in [
             hl.content for hl in self.highlights.get(interaction.user.id, [])
         ]:
-            raise ValueError(
-                "Cannot have multiple highlights with the same content."
-            )
+            raise ValueError("Cannot have multiple highlights with the same content.")
 
         result = await self.bot.db.fetchrow(
             """
@@ -419,9 +407,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
     @app_commands.command(name="remove")
     @app_commands.rename(index="highlight")
     @app_commands.describe(index="A highlight to remove")
-    async def highlight_remove(
-        self, interaction: discord.Interaction, index: str
-    ):
+    async def highlight_remove(self, interaction: discord.Interaction, index: str):
         """Remove a highlight"""
         if is_clear_all(index):
             highlights = self.highlights.get(interaction.user.id, []).copy()
@@ -429,13 +415,9 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
 
         elif is_valid_index(index):
             try:
-                highlights = [
-                    self.highlights[interaction.user.id].pop(int(index) - 1)
-                ]
+                highlights = [self.highlights[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
-                raise IndexError(
-                    "One or more of the provided indices is invalid."
-                )
+                raise IndexError("One or more of the provided indices is invalid.")
 
         else:
             raise TypeError("Invalid input provided.")
@@ -462,12 +444,9 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
             return []
 
         highlights = [
-            highlight.content
-            for highlight in self.highlights[interaction.user.id]
+            highlight.content for highlight in self.highlights[interaction.user.id]
         ]
-        return generate_autocomplete_list(
-            highlights, current, insert_wildcard=True
-        )
+        return generate_autocomplete_list(highlights, current, insert_wildcard=True)
 
     def perform_blocklist_action(
         self, *, profile: FuchsiaUser, ids: list[int], action="block"
@@ -507,9 +486,9 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
 
         ids = [
             *map(
-                lambda obj: obj.id
-                if isinstance(obj, discord.abc.Snowflake)
-                else int(obj),
+                lambda obj: (
+                    obj.id if isinstance(obj, discord.abc.Snowflake) else int(obj)
+                ),
                 filter(None, [user, channel, id]),
             )
         ]
@@ -533,8 +512,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
             return "`{0}` [{1}]".format(id, mention)
 
         menu = ButtonsMenu.from_iterable(
-            [*map(transform_mention, profile.hl_blocks)]
-            or ["No highlight blocks"],
+            [*map(transform_mention, profile.hl_blocks)] or ["No highlight blocks"],
             per_page=10,
             use_embed=True,
             template_embed=fuchsia.Embed().set_author(
@@ -571,16 +549,14 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
 
         ids = [
             *map(
-                lambda obj: obj.id
-                if isinstance(obj, discord.abc.Snowflake)
-                else int(obj),
+                lambda obj: (
+                    obj.id if isinstance(obj, discord.abc.Snowflake) else int(obj)
+                ),
                 filter(None, [user, channel, id]),
             )
         ]
 
-        self.perform_blocklist_action(
-            profile=profile, ids=ids, action="unblock"
-        )
+        self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
         await send_confirmation(interaction, predicate="updated your blocklist")
 
     @highlight_unblock.autocomplete("id")
@@ -591,11 +567,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
 
         def transform_mention(id):
             mention: Optional[
-                discord.Guild
-                | discord.TextChannel
-                | PartialUser
-                | discord.User
-                | str
+                discord.Guild | discord.TextChannel | PartialUser | discord.User | str
             ] = getattr(
                 self.bot.get_guild(id),
                 "name",
@@ -609,9 +581,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
             return "{0} [{1}]".format(id, mention or "Unknown")
 
         return [
-            discord.app_commands.Choice(
-                name=transform_mention(_id), value=str(_id)
-            )
+            discord.app_commands.Choice(name=transform_mention(_id), value=str(_id))
             for _id in filter(
                 lambda block: current in block, map(str, profile.hl_blocks)
             )
