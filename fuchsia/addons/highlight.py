@@ -43,7 +43,7 @@ class DefaultAvatars(Enum):
 
 MAX_TRIGGERS = 256
 CUSTOM_EMOJI = re.compile(r"<a?:[a-zA-Z0-9_]{2,}:\d+>")
-SPOILER_PATTERN = re.compile(r"\\\|\\\|.*?\\\|\\\|")
+SPOILER_PATTERN = re.compile(r"\|\|.*?\|\|")
 
 
 def format_hl_context(message: discord.Message, is_trigger=False):
@@ -55,16 +55,16 @@ def format_hl_context(message: discord.Message, is_trigger=False):
     # strip markdown and replace custom emoji
     message.content = CUSTOM_EMOJI.sub(
         "❔",
-        SPOILER_PATTERN.sub(
-            "*[Spoiler]*", discord.utils.escape_markdown(message.content)
+        discord.utils.escape_markdown(
+            SPOILER_PATTERN.sub("[Spoiler]", message.content)
         ),
     )
     if message.attachments:
-        message.content += " *[Attachment x{}]*".format(len(message.attachments))
+        message.content += " [Attachment x{}]".format(len(message.attachments))
     if message.embeds:
-        message.content += " *[Embed x{}]*".format(len(message.embeds))
+        message.content += " [Embed x{}]".format(len(message.embeds))
     if message.stickers:
-        message.content += " *[Sticker x{}]*".format(len(message.stickers))
+        message.content += " [Sticker x{}]".format(len(message.stickers))
 
     match int(message.author.default_avatar.key):
         case 1:
@@ -188,7 +188,7 @@ class Highlight:
         triggers: set[discord.Message] = {message, *later_triggers}
         async for m in message.channel.history(limit=6, around=message):
             if len(content + m.content) > 1500:  # Don't exceed embed limits
-                m.content = "*[Omitted due to length]*"
+                m.content = "[Omitted due to length]"
             formatted = format_hl_context(m, m in triggers)
             content = f"{formatted}\n{content}"
 
@@ -203,7 +203,7 @@ class Highlight:
         return {
             "content": "{0}: {1}".format(
                 message.author,
-                shorten(SPOILER_PATTERN.sub("*[Spoiler]*", message.content), 75),
+                shorten(SPOILER_PATTERN.sub("[Spoiler]", message.content), 75),
             ),
             "embed": embed,
             "view": view,
