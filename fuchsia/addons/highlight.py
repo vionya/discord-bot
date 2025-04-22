@@ -377,8 +377,9 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         if len(self.highlights.get(interaction.user.id, [])) >= MAX_TRIGGERS:
             raise ValueError("You've used up all of your highlight slots!")
 
+        content = content.casefold()
         if content in [
-            hl.content for hl in self.highlights.get(interaction.user.id, [])
+            hl.content.casefold() for hl in self.highlights.get(interaction.user.id, [])
         ]:
             raise ValueError("Cannot have multiple highlights with the same content.")
 
