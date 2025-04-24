@@ -186,7 +186,7 @@ class Highlight:
     ):
         content = ""
         triggers: set[discord.Message] = {message, *later_triggers}
-        async for m in message.channel.history(limit=6, around=message):
+        async for m in message.channel.history(limit=7, around=message):
             if len(content + m.content) > 1500:  # Don't exceed embed limits
                 m.content = "[Omitted due to length]"
             formatted = format_hl_context(m, m in triggers)
