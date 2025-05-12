@@ -278,7 +278,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         self,
         interaction: discord.Interaction,
         when: str,
-        content: app_commands.Range[str, 1, Reminder.MAX_LEN] = "…",
+        content: app_commands.Range[str, 1, Reminder.MAX_LEN],
         repeat: str | None = None,
         send_here: bool | None = None,
     ):
