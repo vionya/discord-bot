@@ -197,7 +197,8 @@ class Highlight:
         async for m in message.channel.history(limit=7, around=message):
             if len(content + m.content) > 1500:  # Don't exceed embed limits
                 m.content = "[Omitted due to length]"
-            formatted = format_hl_context(m, m in triggers)
+            is_blocked = m.author.id in self.bot.profiles[self.user_id].hl_blocks
+            formatted = format_hl_context(m, m in triggers, is_blocked)
             content = f"{formatted}\n{content}"
 
         embed = fuchsia.Embed(
