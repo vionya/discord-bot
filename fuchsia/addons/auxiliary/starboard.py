@@ -54,7 +54,7 @@ def extract_tenor_gif(embed: discord.Embed):
     assert embed.thumbnail.url
     url = URL(embed.thumbnail.url)
     part = url.parts[1]
-    return URL(f"https://media1.tenor.com/m/{part[:-1] + 'C'}/{url.name}").with_suffix(
+    return URL(f"https://media.tenor.com/{part[:-1] + 'C'}/{url.name}").with_suffix(
         ".gif"
     )
 
