@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 
 import fuchsia
-from fuchsia.modules import ButtonsMenu
+from fuchsia.modules import ButtonsMenu, ContainerPages
 from fuchsia.tools import (
     add_setting_autocomplete,
     convert_setting,
@@ -80,40 +80,38 @@ class Profile(fuchsia.Addon, app_group=True):
         async def profile_settings_list(self, interaction: discord.Interaction):
             """Lists profile settings"""
             profile = self.addon.bot.profiles[interaction.user.id]
-            embeds = []
 
+            components = []
             for setting, setting_info in SETTINGS_MAPPING.items():
                 description = (setting_info["description"] or "").format(
                     getattr(profile, setting)
                 )
-                embed = (
-                    fuchsia.Embed(
-                        title=setting_info.display_name,
-                        description=description,
-                    )
-                    .set_thumbnail(url=interaction.user.display_avatar)
-                    .set_author(
-                        name=f"Settings for {interaction.user.display_name}",
-                    )
+                component = ui.Container(
+                    ui.TextDisplay(f"### {setting_info.display_name}"),
+                    ui.Section(
+                        ui.TextDisplay(description, id=1),
+                        accessory=ui.Thumbnail(
+                            interaction.user.display_avatar.url
+                        ),
+                    ),
                 )
-                embeds.append(embed)
+                components.append(component)
 
-            menu = ButtonsMenu.from_embeds(embeds)
-
-            menu.add_item(
-                ChangeSettingButton(
-                    addon=self.addon,
-                    label="Change this setting",
-                    style=discord.ButtonStyle.primary,
-                    row=0,
-                )
-            )
-            menu.add_item(
-                ResetSettingButton(
-                    addon=self.addon,
-                    label="Reset this setting",
-                    style=discord.ButtonStyle.danger,
-                    row=0,
+            menu = ButtonsMenu(ContainerPages(components))
+            menu.add_extra_component(
+                ui.ActionRow(
+                    ChangeSettingButton(
+                        addon=self.addon,
+                        label="Change this setting",
+                        style=discord.ButtonStyle.primary,
+                        row=0,
+                    ),
+                    ResetSettingButton(
+                        addon=self.addon,
+                        label="Reset this setting",
+                        style=discord.ButtonStyle.danger,
+                        row=0,
+                    ),
                 )
             )
 

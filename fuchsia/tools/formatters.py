@@ -1,10 +1,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025 vionya
+from __future__ import annotations
+
+import re
 import traceback
 from enum import Enum
 from logging import Formatter, LogRecord
 from types import TracebackType
-import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import discord
 
 # Taken from typeshed
 ExcInfo = tuple[type[BaseException], BaseException, TracebackType]
@@ -198,3 +204,29 @@ def full_timestamp(timestamp: float) -> str:
     date = f"<t:{timestamp:.0f}:d>"
     time = f"<t:{timestamp:.0f}:T>"
     return date + " " + time
+
+
+class DefaultAvatars(Enum):
+    Blurple = "<:_:863449882088833065>"
+    Grey = "<:_:863449883121418320>"
+    Green = "<:_:863449884157280307>"
+    Orange = "<:_:863449885088808970>"
+    Red = "<:_:863449885834739712>"
+    Pink = "<:_:863449887403147314>"
+
+
+def user_to_default_avatar(user: discord.User | discord.Member) -> str:
+    match int(user.default_avatar.key):
+        case 1:
+            enum_member = DefaultAvatars.Grey
+        case 2:
+            enum_member = DefaultAvatars.Green
+        case 3:
+            enum_member = DefaultAvatars.Orange
+        case 4:
+            enum_member = DefaultAvatars.Red
+        case 5:
+            enum_member = DefaultAvatars.Pink
+        case _:
+            enum_member = DefaultAvatars.Blurple
+    return enum_member.value

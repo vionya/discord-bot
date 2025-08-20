@@ -23,6 +23,7 @@ from fuchsia.modules import (
     ButtonsMenu,
     DropdownMenu,
     EmbedPages,
+    ContainerPages,
     Interactors,
     cse,
     dictionary,
@@ -40,7 +41,7 @@ from .auxiliary.utility import (
     definitions_to_embed,
     get_browser_links,
     get_choice,
-    result_to_embed,
+    result_to_container,
 )
 
 PREMIUM_ICON_MAPPING = {
@@ -150,22 +151,15 @@ class Utility(fuchsia.Addon):
     ):
         resp = await self.google.search(query, image=image, results=10)
 
-        embeds = [
-            *map(
-                lambda r: result_to_embed(r).set_author(
-                    name=f'Results for "{shorten(query, 50)}"'
-                ),
-                resp,
-            )
-        ]
-        if not embeds:
+        components = [*map(lambda r: result_to_container(query, r), resp)]
+        if not components:
             raise RuntimeError("Search returned no results")
 
-        pages = EmbedPages(embeds)
+        pages = ContainerPages(components)
         menu = DropdownMenu.from_pages(
             pages,
-            embed_auto_label=True,
-            embed_auto_desc=True,
+            option_labels=[result.title for result in resp],
+            option_desc=[result.snippet for result in resp],
             private_interactors=Interactors.EVERYONE,
         )
         await menu.start(interaction)
@@ -188,7 +182,6 @@ class Utility(fuchsia.Addon):
         Use the `dictionary` parameter to choose between the standard[JOIN]
         dictionary and https://urbandictionary.com for definitions
         """
-        embeds = []
         try:
             match target_dict:
                 case "standard":
@@ -198,13 +191,18 @@ class Utility(fuchsia.Addon):
         except dictionary.DefinitionError:
             raise RuntimeError("No definition found")
 
-        embeds.extend(definitions_to_embed(resp))
-        if not embeds:
+        components, label_descs = [], []
+        for comp, (l, d) in definitions_to_embed(resp):
+            components.append(comp)
+            label_descs.append((l, d))
+        if not components:
             raise RuntimeError("No definition found")
 
-        pages = EmbedPages(embeds[:25])
+        pages = ContainerPages(components[:25])
         menu = DropdownMenu.from_pages(
-            pages, embed_auto_label=True, embed_auto_desc=True
+            pages,
+            option_labels=[label for (label, _) in label_descs],
+            option_desc=[desc for (_, desc) in label_descs],
         )
         await menu.start(interaction)
 
@@ -670,7 +668,7 @@ class Utility(fuchsia.Addon):
             for char in set(content)
         ]
         menu = ButtonsMenu.from_iterable(
-            output_lines, per_page=10, use_embed=True
+            output_lines, per_page=10, use_container=True
         )
         await menu.start(interaction)
 

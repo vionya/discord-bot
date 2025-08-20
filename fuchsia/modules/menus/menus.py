@@ -16,6 +16,7 @@ from typing import (
 )
 import logging
 
+from discord import ui
 import discord
 
 from fuchsia.classes.context import FuchsiaContext
@@ -45,10 +46,12 @@ class Interactors(Flag):
     BOT_OWNER = auto()
 
 
-class BaseMenu(Generic[T], discord.ui.View):
+class BaseMenu[T: Pages](ui.LayoutView):
     bot: Fuchsia
+    pages: T
 
     __slots__ = (
+        "container",
         "pages",
         "message",
         "running",
@@ -60,6 +63,7 @@ class BaseMenu(Generic[T], discord.ui.View):
         "private_interactors",
         "guild_interactors",
         "_current_page",
+        "_extra_components",
     )
 
     def __init__(
@@ -72,6 +76,9 @@ class BaseMenu(Generic[T], discord.ui.View):
     ):
         super().__init__()
         self.pages = pages
+        self.container = ui.Container()
+        self.add_item(self.container)
+
         self.dm_interactors = dm_interactors
         self.private_interactors = private_interactors
         self.guild_interactors = guild_interactors
@@ -83,6 +90,8 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         self.update_lock = asyncio.Lock()
         self.pages.link(self)
+
+        self._extra_components: list[ui.Item] = []
 
     @classmethod
     def from_iterable(cls, iterable, *, per_page=1, **kwargs):
@@ -121,30 +130,37 @@ class BaseMenu(Generic[T], discord.ui.View):
         """
         self.origin = origin
 
-        send_kwargs = self._get_kwargs(self.pages[0])
+        self._update_menu_view(self.pages[0])
 
         if isinstance(self.origin, FuchsiaContext):
             # In text commands, menus may optionally be sent as replies
             if as_reply:
-                send_kwargs["reference"] = discord.MessageReference(
-                    message_id=self.origin.message.id,
-                    channel_id=self.origin.channel.id,
+                self.message = await self.origin.send(
+                    view=self,
+                    reference=discord.MessageReference(
+                        message_id=self.origin.message.id,
+                        channel_id=self.origin.channel.id,
+                    ),
                 )
-            self.message = await self.origin.send(**send_kwargs)
+            else:
+                self.message = await self.origin.send(view=self)
             self.bot = self.origin.bot
             self.author = self.origin.author
 
         else:
             if force_ephemeral is True:
-                send_kwargs.update(ephemeral=True)
-            await self.origin.response.send_message(**send_kwargs)
+                await self.origin.response.send_message(
+                    view=self, ephemeral=True
+                )
+            else:
+                await self.origin.response.send_message(view=self)
             self.bot = self.origin.client  # type: ignore
             self.author = self.origin.user
 
         self.running = True
 
     @final
-    def _get_kwargs(self, item: str | discord.Embed) -> dict[str, Any]:
+    def _update_menu_view(self, item: str | discord.Embed | ui.Container):
         """
         Generates kwargs to update the displayed menu
 
@@ -156,23 +172,33 @@ class BaseMenu(Generic[T], discord.ui.View):
 
         :rtype: ``dict[str, Any]``
         """
-        kwargs: dict[str, Any] = {"view": self}
+        self.clear_items()
+        self.container.clear_items()
+        self.update_container(item)
+        for component in self._extra_components:
+            self.container.add_item(component)
+        self.add_item(self.container)
 
+    def update_container(self, item: str | discord.Embed | ui.Container):
         # If the item is an embed, put the page number in the footer
         if isinstance(item, discord.Embed):
-            footer = f"Page {self.page_index + 1}/{len(self.pages)}"
+            if "title" in self.pages.template_embed:
+                self.container.add_item(
+                    ui.TextDisplay(f'### {self.pages.template_embed["title"]}')
+                )
+            self.container.add_item(ui.TextDisplay(item.description or ""))
+
             # if the template embed has a footer then we want to prepend it
             if "footer" in self.pages.template_embed:
                 template_footer = self.pages.template_embed["footer"]["text"]
-                footer = f"{template_footer.strip()} | {footer}"
-            item.set_footer(text=footer)
-            kwargs["embed"] = item
+                self.container.add_item(ui.TextDisplay(f"-# {template_footer}"))
 
         # If the item is a string, put the page number at the end of the string
         elif isinstance(item, str):
-            item += f"\nPage {self.page_index + 1}/{len(self.pages)}"
-            kwargs["content"] = item
-        return kwargs
+            self.add_item(ui.TextDisplay(item))
+
+        elif isinstance(item, ui.Container):
+            self.container = item.copy()
 
     @property
     def page_index(self):
@@ -196,9 +222,9 @@ class BaseMenu(Generic[T], discord.ui.View):
         :type interaction: ``discord.Interaction``
         """
         await self.on_page_update()
-        kwargs = self._get_kwargs(self.current_page)
+        self._update_menu_view(self.current_page)
 
-        await interaction.response.edit_message(**kwargs)
+        await interaction.response.edit_message(view=self)
 
     @final
     async def refresh_page(self):
@@ -207,16 +233,16 @@ class BaseMenu(Generic[T], discord.ui.View):
         """
         # Edits the current page with the contents of the
         # stored pages object
-        kwargs = self._get_kwargs(self.current_page)
+        self._update_menu_view(self.current_page)
 
         # Interactions need to be handled separately
         if isinstance(self.origin, discord.Interaction):
             if not self.origin.response.is_done():
                 await self.origin.response.defer()
-            await self.origin.edit_original_response(**kwargs)
+            await self.origin.edit_original_response(view=self)
 
         elif self.message:
-            await self.message.edit(**kwargs)
+            await self.message.edit(view=self)
 
     @final
     async def close(
@@ -238,7 +264,7 @@ class BaseMenu(Generic[T], discord.ui.View):
             # Otherwise, if closed automatically disable the buttons instead
             # of deleting the message
             else:
-                for item in self.children:
+                for item in self.walk_children():
                     if isinstance(item, discord.ui.Button | discord.ui.Select):
                         item.disabled = True
 
@@ -294,15 +320,21 @@ class BaseMenu(Generic[T], discord.ui.View):
         # an incoming interaction will only have 1 context so elif ladder works
         if interaction.context.guild:
             predicates.append(
-                self._get_interactors_predicate(interaction, self.guild_interactors)
+                self._get_interactors_predicate(
+                    interaction, self.guild_interactors
+                )
             )
         elif interaction.context.dm_channel:
             predicates.append(
-                self._get_interactors_predicate(interaction, self.dm_interactors)
+                self._get_interactors_predicate(
+                    interaction, self.dm_interactors
+                )
             )
         elif interaction.context.private_channel:
             predicates.append(
-                self._get_interactors_predicate(interaction, self.private_interactors)
+                self._get_interactors_predicate(
+                    interaction, self.private_interactors
+                )
             )
 
         return all(predicates)
@@ -331,6 +363,10 @@ class BaseMenu(Generic[T], discord.ui.View):
         """
         ...
 
+    @final
+    def add_extra_component(self, component: ui.Item):
+        self._extra_components.append(component)
+
 
 class PageSelectModal(discord.ui.Modal, title="Go to page"):
     page: discord.ui.TextInput[PageSelectModal] = discord.ui.TextInput(
@@ -346,7 +382,7 @@ class PageSelectModal(discord.ui.Modal, title="Go to page"):
         self.menu = menu
         super().__init__(timeout=30)
 
-    async def on_submit(self, interaction: discord.Interaction, /) -> None:
+    async def on_submit(self, interaction: discord.Interaction, /):
         if not self.page.value.isdecimal():
             return await interaction.response.send_message(
                 "You need to provide a valid number", ephemeral=True
@@ -354,40 +390,61 @@ class PageSelectModal(discord.ui.Modal, title="Go to page"):
         index = int(self.page.value) - 1
         if index < 0 or index > (len(self.menu.pages) - 1):
             return await interaction.response.send_message(
-                "The page number must be in the range of the menu", ephemeral=True
+                "The page number must be in the range of the menu",
+                ephemeral=True,
             )
         self.menu.page_index = index
         await self.menu.update_page(interaction)
 
 
-class ButtonsMenu(BaseMenu[T]):
-    @discord.ui.button(label="ᐊ", row=4)
+class ButtonsMenuRow(ui.ActionRow):
+    __slots__ = ("menu",)
+
+    def __init__(self, menu: BaseMenu):
+        super().__init__()
+        self.menu = menu
+        self.add_item(
+            ui.Button(
+                label=f"{menu.page_index + 1}/{len(menu.pages)}",
+                disabled=True,
+            )
+        )
+
+    @ui.button(label="ᐊ")
     async def previous_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        self.page_index -= 1
-        await self.update_page(interaction)
+        self.menu.page_index -= 1
+        await self.menu.update_page(interaction)
 
-    @discord.ui.button(label="⨉", row=4)
+    @ui.button(label="⨉")
     async def close_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        self.stop()
-        await self.close(interaction=interaction, manual=True)
+        self.menu.stop()
+        await self.menu.close(interaction=interaction, manual=True)
 
-    @discord.ui.button(label="✎", row=4)
-    async def page_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        modal = PageSelectModal(self)
-        await interaction.response.send_modal(modal)
+    # @ui.button(label="✎")
+    # async def page_button(
+    #     self, interaction: discord.Interaction, button: discord.ui.Button
+    # ):
+    #     modal = PageSelectModal(self.menu)
+    #     await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="ᐅ", row=4)
+    @ui.button(label="ᐅ")
     async def next_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        self.page_index += 1
-        await self.update_page(interaction)
+        self.menu.page_index += 1
+        await self.menu.update_page(interaction)
+
+
+class ButtonsMenu[T: Pages](BaseMenu):
+    pages: T
+
+    def update_container(self, item):
+        super().update_container(item)
+        self.container.add_item(ButtonsMenuRow(self))
 
 
 class DropdownMenuItem(discord.ui.Select):
@@ -427,7 +484,9 @@ class DropdownMenuItem(discord.ui.Select):
         # the right and (24 - the number of elements on the left if there are
         # less than 12 on the left, otherwise 12)
         slice_end = (
-            cur_index + 1 + min(len_right, 25 - len_left if len_left < 12 else 12)
+            cur_index
+            + 1
+            + min(len_right, 25 - len_left if len_left < 12 else 12)
         )
         self.options = (
             self.all_options[slice_start:cur_index]
@@ -435,32 +494,45 @@ class DropdownMenuItem(discord.ui.Select):
         )
 
 
-class DropdownMenu(ButtonsMenu, Generic[T]):
+class DropdownMenu[T: Pages](BaseMenu):
     select: DropdownMenuItem
+    pages: T
 
     @classmethod
     def from_pages(
         cls,
-        pages: Pages,
+        pages: T,
         *,
-        embed_auto_label: bool = False,
-        embed_auto_desc: bool = False,
+        option_labels: list[str] | None = None,
+        option_desc: list[str] | None = None,
         **kwargs,
     ):
-        options: list[discord.SelectOption] = []
-        for index, page in enumerate(pages.items, 1):
-            page_num = f"Pg {index}"
-            label = page_num
-            description = None
+        if (option_labels and len(option_labels) != len(pages)) or (
+            option_desc and len(option_desc) != len(pages)
+        ):
+            raise ValueError(
+                "option labels and descriptions must match page count"
+            )
 
-            if isinstance(pages, EmbedPages):
-                page = cast(discord.Embed, page)
-                if embed_auto_label:
-                    label = shorten(page.title or "…", 100)
-                if embed_auto_desc:
-                    description = page_num + shorten(
-                        " - " + (page.description or "…"), 100 - len(page_num)
+        options: list[discord.SelectOption] = []
+        for index, _ in enumerate(pages.items, 1):
+            page_num = f"Pg {index}"
+            label = (
+                page_num
+                if not option_labels
+                else (shorten(option_labels[index - 1] or "…", 100))
+            )
+            description = (
+                None
+                if not option_desc
+                else (
+                    page_num
+                    + shorten(
+                        " - " + (option_desc[index - 1] or "…"),
+                        100 - len(page_num),
                     )
+                )
+            )
 
             options.append(
                 discord.SelectOption(
@@ -472,14 +544,16 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
 
     @classmethod
     def from_options(
-        cls, *, options: list[discord.SelectOption], pages: Pages, **kwargs
+        cls, *, options: list[discord.SelectOption], pages: T, **kwargs
     ):
         if not all(option.value.isdecimal() for option in options):
-            raise TypeError(f"{cls.__name__} options must all have integer values")
+            raise TypeError(
+                f"{cls.__name__} options must all have integer values"
+            )
         instance = cls(pages, **kwargs)
 
-        instance.select = DropdownMenuItem(instance, options=options, row=0)
-        instance.add_item(instance.select)
+        instance.select = DropdownMenuItem(instance, options=options)
+        # instance.add_item(instance.select)
 
         return instance
 
@@ -493,3 +567,8 @@ class DropdownMenu(ButtonsMenu, Generic[T]):
     async def on_page_update(self):
         # update the select menu to appear around the current page
         self.select.update_options_window()
+
+    def update_container(self, item: str | discord.Embed):
+        super().update_container(item)
+        self.container.add_item(ui.ActionRow(self.select))
+        self.container.add_item(ButtonsMenuRow(self))

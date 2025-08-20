@@ -75,13 +75,10 @@ class Todos(fuchsia.Addon, app_group=True, group_name="todo"):
         menu = ButtonsMenu.from_iterable(
             formatted_todos or ["No todos"],
             per_page=10,
-            use_embed=True,
-            template_embed=fuchsia.Embed()
-            .set_author(
-                name=f"{interaction.user}'s todos",
-                icon_url=interaction.user.display_avatar,
-            )
-            .set_footer(text=f"{len(todos)}/{MAX_TODOS} slots used"),
+            use_container=True,
+            template_embed=fuchsia.Embed(
+                title=f"{interaction.user}'s todos"
+            ).set_footer(text=f"{len(todos)}/{MAX_TODOS} slots used"),
         )
         await menu.start(interaction)
 

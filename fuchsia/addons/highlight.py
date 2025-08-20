@@ -25,20 +25,12 @@ from fuchsia.tools import (
     is_valid_index,
     send_confirmation,
     shorten,
+    user_to_default_avatar
 )
 from fuchsia.tools.checks import is_registered_profile_predicate
 
 if TYPE_CHECKING:
     from fuchsia.classes.containers import FuchsiaUser
-
-
-class DefaultAvatars(Enum):
-    Blurple = "<:_:863449882088833065>"
-    Grey = "<:_:863449883121418320>"
-    Green = "<:_:863449884157280307>"
-    Orange = "<:_:863449885088808970>"
-    Red = "<:_:863449885834739712>"
-    Pink = "<:_:863449887403147314>"
 
 
 MAX_TRIGGERS = 256
@@ -73,21 +65,7 @@ def format_hl_context(
         if message.stickers:
             message.content += " [Sticker x{}]".format(len(message.stickers))
 
-    match int(message.author.default_avatar.key):
-        case 1:
-            enum_member = DefaultAvatars.Grey
-        case 2:
-            enum_member = DefaultAvatars.Green
-        case 3:
-            enum_member = DefaultAvatars.Orange
-        case 4:
-            enum_member = DefaultAvatars.Red
-        case 5:
-            enum_member = DefaultAvatars.Pink
-        case _:
-            enum_member = DefaultAvatars.Blurple
-
-    return fmt.format(enum_member.value, message)
+    return fmt.format(user_to_default_avatar(message.author), message)
 
 
 class Highlight:
@@ -197,7 +175,9 @@ class Highlight:
         async for m in message.channel.history(limit=7, around=message):
             if len(content + m.content) > 1500:  # Don't exceed embed limits
                 m.content = "[Omitted due to length]"
-            is_blocked = m.author.id in self.bot.profiles[self.user_id].hl_blocks
+            is_blocked = (
+                m.author.id in self.bot.profiles[self.user_id].hl_blocks
+            )
             formatted = format_hl_context(m, m in triggers, is_blocked)
             content = f"{formatted}\n{content}"
 
@@ -365,13 +345,10 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         menu = ButtonsMenu.from_iterable(
             formatted_hls or ["No highlights"],
             per_page=10,
-            use_embed=True,
-            template_embed=fuchsia.Embed()
-            .set_author(
-                name=f"{interaction.user}'s highlights",
-                icon_url=interaction.user.display_avatar,
-            )
-            .set_footer(
+            use_container=True,
+            template_embed=fuchsia.Embed(
+                title=f"{interaction.user}'s highlights"
+            ).set_footer(
                 text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"
             ),
         )
@@ -551,7 +528,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
             [*map(transform_mention, profile.hl_blocks)]
             or ["No highlight blocks"],
             per_page=10,
-            use_embed=True,
+            use_container=True,
             template_embed=fuchsia.Embed().set_author(
                 name=f"{interaction.user}'s highlight blocks",
                 icon_url=interaction.user.display_avatar,

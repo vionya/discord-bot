@@ -18,7 +18,7 @@ from .autocomplete_helpers import (
 )
 from .checks import is_registered_guild, is_registered_profile
 from .decorators import deprecate, singleton, with_docstring
-from .formatters import humanize_snake_case, shorten
+from .formatters import humanize_snake_case, shorten, user_to_default_avatar
 from .message_helpers import prompt_user, send_confirmation
 from .patcher import Patcher
 

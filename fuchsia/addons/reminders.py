@@ -453,13 +453,10 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         menu = ButtonsMenu.from_iterable(
             formatted_reminders or ["No reminders"],
             per_page=10,
-            use_embed=True,
-            template_embed=fuchsia.Embed()
-            .set_author(
-                name=f"{interaction.user}'s reminders",
-                icon_url=interaction.user.display_avatar,
-            )
-            .set_footer(text=f"{len(reminders)}/{MAX_REMINDERS} slots used"),
+            use_container=True,
+            template_embed=fuchsia.Embed(
+                title=f"{interaction.user}'s reminders"
+            ).set_footer(text=f"{len(reminders)}/{MAX_REMINDERS} slots used"),
         )
         await menu.start(interaction)
 

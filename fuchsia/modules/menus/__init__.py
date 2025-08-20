@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025 vionya
 from .menus import ButtonsMenu, DropdownMenu, Interactors
-from .pages import EmbedPages, Pages
+from .pages import EmbedPages, ContainerPages, Pages

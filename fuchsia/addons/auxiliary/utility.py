@@ -11,6 +11,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 import discord
+from discord import ui
 
 import fuchsia
 from fuchsia.modules.dictionary import (
@@ -23,13 +24,23 @@ if TYPE_CHECKING:
     from fuchsia.modules.cse import SearchResult
 
 
-def result_to_embed(result: SearchResult):
-    embed = fuchsia.Embed(title=result.title, url=result.url)
+def result_to_container(query: str, result: SearchResult):
+    container = discord.ui.Container(
+        ui.TextDisplay(f'-# Results for "{shorten(query, 40)}"'),
+        ui.TextDisplay(f"### [{result.title}]({result.url})"),
+    )
     if result.image_url:
-        embed.set_image(url=result.image_url)
+        container.add_item(
+            ui.MediaGallery().add_item(
+                media=result.image_url,
+                description=(
+                    shorten(result.snippet, 256) if result.snippet else None
+                ),
+            )
+        )
     else:
-        embed.description = result.snippet
-    return embed
+        container.add_item(ui.TextDisplay(shorten(result.snippet, 2000)))
+    return container
 
 
 def definitions_to_embed(
@@ -40,19 +51,18 @@ def definitions_to_embed(
         for definition in resp:
             # construct embed
             # n.b. the shorten calls might accidentally cut off a link but lol
-            embed = (
-                fuchsia.Embed(
-                    description=shorten(definition.definition, 4000),
-                    title=f"{definition.word} (by {definition.author})",
-                )
-                .add_field(
-                    name="Example",
-                    value=shorten(definition.example, 1000),
-                    inline=False,
-                )
-                .add_field(
-                    name="Sourced from Urban Dictionary",
-                    value="[Link]({0}) | \U0001f44d {1} | \U0001f44e {2} | {3}".format(
+            container = discord.ui.Container(
+                ui.TextDisplay(
+                    f"### {definition.word} (by {definition.author})"
+                ),
+                ui.TextDisplay(shorten(definition.definition, 4000)),
+                ui.TextDisplay("**Example**"),
+                ui.TextDisplay(
+                    shorten(definition.example, 1000),
+                ),
+                ui.TextDisplay("**Sourced from Urban Dictionary**"),
+                ui.TextDisplay(
+                    "[Link]({0}) | \U0001f44d {1} | \U0001f44e {2} | {3}".format(
                         definition.permalink,
                         definition.thumbs_up,
                         definition.thumbs_down,
@@ -61,10 +71,9 @@ def definitions_to_embed(
                             definition.written_on, style="R"
                         ),
                     ),
-                    inline=False,
-                )
+                ),
             )
-            yield embed
+            yield container, (definition.word, definition.definition)
     else:
         # this looks really bad but it's really only O(n^2)
         for word in resp.words:
@@ -72,18 +81,19 @@ def definitions_to_embed(
                 :25
             ]:  # Slice at 25 to fit within dropdown limits
                 for definition in meaning.definitions:
-                    embed = fuchsia.Embed(
-                        description=definition.definition,
-                        title=f"{word.word}: {meaning.part_of_speech}",
+                    container = discord.ui.Container(
+                        ui.TextDisplay(
+                            f"### {word.word}: {meaning.part_of_speech}"
+                        ),
+                        ui.TextDisplay(shorten(definition.definition, 4000)),
                     )
-
                     if definition.synonyms:
-                        embed.add_field(
-                            name="Synonyms",
-                            value=", ".join(definition.synonyms[:5]),
+                        container.add_item(
+                            ui.TextDisplay("**Synonyms**")
+                        ).add_item(
+                            ui.TextDisplay(", ".join(definition.synonyms[:5]))
                         )
-
-                    yield embed
+                    yield container, (word.word, definition.definition)
 
 
 def get_browser_links(avatar: discord.Asset):

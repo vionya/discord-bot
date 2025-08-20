@@ -75,6 +75,13 @@ class Patcher:
             for target in self.targets:
                 setattr(target, name, attr)
 
+    def original(self, target: Any) -> dict[str, Any]:
+        """
+        Returns a dictionary of the original attributes of the target,
+        before any patches were applied.
+        """
+        return self._original[target.__name__]
+
     def revert(self):
         """
         Reverts the target back to its state at the time that the

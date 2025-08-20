@@ -189,11 +189,8 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             [f"`{n}`" for n in self.tag_name_cache[interaction.user.id]] or ["No tags"],
             per_page=25,
             joiner=", ",
-            use_embed=True,
-            template_embed=fuchsia.Embed().set_author(
-                name=f"{interaction.user}'s tags",
-                icon_url=interaction.user.display_avatar,
-            ),
+            use_container=True,
+            template_embed=fuchsia.Embed(title=f"{interaction.user}'s tags"),
         )
         menu = fuchsia.ButtonsMenu(pages)
         menu.add_item(

@@ -26,7 +26,9 @@ SETTINGS_MAPPING = SettingsMapping(
 )
 
 
-class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]):
+class ChangeSettingButton(
+    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]
+):
     def __init__(self, *, addon: ServerConfig, **kwargs):
         self.addon = addon
 
@@ -77,7 +79,7 @@ class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPag
                             current_setting.key,
                         )
                     )
-                    outer_self.view.pages.items[index].description = (
+                    outer_self.view.pages.items[index].find_item(1).content = (  # type: ignore
                         f"**Setting: `{current_setting.display_name}`**\n\n"
                         + description
                     )
@@ -88,7 +90,9 @@ class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPag
         await interaction.response.send_modal(modal)
 
 
-class ResetSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]):
+class ResetSettingButton(
+    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]
+):
     def __init__(self, *, addon: ServerConfig, **kwargs):
         self.addon = addon
 
@@ -115,7 +119,7 @@ class ResetSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPage
                 current_setting.key,
             )
         )
-        self.view.pages.items[index].description = (
+        self.view.pages.items[index].find_item(1).content = (  # type: ignore
             f"**Setting: `{current_setting.display_name}`**\n\n" + description
         )
         await self.view.refresh_page()

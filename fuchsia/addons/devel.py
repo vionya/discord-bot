@@ -87,7 +87,7 @@ class Devel(fuchsia.Addon):
             joiner="",
             prefix="```py\n",
             suffix="\n```",
-            use_embed=False,
+            use_container=False,
         )
         menu = ButtonsMenu(pages)
 
@@ -162,7 +162,7 @@ class Devel(fuchsia.Addon):
                 failed.append("```py\n" + format_exception(e) + "\n```")
 
         if failed:
-            menu = ButtonsMenu.from_iterable(failed, use_embed=True)
+            menu = ButtonsMenu.from_iterable(failed, use_container=True)
             await menu.start(ctx)
             return
         await ctx.send_confirmation()

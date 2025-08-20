@@ -54,12 +54,14 @@ def extract_tenor_gif(embed: discord.Embed):
     assert embed.thumbnail.url
     url = URL(embed.thumbnail.url)
     part = url.parts[1]
-    return URL(f"https://media.tenor.com/{part[:-1] + 'C'}/{url.name}").with_suffix(
-        ".gif"
-    )
+    return URL(
+        f"https://media.tenor.com/{part[:-1] + 'C'}/{url.name}"
+    ).with_suffix(".gif")
 
 
-class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPages]]):
+class ChangeSettingButton(
+    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]
+):
     def __init__(self, *, addon: StarboardAddon, **kwargs):
         self.addon = addon
 
@@ -74,7 +76,9 @@ class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPag
 
         outer_self = self
 
-        class ChangeSettingModal(discord.ui.Modal, title="Edit starboard settings"):
+        class ChangeSettingModal(
+            discord.ui.Modal, title="Edit starboard settings"
+        ):
             new_value = discord.ui.TextInput(
                 label=f"Changing {current_setting.display_name}",
                 placeholder="New value",
@@ -108,7 +112,7 @@ class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.EmbedPag
                             current_setting.key,
                         )
                     )
-                    outer_self.view.pages.items[index].description = (
+                    outer_self.view.pages.items[index].find_item(1).content = (  # type: ignore
                         f"**Setting: `{current_setting.display_name}`**\n\n"
                         + description
                     )

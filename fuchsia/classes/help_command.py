@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Any, Optional
 from itertools import chain
 
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 
 import fuchsia
 from fuchsia.classes.app_commands import AutoEphemeralAppCommand
-from fuchsia.modules import DropdownMenu, EmbedPages
+from fuchsia.modules import DropdownMenu, ContainerPages
 from fuchsia.tools import recursive_get_command
 from fuchsia.types.commands import AnyCommand
 
@@ -177,7 +177,9 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
         cmd = (
             self.bot.tree.get_command(command, type=discord.AppCommandType.user)
-            or self.bot.tree.get_command(command, type=discord.AppCommandType.message)
+            or self.bot.tree.get_command(
+                command, type=discord.AppCommandType.message
+            )
             or recursive_get_command(self.bot.tree, command)
         )
         if not cmd:
@@ -199,7 +201,8 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 value=k.qualified_name,
             )
             for k in all_commands
-            if current.casefold().removeprefix("/") in k.qualified_name.casefold()
+            if current.casefold().removeprefix("/")
+            in k.qualified_name.casefold()
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
@@ -235,6 +238,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         self, interaction: discord.Interaction, mapping: HelpMapping
     ):
         embeds = []
+        components = []
 
         for cog, commands in mapping.items():
             # Everything is handled by `filter_commands` here, so
@@ -243,25 +247,32 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 continue
 
             cog_name = getattr(cog, "qualified_name", "Uncategorized")
-            embeds.append(
-                fuchsia.Embed(
-                    title=cog_name, description=getattr(cog, "description", "")
-                )
-                .add_field(
-                    name="Commands",
-                    value="\n".join(map(format_command, cog_commands)),
-                    inline=False,
-                )
-                .add_field(
-                    name="Lost?",
-                    value="Try /help `command: help` to learn more about fuchsia",
-                    inline=False,
-                )
+            component = ui.Container(
+                ui.TextDisplay(f"### {cog_name}"),
+                ui.TextDisplay(getattr(cog, "description", "No description")),
+                ui.Separator(visible=False),
+                ui.TextDisplay("**Commands:**"),
+                ui.TextDisplay("\n".join(map(format_command, cog_commands))),
+                ui.Separator(visible=False),
+                ui.TextDisplay(
+                    "-# Lost? Try `/help command: help` to learn more about fuchsia"
+                ),
             )
+            components.append(component)
 
-        pages = EmbedPages(embeds)
+        pages = ContainerPages(components)
         menu = DropdownMenu.from_pages(
-            pages, embed_auto_label=True, embed_auto_desc=True
+            pages,
+            option_labels=[
+                getattr(cog, "qualified_name", "Uncategorized")
+                for cog in mapping.keys()
+                if self.filter_commands(mapping[cog])
+            ],
+            option_desc=[
+                getattr(cog, "description", "")
+                for cog in mapping.keys()
+                if self.filter_commands(mapping[cog])
+            ],
         )
         await menu.start(interaction)
 

@@ -15,6 +15,7 @@ from typing import (
 )
 
 from discord import Embed as BaseEmbed
+from discord import ui
 
 from fuchsia.classes import Embed
 
@@ -42,9 +43,9 @@ class Pages:
     :param per_page: The number of items to be included on each page, default 1
     :type per_page: ``int``
 
-    :param use_embed: Whether the items should be displayed in a simple embed,
+    :param use_container: Whether the items should be displayed in a simple container,
     default False
-    :type use_embed: ``bool``
+    :type use_container: ``bool``
 
     :param joiner: The string to join items on the page with, default "\\n".
     :type joiner: ``str``
@@ -58,7 +59,7 @@ class Pages:
     :type suffix: ``str``
 
     :param template_embed: An embed that will be used as a template for all
-    pages when `use_embed` is True
+    pages when `use_container` is True
     :type template_embed: ``discord.Embed``
     """
 
@@ -66,7 +67,7 @@ class Pages:
         "items",
         "joiner",
         "per_page",
-        "use_embed",
+        "use_container",
         "prefix",
         "suffix",
         "template_embed",
@@ -80,7 +81,7 @@ class Pages:
         /,
         per_page: int = 1,
         *,
-        use_embed: bool = False,
+        use_container: bool = False,
         joiner: str = "\n",
         prefix: str = "",
         suffix: str = "",
@@ -92,7 +93,7 @@ class Pages:
         self.items = items
         self.joiner = joiner
         self.per_page = per_page
-        self.use_embed = use_embed
+        self.use_container = use_container
         self.menu: Optional[BaseMenu] = None
 
         if (prefix or suffix) and not isinstance(items, str):
@@ -129,7 +130,7 @@ class Pages:
 
     def __getitem__(self, index: SupportsIndex) -> str | BaseEmbed:
         content = self.joiner.join(self._compute_page(int(index)))
-        if self.use_embed:
+        if self.use_container:
             return Embed.from_dict(
                 cast(dict, self.template_embed | {"description": content})
             )
@@ -181,4 +182,18 @@ class EmbedPages(Pages, Generic[T]):
         return self.items
 
     def __getitem__(self, index: SupportsIndex) -> BaseEmbed:
+        return self.pages[index]
+
+
+class ContainerPages(Pages):
+    items: list[ui.Container]
+
+    def __init__(self, items: list[ui.Container]):
+        super().__init__(items, 1)
+
+    @property
+    def pages(self):
+        return self.items
+
+    def __getitem__(self, index: SupportsIndex) -> ui.Container:
         return self.pages[index]

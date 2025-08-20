@@ -19,6 +19,7 @@ view = Patcher(discord.ui.View)
 app_command = Patcher(discord.app_commands.commands)
 interaction_response = Patcher(discord.interactions)
 interaction = Patcher(discord.Interaction)
+container = Patcher(discord.ui.Container)
 
 
 @guild.attribute()
@@ -54,6 +55,11 @@ interaction_response.attribute(
     name="InteractionResponse", value=AutoEphemeralInteractionResponse
 )
 
+@container.attribute()
+def __init__(*args, **kwargs):
+    kwargs.setdefault("accent_colour", 0xF48EAD)
+    container.original(discord.ui.Container)["__init__"](*args, **kwargs)
+
 
 def patch_all() -> None:
     guild.patch()
@@ -62,3 +68,4 @@ def patch_all() -> None:
     app_command.patch()
     interaction_response.patch()
     interaction.patch()
+    container.patch()
