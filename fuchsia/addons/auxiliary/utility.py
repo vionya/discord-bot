@@ -27,7 +27,8 @@ if TYPE_CHECKING:
 def result_to_container(query: str, result: SearchResult):
     container = discord.ui.Container(
         ui.TextDisplay(f'-# Results for "{shorten(query, 40)}"'),
-        ui.TextDisplay(f"### [{result.title}]({result.url})"),
+        ui.TextDisplay(f"### {result.title}"),
+        ui.TextDisplay(f"**{result.url}**"),
     )
     if result.image_url:
         container.add_item(
