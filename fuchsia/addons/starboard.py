@@ -219,7 +219,7 @@ class Starboard:
                 ):
                     # if the replied-to user and author are the same, save a req
                     if ref.resolved.author.id == author.id:
-                        reply_display = "self"
+                        reply_display = f"{user_to_default_avatar(author)} self"
                     else:
                         # otherwise we have to fetch it
                         try:
@@ -228,9 +228,7 @@ class Starboard:
                             )
                         except discord.DiscordException:
                             replied_to = ref.resolved.author
-                        reply_display = (
-                            f"{replied_to.display_name} ({ref.resolved.author})"
-                        )
+                        reply_display = f"{user_to_default_avatar(replied_to)} {replied_to.display_name} ({ref.resolved.author})"
 
                     container.add_item(
                         ui.TextDisplay(f"**Replying to {reply_display}**")
@@ -249,7 +247,9 @@ class Starboard:
                     and display_message.content
                 ):
                     container.add_item(
-                        ui.TextDisplay(f"**{author.display_name}**")
+                        ui.TextDisplay(
+                            f"{user_to_default_avatar(author)} **{author.display_name}**"
+                        )
                     ).add_item(
                         ui.TextDisplay(
                             shorten(display_message.content, 1024)
