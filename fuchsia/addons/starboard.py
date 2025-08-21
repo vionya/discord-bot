@@ -343,13 +343,14 @@ class Starboard:
                             case "rich" | "article":
                                 if attach.image and attach.image.url:
                                     gallery.add_item(media=attach.image.url)
-                
+
                 if gallery.items:
                     container.add_item(gallery)
 
             container.add_item(
                 ui.TextDisplay(
-                    (
+                    "-# "
+                    + (
                         f"#{message.channel.parent.name} > {message.channel.name}"
                         if isinstance(message.channel, discord.Thread)
                         and message.channel.parent
