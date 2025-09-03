@@ -259,12 +259,6 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         if message.guild is None:
             return
 
-        # If the message author blocked highlight triggering, then quit processing
-        if message.author.id in self.bot.profiles:
-            author_profile = self.bot.profiles[message.author.id]
-            if author_profile.block_highlight_triggering:
-                return
-
         # If the server has disallowed highlights, then quit processing
         if message.guild.id in self.bot.configs:
             guild_config = self.bot.configs[message.guild.id]
@@ -275,6 +269,12 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         # current channel ID to the set of grace periods
         if message.author.id in {hl.user_id for hl in self.flat_highlights}:
             self.grace_periods[message.author.id].add(message.channel.id)
+
+        # If the message author blocked highlight triggering, then quit processing
+        if message.author.id in self.bot.profiles:
+            author_profile = self.bot.profiles[message.author.id]
+            if author_profile.block_highlight_triggering:
+                return
 
         # Loop over every highlight that matches the message content
         for hl in filter(
