@@ -43,10 +43,18 @@ SETTINGS_MAPPING = SettingsMapping(
         transformer=bool_transformer,
         name_override="Send Reminders Where Created",
     ),
+    Setting(
+        "block_highlight_triggering",
+        transformer=bool_transformer,
+        name_override="Block Highlight Triggering",
+        enabled=False,
+    ),
 )
 
 
-class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]):
+class ChangeSettingButton(
+    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]
+):
     def __init__(self, *, addon: Profile, **kwargs):
         self.addon = addon
 
@@ -58,6 +66,11 @@ class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.Containe
 
         index = self.view.page_index
         current_setting = [*SETTINGS_MAPPING.values()][index]
+
+        if current_setting["enabled"] is False:
+            return await interaction.response.send_message(
+                "This setting cannot be changed.", ephemeral=True
+            )
 
         outer_self = self
 
@@ -108,7 +121,9 @@ class ChangeSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.Containe
         await interaction.response.send_modal(modal)
 
 
-class ResetSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]):
+class ResetSettingButton(
+    discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.ContainerPages]]
+):
     def __init__(self, *, addon: Profile, **kwargs):
         self.addon = addon
 
@@ -120,6 +135,11 @@ class ResetSettingButton(discord.ui.Button[fuchsia.ButtonsMenu[fuchsia.Container
 
         index = self.view.page_index
         current_setting = [*SETTINGS_MAPPING.values()][index]
+
+        if current_setting["enabled"] is False:
+            return await interaction.response.send_message(
+                "This setting cannot be changed.", ephemeral=True
+            )
 
         await self.addon.reset_option(interaction, current_setting.key)
 

@@ -339,6 +339,10 @@ class Setting(MutableMapping):
 
         if "description" not in data:
             data["description"] = None
+        
+        if "enabled" not in data:
+            data["enabled"] = True
+
         self.__setting_data = data
 
     @property

@@ -117,6 +117,12 @@ class ServerConfig(
                         ),
                     ),
                 )
+                if setting_info["enabled"] is False:
+                    component.add_item(
+                        ui.TextDisplay(
+                            "-# This setting is read-only and cannot be changed"
+                        )
+                    )
                 components.append(component)
 
             menu = ButtonsMenu(ContainerPages(components))

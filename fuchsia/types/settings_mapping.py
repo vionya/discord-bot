@@ -24,3 +24,5 @@ class SettingData(TypedDict, total=False):
     ]
     # A static collection of values to provide in autocompletion
     autocomplete_values: NotRequired[Iterable[tuple[str, str] | str]]
+    # Whether or not this setting is enabled (i.e. should be updateable by users)
+    enabled: NotRequired[bool]

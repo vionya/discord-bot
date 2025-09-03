@@ -61,6 +61,9 @@ async def convert_setting(
         raise NameError("That's not a valid setting!")
     valid_setting = mapping[setting]
 
+    if valid_setting["enabled"] is False:
+        raise ValueError("This setting cannot be changed.")
+
     value = None
 
     transformer = valid_setting["transformer"]

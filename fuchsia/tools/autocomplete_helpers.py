@@ -190,6 +190,8 @@ def add_setting_autocomplete(
         ) -> list[Choice[str]]:
             setting_pairs: list[tuple[str, str]] = []
             for k, v in mapping.items():
+                if v["enabled"] is False:
+                    continue
                 setting_pairs.append((v.display_name, k))
 
             # Filter to the first 25 entries which match the current input
@@ -220,6 +222,12 @@ def add_setting_autocomplete(
                 # Discord resolution weirdness, return an empty list
                 setting_param_value: str = interaction.namespace[setting_param]
                 if not isinstance(setting_param_value, str):
+                    return []
+
+                if (
+                    setting_param_value not in mapping
+                    or mapping[setting_param_value]["enabled"] is False
+                ):
                     return []
 
                 setting = mapping[setting_param_value]

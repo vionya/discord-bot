@@ -74,6 +74,11 @@ class ChangeSettingButton(
         index = self.view.page_index
         current_setting = [*SETTINGS_MAPPING.values()][index]
 
+        if current_setting["enabled"] is False:
+            return await interaction.response.send_message(
+                "This setting cannot be changed.", ephemeral=True
+            )
+
         outer_self = self
 
         class ChangeSettingModal(
