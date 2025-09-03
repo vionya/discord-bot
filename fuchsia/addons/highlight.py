@@ -259,6 +259,12 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         if message.guild is None:
             return
 
+        # If the message author blocked highlight triggering, then quit processing
+        if message.author.id in self.bot.profiles:
+            author_profile = self.bot.profiles[message.author.id]
+            if author_profile.block_highlight_triggering:
+                return
+
         # If the server has disallowed highlights, then quit processing
         if message.guild.id in self.bot.configs:
             guild_config = self.bot.configs[message.guild.id]

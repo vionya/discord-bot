@@ -75,6 +75,15 @@ Default Value: `False`
 **Current Value:** `{}`
 ';
 
+COMMENT ON COLUMN profiles.block_highlight_triggering IS
+'Sets whether your messages can trigger other highlights for other users.
+
+Expected Value Type: A boolean-like (`yes`/`no`) value
+Default Value: `False`
+
+**Current Value:** `{}`
+';
+
 -- Table: guild_configs | Documentation for settings --
 COMMENT ON COLUMN guild_configs.starboard IS
 'Controls whether the server''s starboard is enabled.

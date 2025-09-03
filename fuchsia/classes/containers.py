@@ -113,6 +113,7 @@ class FuchsiaUser(RecordContainer):
     default_ephemeral: bool
     silence_hl: bool
     reminders_in_channel: bool
+    block_highlight_triggering: bool
 
     __slots__ = (
         "user_id",
@@ -124,6 +125,7 @@ class FuchsiaUser(RecordContainer):
         "default_ephemeral",
         "silence_hl",
         "reminders_in_channel",
+        "block_highlight_triggering",
     )
 
     def __repr__(self):
