@@ -370,7 +370,9 @@ class Starboard:
             view = ui.LayoutView(timeout=0)
             view.add_item(ui.TextDisplay(content, id=1)).add_item(container)
 
-            starboard_message = await self.channel.send(view=view)
+            starboard_message = await self.channel.send(
+                view=view, allowed_mentions=discord.AllowedMentions.none()
+            )
             star = Star(
                 message_id=message.id,
                 stars=stars,
