@@ -152,9 +152,7 @@ class Starboard:
             return self.cached_stars[id]
 
         query = "SELECT * FROM stars WHERE {0}=$1".format(
-            "starboard_message_id"
-            if from_starboard_message is True
-            else "message_id"
+            "starboard_message_id" if from_starboard_message is True else "message_id"
         )
         star_data = await self.pool.fetchrow(query, id)
 
@@ -173,9 +171,7 @@ class Starboard:
             return star
         return None
 
-    async def create_star(
-        self, message: discord.Message, stars: int, *, forced=False
-    ):
+    async def create_star(self, message: discord.Message, stars: int, *, forced=False):
         if (
             not message.guild
             or not self.channel
@@ -183,9 +179,7 @@ class Starboard:
         ):
             return
 
-        assert isinstance(
-            message.channel, discord.abc.GuildChannel | discord.Thread
-        )
+        assert isinstance(message.channel, discord.abc.GuildChannel | discord.Thread)
 
         async with self.lock:
             try:
@@ -195,11 +189,10 @@ class Starboard:
                 # make sure to have a fallback in case something goes wrong
                 author = message.author
 
-            container = ui.Container(
-                ui.TextDisplay(
-                    f"**{user_to_default_avatar(author)} {author.display_name} ({message.author})**"
-                ),
+            author_display = ui.TextDisplay(
+                f"**{user_to_default_avatar(author)} {author.display_name} ({message.author})**",
             )
+            container = ui.Container(author_display)
 
             row = ui.ActionRow()
 
@@ -209,13 +202,10 @@ class Starboard:
                     display_message = message.message_snapshots[0]
                     if ref.guild_id == message.guild.id:
                         row.add_item(
-                            discord.ui.Button(
-                                url=ref.jump_url, label="Go to forward"
-                            )
+                            discord.ui.Button(url=ref.jump_url, label="Go to forward")
                         )
-                elif (
-                    ref.type == discord.MessageReferenceType.reply
-                    and isinstance(ref.resolved, discord.Message)
+                elif ref.type == discord.MessageReferenceType.reply and isinstance(
+                    ref.resolved, discord.Message
                 ):
                     # if the replied-to user and author are the same, save a req
                     if ref.resolved.author.id == author.id:
@@ -232,66 +222,48 @@ class Starboard:
 
                     container.add_item(
                         ui.TextDisplay(f"**Replying to {reply_display}**")
-                    ).add_item(
-                        ui.TextDisplay(
-                            shorten(ref.resolved.content, 500) or "*no content*"
+                    )
+                    if ref.resolved.content:
+                        container.add_item(
+                            ui.TextDisplay(shorten(ref.resolved.content, 500))
                         )
-                    )
-                    row.add_item(
-                        ui.Button(url=ref.jump_url, label="Go to reply")
-                    )
+                    row.add_item(ui.Button(url=ref.jump_url, label="Go to reply"))
 
             if ref:
                 if (
                     ref.type == discord.MessageReferenceType.reply
                     and display_message.content
                 ):
-                    container.add_item(
-                        ui.TextDisplay(
-                            f"{user_to_default_avatar(author)} **{author.display_name}**"
+                    container.remove_item(author_display)
+                    container.add_item(author_display)
+
+                    if display_message.content:
+                        container.add_item(
+                            ui.TextDisplay(shorten(display_message.content, 1024))
                         )
-                    ).add_item(
-                        ui.TextDisplay(
-                            shorten(display_message.content, 1024)
-                            or "*no content*"
-                        )
-                    )
-                    row.add_item(
-                        ui.Button(url=message.jump_url, label="Go to message")
-                    )
+                    row.add_item(ui.Button(url=message.jump_url, label="Go to message"))
                 elif ref.type == discord.MessageReferenceType.forward:
-                    container.add_item(
-                        ui.TextDisplay("**\U000021b1 Forwarded**")
-                    ).add_item(
-                        ui.TextDisplay(
-                            shorten(display_message.content, 1024)
-                            or "*no content*"
+                    container.add_item(ui.TextDisplay("**\U000021b1 Forwarded**"))
+                    if display_message.content:
+                        container.add_item(
+                            ui.TextDisplay(shorten(display_message.content, 1024))
                         )
-                    )
-                    row.add_item(
-                        ui.Button(url=ref.jump_url, label="Go to original")
-                    )
+                    row.add_item(ui.Button(url=ref.jump_url, label="Go to original"))
             else:
-                container.add_item(
-                    ui.TextDisplay(
-                        shorten(display_message.content, 1024) or "*no content*"
+                if display_message.content:
+                    container.add_item(
+                        ui.TextDisplay(shorten(display_message.content, 1024))
                     )
-                )
-                row.add_item(
-                    ui.Button(url=message.jump_url, label="Go to message")
-                )
+                row.add_item(ui.Button(url=message.jump_url, label="Go to message"))
 
             if display_message.stickers:
                 container.add_item(
-                    ui.TextDisplay(
-                        f"**Stickers [x{len(display_message.stickers)}]**"
-                    )
+                    ui.TextDisplay(f"**Stickers [x{len(display_message.stickers)}]**")
                 )
                 container.add_item(
                     ui.TextDisplay(
                         "\n".join(
-                            f"`{sticker.name}`"
-                            for sticker in display_message.stickers
+                            f"`{sticker.name}`" for sticker in display_message.stickers
                         )
                     ),
                 )
@@ -306,9 +278,7 @@ class Starboard:
                 container.add_item(
                     ui.TextDisplay(
                         "\n".join(
-                            (
-                                "[`{fn}`]({url})" if attachment.url else "{fn}"
-                            ).format(
+                            ("[`{fn}`]({url})" if attachment.url else "{fn}").format(
                                 fn=f"{humanize_snake_case(attachment.type)} Embed",
                                 url=attachment.url,
                             )
@@ -327,9 +297,7 @@ class Starboard:
                         isinstance(attach, discord.Attachment)
                         and not attach.is_voice_message()
                     ):
-                        gallery.add_item(
-                            media=attach.url, spoiler=attach.is_spoiler()
-                        )
+                        gallery.add_item(media=attach.url, spoiler=attach.is_spoiler())
                     elif isinstance(attach, discord.Embed):
                         match attach.type:
                             case "gifv":
@@ -463,9 +431,7 @@ class StarboardAddon(
         self.ready = False
         self.starboards: dict[int, Starboard] = {}
 
-        self.bot.tree.context_menu(name="Toggle Forced Starboard")(
-            self.force_star_ctx
-        )
+        self.bot.tree.context_menu(name="Toggle Forced Starboard")(self.force_star_ctx)
 
         asyncio.create_task(self.__ainit__())
 
@@ -549,9 +515,7 @@ class StarboardAddon(
 
     @fuchsia.Addon.listener("on_raw_reaction_add")
     @fuchsia.Addon.listener("on_raw_reaction_remove")
-    async def handle_individual_reaction(
-        self, payload: discord.RawReactionActionEvent
-    ):
+    async def handle_individual_reaction(self, payload: discord.RawReactionActionEvent):
         if payload.guild_id not in self.starboards or not payload.guild_id:
             return
         starboard = self.starboards[payload.guild_id]
@@ -643,9 +607,7 @@ class StarboardAddon(
             await starboard.delete_star(payload.message_id)
 
     @fuchsia.Addon.listener("on_guild_channel_delete")
-    async def handle_starboard_channel_delete(
-        self, channel: discord.abc.GuildChannel
-    ):
+    async def handle_starboard_channel_delete(self, channel: discord.abc.GuildChannel):
         if channel.guild.id not in self.starboards:
             return
 
@@ -674,9 +636,7 @@ class StarboardAddon(
                 guild.id,
             )
 
-            self.starboards[guild.id] = await self.create_starboard(
-                starboard_data
-            )
+            self.starboards[guild.id] = await self.create_starboard(starboard_data)
 
     @fuchsia.Addon.recv("config_delete")
     async def handle_deleted_config(self, guild_id: int):
@@ -685,9 +645,7 @@ class StarboardAddon(
     # /Sect: Event Handling
     # Sect: Commands
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return is_valid_starboard_env(interaction)
 
     @singleton
@@ -773,9 +731,7 @@ class StarboardAddon(
     ):
         assert interaction.guild
 
-        value = await convert_setting(
-            interaction, SETTINGS_MAPPING, setting, new_value
-        )
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
         starboard = self.starboards[interaction.guild.id]
         setattr(starboard, setting, value)
 
@@ -841,9 +797,7 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError(
-                "You must provide at least one valid argument to ignore."
-            )
+            raise TypeError("You must provide at least one valid argument to ignore.")
 
         starboard = self.starboards[interaction.guild.id]
         for snowflake in filter(None, [channel, user, message_obj]):
@@ -862,9 +816,9 @@ class StarboardAddon(
                 interaction.guild.id,
             )
 
-            if isinstance(
-                snowflake, discord.PartialMessage
-            ) and await starboard.exists(id):
+            if isinstance(snowflake, discord.PartialMessage) and await starboard.exists(
+                id
+            ):
                 await starboard.delete_star(id)
 
         await interaction.response.send_message(
@@ -908,17 +862,13 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError(
-                "You must provide at least one valid argument to unignore."
-            )
+            raise TypeError("You must provide at least one valid argument to unignore.")
 
         starboard = self.starboards[interaction.guild.id]
         target_id = int(id) if id.isdigit() else None
 
         for obj in filter(None, [target_id, user, channel, message_obj]):
-            object_id = (
-                obj.id if isinstance(obj, discord.abc.Snowflake) else obj
-            )
+            object_id = obj.id if isinstance(obj, discord.abc.Snowflake) else obj
 
             starboard.ignored.discard(object_id)
             await self.bot.db.execute(
@@ -952,9 +902,7 @@ class StarboardAddon(
             ):
                 formatted.insert(0, f"**Channel** {channel.mention}")
             else:
-                formatted.append(
-                    f"**Message or User ID** `{id}` (maybe <@{id}>)"
-                )
+                formatted.append(f"**Message or User ID** `{id}` (maybe <@{id}>)")
 
         menu = ButtonsMenu.from_iterable(
             formatted or ["No ignored items"],
@@ -967,9 +915,7 @@ class StarboardAddon(
         )
         await menu.start(interaction)
 
-    @app_commands.allowed_contexts(
-        guilds=True, dms=False, private_channels=False
-    )
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
@@ -1007,9 +953,7 @@ class StarboardAddon(
             return
 
         if star is None:
-            star = await starboard.create_star(
-                await message.fetch(), 0, forced=True
-            )
+            star = await starboard.create_star(await message.fetch(), 0, forced=True)
         elif star is not None and star.forced is True:
             await starboard.delete_star(star.message_id)
 
