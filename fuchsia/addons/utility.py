@@ -830,7 +830,7 @@ class Utility(fuchsia.Addon):
                 ui.TextDisplay(
                     f"### ‣ Info in {interaction.guild}"
                     + (
-                        f"\n<:server_owner:1417956422225756220> **Owns this server**"
+                        f"\n<:server_owner:1417956422225756220> **owns this server**"
                         if interaction.guild.owner_id == user_object.id
                         else ""
                     )
