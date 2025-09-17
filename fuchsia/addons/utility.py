@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo, available_timezones
 
 import discord
 from aiohttp import FormData
-from discord import app_commands
+from discord import app_commands, ui
 from discord.utils import format_dt
 
 import fuchsia
@@ -28,7 +28,7 @@ from fuchsia.modules import (
     cse,
     dictionary,
 )
-from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none
+from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none, ab_test
 from fuchsia.tools.decorators import singleton
 from fuchsia.tools.formatters import full_timestamp
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
@@ -42,6 +42,7 @@ from .auxiliary.utility import (
     get_browser_links,
     get_choice,
     result_to_container,
+    get_member_message_data,
 )
 
 PREMIUM_ICON_MAPPING = {
@@ -57,6 +58,25 @@ ASSOCIATION_FILTER = [
     ("Managed by Integration", discord.Role.is_integration),
 ]
 TIMEZONE_STRS = available_timezones()
+BADGE_MAPPING = {
+    "active_developer": "<:_:1417957441840087140>",
+    # "bot_http_interactions": "",  # TODO
+    "bug_hunter": "<:_:1417956398012043274>",
+    "bug_hunter_level_2": "<:_:1417956406170222755>",
+    "discord_certified_moderator": "<:_:1417956389657120831>",
+    "early_supporter": "<:_:1417956381654253578>",
+    "hypesquad": "<:_:1417956335349141545>",
+    "hypesquad_balance": "<:_:1417956365724553447>",
+    "hypesquad_bravery": "<:_:1417956357780406383>",
+    "hypesquad_brilliance": "<:_:1417956348317925550>",
+    "partner": "<:_:1417956413917106216>",
+    # "spammer": "",
+    "staff": "<:_:1417956430627082260>",
+    # "system": "",
+    # "team_user": "",
+    # "verified_bot": "",
+    "verified_bot_developer": "<:_:1417956438445396192>",
+}
 
 
 class Utility(fuchsia.Addon):
@@ -67,17 +87,11 @@ class Utility(fuchsia.Addon):
         with open(bot.cfg["privacy_policy_path"]) as policy:
             header, body = policy.read().split("\n", 1)
             header = header.lstrip("# ")
-            body = body.replace(
-                "  \n", "\n"
-            )  # Ensure proper formatting on mobile
+            body = body.replace("  \n", "\n")  # Ensure proper formatting on mobile
         self.privacy_embed = fuchsia.Embed(title=header, description=body)
 
-        self.bot.tree.context_menu(name="View Avatar")(
-            self.avatar_context_command
-        )
-        self.bot.tree.context_menu(name="View Banner")(
-            self.banner_context_command
-        )
+        self.bot.tree.context_menu(name="View Avatar")(self.avatar_context_command)
+        self.bot.tree.context_menu(name="View Banner")(self.banner_context_command)
         # self.bot.tree.context_menu(name="Show Message Info")(
         #     self.message_info_context_command
         # )
@@ -95,9 +109,7 @@ class Utility(fuchsia.Addon):
 
         # Since we wait for bot ready, this has to be true
         if not self.bot.user:
-            raise RuntimeError(
-                "`self.bot.user` did not exist when it should have"
-            )
+            raise RuntimeError("`self.bot.user` did not exist when it should have")
 
         # These both take a ClientSession, so we wait until ready so we can use the bot's
         self.google = cse.Search(
@@ -132,17 +144,13 @@ class Utility(fuchsia.Addon):
 
     @app_commands.command(name="google")
     @app_commands.describe(query="The query to search for")
-    async def google_command(
-        self, interaction: discord.Interaction, query: str
-    ):
+    async def google_command(self, interaction: discord.Interaction, query: str):
         """Search Google for a query"""
         await self.google_command_callback(interaction, query)
 
     @app_commands.command(name="img")
     @app_commands.describe(query="The query to search for")
-    async def google_image_command(
-        self, interaction: discord.Interaction, query: str
-    ):
+    async def google_image_command(self, interaction: discord.Interaction, query: str):
         """Search Google Images for a query"""
         await self.google_command_callback(interaction, query, True)
 
@@ -207,9 +215,7 @@ class Utility(fuchsia.Addon):
         await menu.start(interaction)
 
     @app_commands.command(name="clear")
-    @app_commands.allowed_contexts(
-        guilds=True, dms=False, private_channels=False
-    )
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.describe(
         limit="The number of messages to delete",
@@ -284,9 +290,7 @@ class Utility(fuchsia.Addon):
         opt_4: Optional[str] = None,
     ):
         """Make a (pseudo-)random choice from up to 5 different options"""
-        options = [
-            opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt
-        ]
+        options = [opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt]
         (selection, table) = get_choice(options)
 
         embed = (
@@ -307,9 +311,7 @@ class Utility(fuchsia.Addon):
     # Information commands below
 
     @app_commands.command(name="avatar")
-    @app_commands.describe(
-        user="The user to get the avatar of. Yourself if empty"
-    )
+    @app_commands.describe(user="The user to get the avatar of. Yourself if empty")
     async def avatar_command(
         self,
         interaction: discord.Interaction,
@@ -359,9 +361,7 @@ class Utility(fuchsia.Addon):
         await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="banner")
-    @app_commands.describe(
-        user="The user to get the banner of. Yourself if empty"
-    )
+    @app_commands.describe(user="The user to get the banner of. Yourself if empty")
     async def banner_command(
         self,
         interaction: discord.Interaction,
@@ -377,9 +377,7 @@ class Utility(fuchsia.Addon):
         except (discord.HTTPException, AttributeError):
             user_object = await self.bot.fetch_user(id)
 
-        if (
-            isinstance(user_object, discord.User) and user_object.banner is None
-        ) or (
+        if (isinstance(user_object, discord.User) and user_object.banner is None) or (
             isinstance(user_object, discord.Member)
             and user_object.display_avatar is None
         ):
@@ -418,9 +416,7 @@ class Utility(fuchsia.Addon):
         await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="serverinfo")
-    @app_commands.allowed_contexts(
-        guilds=True, dms=False, private_channels=False
-    )
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.allowed_installs(guilds=True, users=False)
     async def guild_info_command(self, interaction: discord.Interaction):
         """Retrieves information about the current server"""
@@ -453,9 +449,7 @@ class Utility(fuchsia.Addon):
         await interaction.response.send_message(content=content, embed=embed)
 
     @app_commands.command(name="roleinfo")
-    @app_commands.allowed_contexts(
-        guilds=True, dms=False, private_channels=False
-    )
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.describe(role="The role to get info about")
     async def role_info_command(
@@ -472,8 +466,7 @@ class Utility(fuchsia.Addon):
         embed = fuchsia.Embed(
             title=role.name,
             description=f"**Created** <t:{int(role.created_at.timestamp())}:D>"
-            + f"\n**Associations** {', '.join(associations)}"
-            * bool(associations)
+            + f"\n**Associations** {', '.join(associations)}" * bool(associations)
             + f"\n\n**Color** {str(role.colour).upper()}"
             f"\n**Mentionable** {role.mentionable}"
             f"\n**Hoisted** {role.hoist}"
@@ -523,15 +516,11 @@ class Utility(fuchsia.Addon):
 
         if self.bot.user:
             embed.set_thumbnail(url=self.bot.user.display_avatar)
-        await interaction.response.send_message(
-            embed=embed, view=self.info_buttons()
-        )
+        await interaction.response.send_message(embed=embed, view=self.info_buttons())
 
     @app_commands.command(name="upscale")
     @app_commands.describe(emoji="The emoji to upscale")
-    async def upscale_emoji_command(
-        self, interaction: discord.Interaction, emoji: str
-    ):
+    async def upscale_emoji_command(self, interaction: discord.Interaction, emoji: str):
         """Upscale a static or animated emoji and send the image"""
         partial = discord.PartialEmoji.from_str(emoji)
         if partial.is_unicode_emoji():
@@ -578,15 +567,11 @@ class Utility(fuchsia.Addon):
 
             await interaction.response.send_message(
                 embed=embed,
-                file=discord.File(
-                    BytesIO(upscaled_data), f"upscaled.{content_type}"
-                ),
+                file=discord.File(BytesIO(upscaled_data), f"upscaled.{content_type}"),
             )
 
     @app_commands.command(name="steal")
-    @app_commands.allowed_contexts(
-        guilds=True, dms=False, private_channels=False
-    )
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.allowed_installs(guilds=True, users=False)
     @app_commands.default_permissions(create_expressions=True)
     @app_commands.rename(source_emoji="emoji", new_name="name")
@@ -667,9 +652,7 @@ class Utility(fuchsia.Addon):
             )
             for char in set(content)
         ]
-        menu = ButtonsMenu.from_iterable(
-            output_lines, per_page=10, use_container=True
-        )
+        menu = ButtonsMenu.from_iterable(output_lines, per_page=10, use_container=True)
         await menu.start(interaction)
 
     @singleton
@@ -694,9 +677,7 @@ class Utility(fuchsia.Addon):
                 "**Time** %H:%M:%S (%I:%M %p)\n**Date** %d %B, %Y"
             )
             await interaction.response.send_message(
-                embed=fuchsia.Embed(
-                    title=f"Time at {source_tz}", description=time_info
-                )
+                embed=fuchsia.Embed(title=f"Time at {source_tz}", description=time_info)
             )
 
         @iter_autocomplete(TIMEZONE_STRS, param="source_tz")
@@ -735,14 +716,11 @@ class Utility(fuchsia.Addon):
             else:
                 tz = timezone.utc
                 if interaction.user.id in self.addon.bot.profiles:
-                    tz = (
-                        self.addon.bot.profiles[interaction.user.id].timezone
-                        or tz
-                    )
+                    tz = self.addon.bot.profiles[interaction.user.id].timezone or tz
 
-            (time_data, _) = try_or_none(
-                parse_relative, when
-            ) or parse_absolute(when, tz=tz)
+            (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
+                when, tz=tz
+            )
             target = datetime.now(tz)
 
             if isinstance(time_data, timedelta):
@@ -767,6 +745,85 @@ class Utility(fuchsia.Addon):
                     formatted = format_dt(target, style="f")
 
             await interaction.response.send_message(content=formatted)
+
+    @app_commands.command(name="userinfo")
+    @app_commands.describe(user="The user to get info for, yourself if empty")
+    async def user_info_command(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | discord.User | None = None,
+    ):
+        """
+        Retrieves info on the specified user, or on yourself.
+        """
+        if isinstance(user, fuchsia.partials.PartialUser) or user is None:
+            id = (user or interaction.user).id
+        else:
+            id = user.id
+
+        # we need to fetch the user every time to have the required info
+        try:
+            user_object = await interaction.guild.fetch_member(id)  # type: ignore
+        except (discord.HTTPException, AttributeError):
+            user_object = await self.bot.fetch_user(id)
+
+        main_info = (
+            "### ‣ Primary Info"
+            + "\n"
+            + " ".join(
+                BADGE_MAPPING[badge]
+                for badge, owned in user_object.public_flags
+                if owned
+            )
+            + f"\n**User ID** `{user_object.id}`"
+            + f"\n**Account Made** {format_dt(user_object.created_at)}"
+        )
+
+        is_member = isinstance(user_object, discord.Member)
+        container = ui.Container(
+            ui.Section(
+                f"-# {user_object.display_name}"
+                + (
+                    f" ({user_object})"
+                    if user_object.display_name != str(user_object)
+                    else ""
+                ),
+                main_info,
+                accessory=ui.Thumbnail(user_object.display_avatar.url),
+            )
+        )
+
+        if is_member:
+            assert interaction.guild is not None
+            assert isinstance(user_object, discord.Member)
+            assert user_object.joined_at
+
+            total_messages, first_message, first_link = await get_member_message_data(
+                self.bot.http, interaction.guild, user_object
+            )
+            container.add_item(
+                ui.TextDisplay(
+                    f"### ‣ Info in {interaction.guild}"
+                    + (
+                        f"\n<:server_owner:1417956422225756220> **Owns this server**"
+                        if interaction.guild.owner_id == user_object.id
+                        else ""
+                    )
+                    + f"\n**Joined Server** {format_dt(user_object.joined_at)}"
+                    + f"\n**First Message** {format_dt(first_message)}"
+                    + f"\n**Total Messages** {total_messages:,}"
+                ),
+            )
+
+            # idk if i should leave this in or not so i'll A/B test on it lol
+            if ab_test(interaction.user.id):
+                container.add_item(
+                    ui.ActionRow(ui.Button(url=first_link, label="See first message"))
+                )
+
+        await interaction.response.send_message(
+            view=ui.LayoutView(timeout=0).add_item(container)
+        )
 
     # CONTEXT MENU COMMANDS #
 
@@ -822,9 +879,7 @@ class Utility(fuchsia.Addon):
             f"**Message Flags** {flags_str}" if flags_str else "",
             f"**Pinned** {message.pinned}",
         )
-        embed = fuchsia.Embed(
-            description="\n".join(filter(None, raw_description))
-        )
+        embed = fuchsia.Embed(description="\n".join(filter(None, raw_description)))
 
         if message.application:
             app = message.application
@@ -843,9 +898,7 @@ class Utility(fuchsia.Addon):
         embed.set_thumbnail(url=message.author.display_avatar)
 
         view = discord.ui.View().add_item(
-            discord.ui.Button(
-                label="Jump to Message", url=message.jump_url, row=0
-            )
+            discord.ui.Button(label="Jump to Message", url=message.jump_url, row=0)
         )
         if message.reference:
             view.add_item(
@@ -856,9 +909,7 @@ class Utility(fuchsia.Addon):
                 )
             )
 
-        await interaction.response.send_message(
-            embed=embed, view=view, ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     async def raw_msg_context_command(
         self, interaction: discord.Interaction, message: discord.Message
@@ -952,9 +1003,7 @@ class Utility(fuchsia.Addon):
         if sticker.format != discord.StickerFormatType.lottie:
             embed.set_image(url=sticker.url)
 
-        await interaction.response.send_message(
-            embed=embed, ephemeral=True, view=view
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True, view=view)
 
 
 async def setup(bot: fuchsia.Fuchsia):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, overload
+from random import Random
 
 from discord import app_commands, utils
 
@@ -42,9 +43,7 @@ U = TypeVar("U")
 P = ParamSpec("P")
 
 
-def try_or_none(
-    func: Callable[P, T], *args: P.args, **kwargs: P.kwargs
-) -> T | None:
+def try_or_none(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T | None:
     try:
         return func(*args, **kwargs)
     except Exception:
@@ -233,9 +232,7 @@ def recursive_get_command(
         return new_container
 
     # If there's another layer of tree/group, recurse
-    elif isinstance(
-        new_container, app_commands.Group | app_commands.CommandTree
-    ):
+    elif isinstance(new_container, app_commands.Group | app_commands.CommandTree):
         return recursive_get_command(new_container, " ".join(command_path))
 
     # If all else fails, return None
@@ -243,15 +240,11 @@ def recursive_get_command(
 
 
 @overload
-def parse_id(content: str) -> int:
-    ...
+def parse_id(content: str) -> int: ...
 
 
 @overload
-def parse_id(
-    content: str, *, with_channel: bool = True
-) -> tuple[int, int | None]:
-    ...
+def parse_id(content: str, *, with_channel: bool = True) -> tuple[int, int | None]: ...
 
 
 def parse_id(
@@ -291,3 +284,16 @@ def parse_id(
     if "channel_id" not in data:
         return (message_id, None)
     return (message_id, int(data["channel_id"]))
+
+
+def ab_test(user_id: int) -> bool:
+    """
+    Returns whether or not a user should be placed in an experiment bucket for an A/B test
+
+    :param user_id: The user to check for, used to seed the placement
+    :type user_id: ``int``
+
+    :returns: Whether the user is in an experiment bucket
+    :rtype: ``bool``
+    """
+    return bool(Random(user_id).getrandbits(1))
