@@ -796,7 +796,7 @@ class Utility(fuchsia.Addon):
                     if user_object.display_name != str(user_object)
                     else ""
                 ),
-                "### ‣ Primary Info"
+                "### Primary Info"
                 + "\n"
                 + " ".join(
                     BADGE_MAPPING[badge]
@@ -828,7 +828,7 @@ class Utility(fuchsia.Addon):
             )
             container.add_item(
                 ui.TextDisplay(
-                    f"### ‣ Info in {interaction.guild}"
+                    f"### Info in {interaction.guild}"
                     + (
                         f"\n<:server_owner:1417956422225756220> **owns this server**"
                         if interaction.guild.owner_id == user_object.id
