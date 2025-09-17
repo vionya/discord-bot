@@ -30,7 +30,7 @@ from fuchsia.modules import (
 )
 from fuchsia.tools import iter_autocomplete, parse_id, shorten, try_or_none, ab_test
 from fuchsia.tools.decorators import singleton
-from fuchsia.tools.formatters import full_timestamp
+from fuchsia.tools.formatters import full_timestamp, user_to_default_avatar
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
@@ -90,6 +90,7 @@ class Utility(fuchsia.Addon):
             body = body.replace("  \n", "\n")  # Ensure proper formatting on mobile
         self.privacy_embed = fuchsia.Embed(title=header, description=body)
 
+        self.bot.tree.context_menu(name="View User Info")(self.userinfo_context_command)
         self.bot.tree.context_menu(name="View Avatar")(self.avatar_context_command)
         self.bot.tree.context_menu(name="View Banner")(self.banner_context_command)
         # self.bot.tree.context_menu(name="Show Message Info")(
@@ -748,7 +749,7 @@ class Utility(fuchsia.Addon):
 
     @app_commands.command(name="userinfo")
     @app_commands.describe(user="The user to get info for, yourself if empty")
-    async def user_info_command(
+    async def userinfo_command(
         self,
         interaction: discord.Interaction,
         user: discord.Member | discord.User | None = None,
@@ -767,18 +768,6 @@ class Utility(fuchsia.Addon):
         except (discord.HTTPException, AttributeError):
             user_object = await self.bot.fetch_user(id)
 
-        main_info = (
-            "### ‣ Primary Info"
-            + "\n"
-            + " ".join(
-                BADGE_MAPPING[badge]
-                for badge, owned in user_object.public_flags
-                if owned
-            )
-            + f"\n**User ID** `{user_object.id}`"
-            + f"\n**Account Made** {format_dt(user_object.created_at)}"
-        )
-
         is_member = isinstance(user_object, discord.Member)
         container = ui.Container(
             ui.Section(
@@ -788,10 +777,27 @@ class Utility(fuchsia.Addon):
                     if user_object.display_name != str(user_object)
                     else ""
                 ),
-                main_info,
+                "### ‣ Primary Info"
+                + "\n"
+                + " ".join(
+                    BADGE_MAPPING[badge]
+                    for badge, owned in user_object.public_flags
+                    if owned
+                )
+                + f"\n**User ID** `{user_object.id}`"
+                + f"\n**Account Made** {format_dt(user_object.created_at)}"
+                + (
+                    f"\n**Accent Color** `#{user_object.accent_color.value:X}`"
+                    if user_object.accent_color
+                    else ""
+                )
+                + f"\n**Default Avatar** {user_to_default_avatar(user_object)}",
                 accessory=ui.Thumbnail(user_object.display_avatar.url),
-            )
+            ),
         )
+
+        if user_object.accent_color:
+            container.accent_color = user_object.accent_color
 
         if is_member:
             assert interaction.guild is not None
@@ -828,6 +834,21 @@ class Utility(fuchsia.Addon):
     # CONTEXT MENU COMMANDS #
 
     # Context menu command added in __init__
+    async def userinfo_context_command(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | discord.User,
+    ):
+        """
+        Shows information about the selected user
+
+        This command is functionally the same as using the `/userinfo`[JOIN]
+        command, but is possibly more convenient. Additionally, the output[JOIN]
+        of this command will only ever be visible to you.
+        """
+        setattr(interaction.namespace, "private", True)
+        await self.userinfo_command.callback(self, interaction, user)  # type: ignore
+
     async def avatar_context_command(
         self,
         interaction: discord.Interaction,
