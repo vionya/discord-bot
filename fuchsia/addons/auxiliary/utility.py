@@ -406,7 +406,7 @@ class ChooseOutputView(discord.ui.View):
 
 async def get_member_message_data(
     http: HTTPClient, guild: discord.Guild, member: discord.Member
-) -> tuple[int, datetime, str]:
+) -> tuple[int, datetime | None, str | None]:
     res = await http.request(
         Route(
             "GET",
@@ -414,6 +414,8 @@ async def get_member_message_data(
             f"&sort_by=timestamp&min_id=0&sort_order=asc&offset=0&limit=1",
         )
     )
+    if len(res["messages"]) == 0:
+        return 0, None, None
     data = res["messages"][0][0]
     jump = f"https://discord.com/channels/{guild.id}/{data['channel_id']}/{data['id']}"
     return res["total_results"], discord.utils.snowflake_time(int(data["id"])), jump

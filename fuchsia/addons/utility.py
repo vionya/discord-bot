@@ -768,6 +768,25 @@ class Utility(fuchsia.Addon):
         except (discord.HTTPException, AttributeError):
             user_object = await self.bot.fetch_user(id)
 
+        avatar = user_object.display_avatar.url
+        # unsure about this so A/B testing with it until i decide
+        if (
+            ab_test("circle_pfp", interaction.user.id, 0.1)
+            and not user_object.display_avatar.is_animated()
+        ):
+            data = (
+                await user_object.display_avatar.with_format("png")
+                .with_size(256)
+                .read()
+            )
+            (form := FormData()).add_field(
+                name="data", value=data, filename="av.png", content_type="image/png"
+            )
+            async with self.bot.session.post(
+                f"http://{self.bot.cfg['api']}/actions/circlize?dim=256", data=form
+            ) as resp:
+                avatar = discord.File(BytesIO(await resp.read()), "circle_avatar.png")
+
         is_member = isinstance(user_object, discord.Member)
         container = ui.Container(
             ui.Section(
@@ -792,7 +811,7 @@ class Utility(fuchsia.Addon):
                     else ""
                 )
                 + f"\n**Default Avatar** {user_to_default_avatar(user_object)}",
-                accessory=ui.Thumbnail(user_object.display_avatar.url),
+                accessory=ui.Thumbnail(avatar),
             ),
         )
 
@@ -816,19 +835,24 @@ class Utility(fuchsia.Addon):
                         else ""
                     )
                     + f"\n**Joined Server** {format_dt(user_object.joined_at)}"
-                    + f"\n**First Message** {format_dt(first_message)}"
+                    + (
+                        f"\n**First Message** {format_dt(first_message)}"
+                        if first_message
+                        else ""
+                    )
                     + f"\n**Total Messages** {total_messages:,}"
                 ),
             )
 
             # idk if i should leave this in or not so i'll A/B test on it lol
-            if ab_test(interaction.user.id):
+            if ab_test("see_first_message", interaction.user.id) and first_link:
                 container.add_item(
                     ui.ActionRow(ui.Button(url=first_link, label="See first message"))
                 )
 
         await interaction.response.send_message(
-            view=ui.LayoutView(timeout=0).add_item(container)
+            view=ui.LayoutView(timeout=0).add_item(container),
+            files=[avatar] if isinstance(avatar, discord.File) else [],
         )
 
     # CONTEXT MENU COMMANDS #

@@ -286,14 +286,24 @@ def parse_id(
     return (message_id, int(data["channel_id"]))
 
 
-def ab_test(user_id: int) -> bool:
+def ab_test(test_name: str, user_id: int, experimental_ratio: float = 0.5) -> bool:
     """
     Returns whether or not a user should be placed in an experiment bucket for an A/B test
+
+    :param test_name: The name of the A/B test
+    :type test_name: ``str``
 
     :param user_id: The user to check for, used to seed the placement
     :type user_id: ``int``
 
+    :param experimental_ratio: The ratio of users to be placed in the experimental bucket
+    :type experimental_ratio: ``float``
+
     :returns: Whether the user is in an experiment bucket
     :rtype: ``bool``
     """
-    return bool(Random(user_id).getrandbits(1))
+    rng = Random(f"{test_name}-{user_id}")
+
+    if experimental_ratio == 0.5:
+        return bool(rng.getrandbits(1))
+    return rng.random() < experimental_ratio
