@@ -25,7 +25,7 @@ from fuchsia.tools import (
     is_valid_index,
     send_confirmation,
     shorten,
-    user_to_default_avatar
+    user_to_default_avatar,
 )
 from fuchsia.tools.checks import is_registered_profile_predicate
 
@@ -213,12 +213,11 @@ QueuedHighlightsType = defaultdict[
 class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
     """
     Commands for managing highlights
-    
+
     Highlights will notify you when the word/phrase you add is said in chat.
 
     ### Notes
-    - Highlights will **never** be triggered from private threads that[JOIN]
-    you are not a member of
+    - Highlights will **never** be triggered from private threads that you are not a member of
     - Highlights will **never** be triggered by bots
     - You must be a member of a channel/thread to be highlighted in it
     """
