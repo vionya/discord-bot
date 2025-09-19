@@ -211,7 +211,17 @@ QueuedHighlightsType = defaultdict[
 
 
 class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
-    """Commands for managing highlights"""
+    """
+    Commands for managing highlights
+    
+    Highlights will notify you when the word/phrase you add is said in chat.
+
+    ### Notes
+    - Highlights will **never** be triggered from private threads that[JOIN]
+    you are not a member of
+    - Highlights will **never** be triggered by bots
+    - You must be a member of a channel/thread to be highlighted in it
+    """
 
     def __init__(self, bot: fuchsia.Fuchsia):
         self.bot = bot
@@ -369,14 +379,6 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
     ):
         """
         Add a new highlight
-
-        Highlights will notify you when the word/phrase you add is said in chat.
-
-        ### Notes
-        - Highlights will **never** be triggered from private threads that[JOIN]
-        you are not a member of
-        - Highlights will **never** be triggered by bots
-        - You must be a member of a channel to be highlighted in it
         """
         if len(self.highlights.get(interaction.user.id, [])) >= MAX_TRIGGERS:
             raise ValueError("You've used up all of your highlight slots!")
