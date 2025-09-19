@@ -215,7 +215,6 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
     Commands for managing highlights
 
     Highlights will notify you when the word/phrase you add is said in chat.
-
     ### Notes
     - Highlights will **never** be triggered from private threads that you are not a member of
     - Highlights will **never** be triggered by bots
