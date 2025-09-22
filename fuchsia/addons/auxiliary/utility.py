@@ -36,7 +36,9 @@ def result_to_container(query: str, result: SearchResult):
         container.add_item(
             ui.MediaGallery().add_item(
                 media=result.image_url,
-                description=(shorten(result.snippet, 256) if result.snippet else None),
+                description=(
+                    shorten(result.snippet, 256) if result.snippet else None
+                ),
             )
         )
     else:
@@ -53,7 +55,9 @@ def definitions_to_embed(
             # construct embed
             # n.b. the shorten calls might accidentally cut off a link but lol
             container = discord.ui.Container(
-                ui.TextDisplay(f"### {definition.word} (by {definition.author})"),
+                ui.TextDisplay(
+                    f"### {definition.word} (by {definition.author})"
+                ),
                 ui.TextDisplay(shorten(definition.definition, 4000)),
                 ui.TextDisplay("**Example**"),
                 ui.TextDisplay(
@@ -66,7 +70,9 @@ def definitions_to_embed(
                         definition.thumbs_up,
                         definition.thumbs_down,
                         # want timestamp relative
-                        discord.utils.format_dt(definition.written_on, style="R"),
+                        discord.utils.format_dt(
+                            definition.written_on, style="R"
+                        ),
                     ),
                 ),
             )
@@ -79,11 +85,15 @@ def definitions_to_embed(
             ]:  # Slice at 25 to fit within dropdown limits
                 for definition in meaning.definitions:
                     container = discord.ui.Container(
-                        ui.TextDisplay(f"### {word.word}: {meaning.part_of_speech}"),
+                        ui.TextDisplay(
+                            f"### {word.word}: {meaning.part_of_speech}"
+                        ),
                         ui.TextDisplay(shorten(definition.definition, 4000)),
                     )
                     if definition.synonyms:
-                        container.add_item(ui.TextDisplay("**Synonyms**")).add_item(
+                        container.add_item(
+                            ui.TextDisplay("**Synonyms**")
+                        ).add_item(
                             ui.TextDisplay(", ".join(definition.synonyms[:5]))
                         )
                     yield container, (word.word, definition.definition)
@@ -169,7 +179,9 @@ class InfoButtons(discord.ui.View):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
         self.add_item(
-            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
+            InviteButton(
+                view_kwargs=invite_menu_kwargs, disabled=invite_disabled
+            )
         )
         for button in buttons:
             self.add_item(button)
@@ -211,7 +223,9 @@ class AssetsView(discord.ui.View):
         self.user_asset = user_asset
         self.guild_asset = guild_asset
         self.asset_name = asset_name
-        self.state = AssetState.GUILD if guild_asset is not None else AssetState.USER
+        self.state = (
+            AssetState.GUILD if guild_asset is not None else AssetState.USER
+        )
 
         super().__init__()
 
@@ -231,7 +245,9 @@ class AssetsView(discord.ui.View):
             self.remove_item(self.user_asset_button)
             self.guild_asset_button.style = discord.ButtonStyle.blurple
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(
+        self, interaction: discord.Interaction, /
+    ) -> bool:
         return interaction.user.id == self.user_id
 
     @discord.ui.button(style=discord.ButtonStyle.blurple)
@@ -244,7 +260,9 @@ class AssetsView(discord.ui.View):
         if not interaction.message:
             return
 
-        embed = interaction.message.embeds[0].set_image(url=self.guild_asset.url)
+        embed = interaction.message.embeds[0].set_image(
+            url=self.guild_asset.url
+        )
         embed.description = "**View in browser**\n" + get_browser_links(
             self.guild_asset
         )
@@ -266,7 +284,9 @@ class AssetsView(discord.ui.View):
             return
 
         embed = interaction.message.embeds[0].set_image(url=self.user_asset.url)
-        embed.description = "**View in browser**\n" + get_browser_links(self.user_asset)
+        embed.description = "**View in browser**\n" + get_browser_links(
+            self.user_asset
+        )
         self.state = AssetState.USER
         for child in self.children:
             if isinstance(child, discord.ui.Button):
@@ -334,8 +354,12 @@ class StickerInfoView(discord.ui.View):
             self.steal.disabled = True
 
     @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
-    async def steal(self, interaction: discord.Interaction, _: discord.ui.Button):
-        assert interaction.guild and isinstance(self.sticker, discord.GuildSticker)
+    async def steal(
+        self, interaction: discord.Interaction, _: discord.ui.Button
+    ):
+        assert interaction.guild and isinstance(
+            self.sticker, discord.GuildSticker
+        )
 
         try:
             # try to create the sticker
@@ -388,7 +412,9 @@ class ChooseOutputView(discord.ui.View):
         self.user_id = user_id
         super().__init__(**kwargs)
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(
+        self, interaction: discord.Interaction, /
+    ) -> bool:
         return interaction.user.id == self.user_id
 
     @discord.ui.button(label="Reroll", style=discord.ButtonStyle.primary)
@@ -405,17 +431,21 @@ class ChooseOutputView(discord.ui.View):
 
 
 async def get_member_message_data(
-    http: HTTPClient, guild: discord.Guild, member: discord.Member
+    http: HTTPClient, guild: discord.Guild, member: discord.Member | None = None
 ) -> tuple[int, datetime | None, str | None]:
-    res = await http.request(
-        Route(
-            "GET",
-            f"/guilds/{guild.id}/messages/search?author_id={member.id}"
-            f"&sort_by=timestamp&min_id=0&sort_order=asc&offset=0&limit=1",
-        )
+    query = (
+        f"/guilds/{guild.id}/messages/search?"
+        f"&sort_by=timestamp&min_id=0&sort_order=asc&offset=0&limit=1"
     )
+    if member is not None:
+        query += f"author_id={member.id}"
+    res = await http.request(Route("GET", query))
     if len(res["messages"]) == 0:
         return 0, None, None
     data = res["messages"][0][0]
     jump = f"https://discord.com/channels/{guild.id}/{data['channel_id']}/{data['id']}"
-    return res["total_results"], discord.utils.snowflake_time(int(data["id"])), jump
+    return (
+        res["total_results"],
+        discord.utils.snowflake_time(int(data["id"])),
+        jump,
+    )
