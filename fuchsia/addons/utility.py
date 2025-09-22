@@ -474,7 +474,7 @@ class Utility(fuchsia.Addon):
             f" | {animated_emotes}/{interaction.guild.emoji_limit} animated"
             f"\n**Filesize Limit** {round(interaction.guild.filesize_limit / 1_000_000)} MB"
             f"\n**Bitrate Limit** {round(interaction.guild.bitrate_limit / 1_000)} KB/s"
-            f"\n\n**Total Messages** {message_count}",
+            f"\n\n**Total Messages** {message_count:,}",
         ).set_thumbnail(url=interaction.guild.icon)
 
         content = None
