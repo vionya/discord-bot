@@ -438,7 +438,7 @@ async def get_member_message_data(
         f"&sort_by=timestamp&min_id=0&sort_order=asc&offset=0&limit=1"
     )
     if member is not None:
-        query += f"author_id={member.id}"
+        query += f"&author_id={member.id}"
     res = await http.request(Route("GET", query))
     if len(res["messages"]) == 0:
         return 0, None, None
