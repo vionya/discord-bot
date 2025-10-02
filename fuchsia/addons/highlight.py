@@ -166,11 +166,12 @@ class Highlight:
     ):
         triggers: set[discord.Message] = {message, *later_triggers}
         messages = [m async for m in message.channel.history(limit=7, around=message)]
+        messages.reverse()
         container = ui.Container(
             ui.TextDisplay("### In {0.guild.name}/#{0.channel.name}".format(message)),
             accent_colour=None,
         )
-        for i, msg in enumerate(reversed(messages)):
+        for i, msg in enumerate(messages):
             if len(msg.content) + container.content_length() > 1500:
                 msg.content = "[Omitted due to length]"
             is_blocked = msg.author.id in self.bot.profiles[self.user_id].hl_blocks
