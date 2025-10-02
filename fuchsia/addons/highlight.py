@@ -39,7 +39,11 @@ SPOILER_PATTERN = re.compile(r"\|\|.*?\|\|")
 
 
 def format_hl_context(
-    message: discord.Message, is_trigger=False, is_author_blocked=False
+    message: discord.Message,
+    is_trigger=False,
+    is_author_blocked=False,
+    *,
+    escape_markdown,
 ):
     fmt = (
         "**{0} [{1.author.display_name}]({1.jump_url})** {1.content}"
@@ -50,8 +54,14 @@ def format_hl_context(
         message.content = "[Blocked]"
     else:
         # strip markdown and replace custom emoji
+        santitised_content = SPOILER_PATTERN.sub("[Spoiler]", message.content)
         message.content = CUSTOM_EMOJI.sub(
-            "❔", SPOILER_PATTERN.sub("[Spoiler]", message.content)
+            "❔",
+            (
+                discord.utils.escape_markdown(santitised_content)
+                if escape_markdown
+                else santitised_content
+            ),
         )
         if message.attachments:
             message.content += " [Attachment x{}]".format(len(message.attachments))
@@ -165,48 +175,92 @@ class Highlight:
         self, message: discord.Message, later_triggers: set[discord.Message]
     ):
         triggers: set[discord.Message] = {message, *later_triggers}
-        messages = [m async for m in message.channel.history(limit=7, around=message)]
-        messages.reverse()
-        container = ui.Container(
-            ui.TextDisplay("### In {0.guild.name}/#{0.channel.name}".format(message)),
-            accent_colour=None,
-        )
-        for i, msg in enumerate(messages):
-            if len(msg.content) + container.content_length() > 1500:
-                msg.content = "[Omitted due to length]"
-            is_blocked = msg.author.id in self.bot.profiles[self.user_id].hl_blocks
-            formatted = format_hl_context(msg, msg in triggers, is_blocked)
-            if msg in triggers and (
-                i == 0 or i > 0 and messages[i - 1] not in triggers
-            ):
-                container.add_item(ui.Separator())
-            container.add_item(ui.TextDisplay(formatted))
-            if msg in triggers and (
-                i == len(messages) - 1
-                or i < len(messages) - 1
-                and messages[i + 1] not in triggers
-            ):
-                container.add_item(ui.Separator())
-        container.add_item(
-            ui.ActionRow(ui.Button(label="Jump to Message", url=message.jump_url))
-        )
-        view = (
-            ui.LayoutView(timeout=0)
-            .add_item(
+
+        # this is a dumb bandaid solution to the fact that Discord introduced a regression
+        # with how cv2 notifications are rendered (i.e. they arent) so until the new
+        # design for highlights has to be restricted to bot owners only until
+        # the regression is fixed :DDDDDDDDD
+        if self.bot.owner_ids and self.user_id in self.bot.owner_ids:
+            messages = [
+                m async for m in message.channel.history(limit=7, around=message)
+            ]
+            messages.reverse()
+            container = ui.Container(
                 ui.TextDisplay(
-                    "{0}: {1}".format(
-                        message.author,
-                        shorten(SPOILER_PATTERN.sub("[Spoiler]", message.content), 75),
+                    "### In {0.guild.name}/#{0.channel.name}".format(message)
+                ),
+                accent_colour=None,
+            )
+            for i, msg in enumerate(messages):
+                if len(msg.content) + container.content_length() > 1500:
+                    msg.content = "[Omitted due to length]"
+                is_blocked = msg.author.id in self.bot.profiles[self.user_id].hl_blocks
+                formatted = format_hl_context(
+                    msg, msg in triggers, is_blocked, escape_markdown=False
+                )
+                if msg in triggers and (
+                    i == 0 or i > 0 and messages[i - 1] not in triggers
+                ):
+                    container.add_item(ui.Separator())
+                container.add_item(ui.TextDisplay(formatted))
+                if msg in triggers and (
+                    i == len(messages) - 1
+                    or i < len(messages) - 1
+                    and messages[i + 1] not in triggers
+                ):
+                    container.add_item(ui.Separator())
+            container.add_item(
+                ui.ActionRow(ui.Button(label="Jump to Message", url=message.jump_url))
+            )
+            view = (
+                ui.LayoutView(timeout=0)
+                .add_item(
+                    ui.TextDisplay(
+                        "{0}: {1}".format(
+                            message.author,
+                            shorten(
+                                SPOILER_PATTERN.sub("[Spoiler]", message.content), 75
+                            ),
+                        )
                     )
                 )
+                .add_item(container)
             )
-            .add_item(container)
-        )
 
-        return {
-            "view": view,
-            "silent": self.bot.profiles[self.user_id].silence_hl,
-        }
+            return {
+                "view": view,
+                "silent": self.bot.profiles[self.user_id].silence_hl,
+            }
+        else:
+            content = ""
+            async for m in message.channel.history(limit=7, around=message):
+                if len(content + m.content) > 1500:  # Don't exceed embed limits
+                    m.content = "[Omitted due to length]"
+                is_blocked = m.author.id in self.bot.profiles[self.user_id].hl_blocks
+                formatted = format_hl_context(
+                    m, m in triggers, is_blocked, escape_markdown=True
+                )
+                content = f"{formatted}\n{content}"
+
+            embed = fuchsia.Embed(
+                title="In {0.guild.name}/#{0.channel.name}".format(message),
+                description=content,
+            )
+
+            view = discord.ui.View(timeout=0)
+            view.add_item(
+                discord.ui.Button(url=message.jump_url, label="Jump to message")
+            )
+
+            return {
+                "content": "{0}: {1}".format(
+                    message.author,
+                    shorten(SPOILER_PATTERN.sub("[Spoiler]", message.content), 75),
+                ),
+                "embed": embed,
+                "view": view,
+                "silent": self.bot.profiles[self.user_id].silence_hl,
+            }
 
     def matches(self, other: str):
         return self.pattern.search(other)
