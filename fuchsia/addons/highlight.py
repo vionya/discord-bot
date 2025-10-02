@@ -51,10 +51,7 @@ def format_hl_context(
     else:
         # strip markdown and replace custom emoji
         message.content = CUSTOM_EMOJI.sub(
-            "❔",
-            discord.utils.escape_markdown(
-                SPOILER_PATTERN.sub("[Spoiler]", message.content)
-            ),
+            "❔", SPOILER_PATTERN.sub("[Spoiler]", message.content)
         )
         if message.attachments:
             message.content += " [Attachment x{}]".format(len(message.attachments))
