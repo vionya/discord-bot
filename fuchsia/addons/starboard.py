@@ -230,9 +230,10 @@ class Starboard:
                     row.add_item(ui.Button(url=ref.jump_url, label="Go to reply"))
 
             if ref:
-                if (
-                    ref.type == discord.MessageReferenceType.reply
-                    and display_message.content
+                if ref.type == discord.MessageReferenceType.reply and (
+                    display_message.content
+                    or display_message.attachments
+                    or display_message.embeds
                 ):
                     container.remove_item(author_display)
                     container.add_item(author_display)
@@ -305,7 +306,7 @@ class Starboard:
                                     gallery.add_item(
                                         media=str(extract_tenor_gif(attach))
                                     )
-                            case "image":
+                            case "image" | "video":
                                 if attach.url:
                                     gallery.add_item(media=attach.url)
                             case "rich" | "article":
