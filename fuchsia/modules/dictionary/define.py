@@ -22,11 +22,11 @@ class Define:
         url = BASE_STANDARD / "en" / query
 
         async with self.session.get(url) as resp:
-            _data = await resp.json()
             if resp.status != 200:
                 raise DefinitionError(
                     f"Error fetching standard dictionary definition ({resp.status})"
                 )
+            _data = await resp.json()
 
         return StandardDictionaryResponse(_data)
 
@@ -34,10 +34,10 @@ class Define:
         url = BASE_URBAN % {"term": query}
 
         async with self.session.get(url) as resp:
-            _data = await resp.json()
             if resp.status != 200:
                 raise DefinitionError(
                     f"Error fetching Urban Dictionary definition ({resp.status})"
                 )
+            _data = await resp.json()
 
         return UrbanDictionaryResponse(_data)
