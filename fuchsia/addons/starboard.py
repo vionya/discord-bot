@@ -192,7 +192,7 @@ class Starboard:
             author_display = ui.TextDisplay(
                 f"**{user_to_default_avatar(author)} {author.display_name} ({message.author})**",
             )
-            container = ui.Container(author_display)
+            container = ui.Container(author_display, accent_colour=None)
 
             row = ui.ActionRow()
 
