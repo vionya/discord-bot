@@ -9,7 +9,12 @@ from .objects import StandardDictionaryResponse, UrbanDictionaryResponse
 
 BASE_STANDARD = URL("https://api.dictionaryapi.dev/api/v2/entries/")
 BASE_URBAN = URL("https://api.urbandictionary.com/v0/define")
-DefinitionError = type("DefinitionError", (Exception,), {})
+
+
+class DefinitionError(Exception):
+    def __init__(self, status: int):
+        super().__init__()
+        self.status = status
 
 
 class Define:
@@ -23,9 +28,7 @@ class Define:
 
         async with self.session.get(url) as resp:
             if resp.status != 200:
-                raise DefinitionError(
-                    f"Error fetching standard dictionary definition ({resp.status})"
-                )
+                raise DefinitionError(resp.status)
             _data = await resp.json()
 
         return StandardDictionaryResponse(_data)
@@ -35,9 +38,7 @@ class Define:
 
         async with self.session.get(url) as resp:
             if resp.status != 200:
-                raise DefinitionError(
-                    f"Error fetching Urban Dictionary definition ({resp.status})"
-                )
+                raise DefinitionError(resp.status)
             _data = await resp.json()
 
         return UrbanDictionaryResponse(_data)

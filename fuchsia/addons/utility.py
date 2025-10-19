@@ -217,8 +217,12 @@ class Utility(fuchsia.Addon):
                     resp = await self.dictionary.define_standard(term)
                 case "urban":
                     resp = await self.dictionary.define_urban(term)
-        except dictionary.DefinitionError:
-            raise RuntimeError("No definition found")
+        except dictionary.DefinitionError as e:
+            if e.status == 404:
+                msg = "No definition found"
+            else:
+                msg = f"Something went wrong fetching a definition (status: {e.status})"
+            raise RuntimeError(msg)
 
         components, label_descs = [], []
         for comp, (l, d) in definitions_to_embed(resp):
