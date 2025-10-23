@@ -61,7 +61,7 @@ class Fuchsia(commands.Bot):
             state=config["bot"]["activity_state"].format(version=__version__),
             type=discord.ActivityType[config["bot"]["activity_type"]],
             emoji=(
-                discord.PartialEmoji.from_str(config["bot"]["activity_emoji"])
+                discord.PartialEmoji.from_str(config["bot"]["activity_emoji"]).to_dict()
                 if config["bot"]["activity_emoji"]
                 else None
             ),
