@@ -20,6 +20,7 @@ class FuchsiaBotConfig(TypedDict):
     activity_name: str
     activity_state: str
     activity_type: str
+    activity_emoji: str
     status: str
     ignored_exceptions: list[str]
     sync_app_commands: bool

@@ -60,6 +60,11 @@ class Fuchsia(commands.Bot):
             name=config["bot"]["activity_name"].format(version=__version__),
             state=config["bot"]["activity_state"].format(version=__version__),
             type=discord.ActivityType[config["bot"]["activity_type"]],
+            emoji=(
+                discord.PartialEmoji.from_str(config["bot"]["activity_emoji"])
+                if config["bot"]["activity_emoji"]
+                else None
+            ),
             url="https://twitch.tv/#",  # for spoofing Discord when activity type is streaming
         )
         kwargs["status"] = discord.Status[config["bot"]["status"]]
