@@ -41,7 +41,7 @@ def result_to_container(query: str, result: SearchResult):
                 ),
             )
         )
-    else:
+    elif result.snippet:
         container.add_item(ui.TextDisplay(shorten(result.snippet, 2000)))
     return container
 
