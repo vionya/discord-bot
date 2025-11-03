@@ -57,7 +57,8 @@ interaction_response.attribute(
 
 @container.attribute()
 def __init__(*args, **kwargs):
-    kwargs.setdefault("accent_colour", 0xF48EAD)
+    # kwargs.setdefault("accent_colour", 0xF48EAD)
+    kwargs.setdefault("accent_colour", None)
     container.original(discord.ui.Container)["__init__"](*args, **kwargs)
 
 
