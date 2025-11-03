@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 import discord
+from discord import ui
 
 import fuchsia
 
@@ -29,12 +30,13 @@ async def send_confirmation(
     if predicate:
         msg = f"Successfully {predicate}"
 
+    content = f"\U00002714 {msg}!"
+    container = ui.Container(ui.TextDisplay(content))
+    view = ui.LayoutView().add_item(container)
     if ephemeral is not None:
-        await interaction.response.send_message(
-            f"\U00002714 {msg}!", ephemeral=ephemeral
-        )
+        await interaction.response.send_message(view=view, ephemeral=ephemeral)
     else:
-        await interaction.response.send_message(f"\U00002714 {msg}!")
+        await interaction.response.send_message(view=view)
 
 
 class PromptButton(discord.ui.Button):
@@ -53,13 +55,14 @@ class PromptButton(discord.ui.Button):
         self.view.value = self.value
 
 
-class PromptActions(discord.ui.View):
+class PromptActions(ui.LayoutView):
     value: Optional[bool]
 
     def __init__(
         self,
         interaction: discord.Interaction,
         *,
+        prompt: str,
         content_confirmed: str,
         content_cancelled: str,
         label_confirm: str,
@@ -67,13 +70,15 @@ class PromptActions(discord.ui.View):
     ):
         super().__init__()
         self.user = interaction.user
+
+        row = ui.ActionRow()
         for content, value, style, label in [
             (content_confirmed, True, discord.ButtonStyle.green, label_confirm),
             (content_cancelled, False, discord.ButtonStyle.red, label_cancel),
         ]:
-            self.add_item(
-                PromptButton(content, value, style=style, label=label)
-            )
+            row.add_item(PromptButton(content, value, style=style, label=label))
+        container = ui.Container(ui.TextDisplay(prompt), row)
+        self.add_item(container)
         self.value = None
 
     async def interaction_check(self, interaction):
@@ -91,12 +96,12 @@ async def prompt_user(
 ):
     actions = PromptActions(
         interaction,
+        prompt=prompt_message,
         content_confirmed=content_confirmed,
         content_cancelled=content_cancelled,
         label_confirm=label_confirm,
         label_cancel=label_cancel,
     )
-    embed = fuchsia.Embed(description=prompt_message)
-    await interaction.response.send_message(embed=embed, view=actions)
+    await interaction.response.send_message(view=actions)
     await actions.wait()
     return actions.value

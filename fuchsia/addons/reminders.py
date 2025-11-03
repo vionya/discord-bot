@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 import discord
-from discord import app_commands, utils
+from discord import app_commands, utils, ui
 
 import fuchsia
 from fuchsia.classes.app_commands import no_defer
@@ -32,7 +32,7 @@ from fuchsia.tools.time_parse import (
     parse_relative,
 )
 
-from .auxiliary.reminders import ReminderEditModal, ReminderShowView
+from .auxiliary.reminders import ReminderEditModal, ReminderShowRow
 
 # Maximum number of reminders per user
 MAX_REMINDERS = 100
@@ -130,9 +130,7 @@ class Reminder:
             # never fail and if it does I will cry
             assert isinstance(dest, discord.abc.Messageable)
 
-            embed = fuchsia.Embed(
-                title="Reminder Triggered", description=self.content
-            )
+            embed = fuchsia.Embed(title="Reminder Triggered", description=self.content)
             if self.repeating is True:
                 embed.add_field(
                     name="Repeats at:",
@@ -148,9 +146,7 @@ class Reminder:
             # mention the user if there is an existing channel we want to send in
             if isinstance(
                 dest,
-                discord.abc.GuildChannel
-                | discord.Thread
-                | discord.abc.PrivateChannel,
+                discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel,
             ):
                 content = f"<@{self.user_id}> {content}"
 
@@ -266,9 +262,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         reminder = Reminder(bot=self.bot, **data)
         insort(self.reminders[user_id], reminder, key=lambda r: r.end_time)
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)
 
     @iter_autocomplete(("1d", "1w", "1mo", "1y"), param="repeat")
@@ -346,7 +340,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         now = datetime.now(tz)
 
         message = "Your reminder will be delivered <t:{0}:R> [<t:{0}>]"
-        coachmark = discord.utils.MISSING
+        use_coachmark = False
         match time_data:
             case TimedeltaWithYears():
                 if repeat:
@@ -356,15 +350,11 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                             "Reminders may repeat no more than once a minute"
                         )
 
-                    epoch = (now + time_data - delta).replace(
-                        second=1, microsecond=0
-                    )
+                    epoch = (now + time_data - delta).replace(second=1, microsecond=0)
                     message = (
                         "Your reminder will be delivered every {0}, starting"
                         " <t:{1:.0f}>"
-                    ).format(
-                        humanize_timedelta(delta), (epoch + delta).timestamp()
-                    )
+                    ).format(humanize_timedelta(delta), (epoch + delta).timestamp())
 
                 else:
                     # Delta is provided, epoch time is now since it's the starting
@@ -387,24 +377,14 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                     message = (
                         "Your reminder will be delivered every {0}, starting"
                         " <t:{1:.0f}>"
-                    ).format(
-                        humanize_timedelta(delta), (epoch + delta).timestamp()
-                    )
+                    ).format(humanize_timedelta(delta), (epoch + delta).timestamp())
 
                 else:
                     delta = time_data - now
                     epoch = now
 
                     if not profile.timezone:
-                        profile_cmd_id = self.bot.command_ids.get("profile")
-                        coachmark = fuchsia.Embed(
-                            title="\u2139\ufe0f Heads up!",
-                            description="Not the time you expected? Consider setting your timezone with {}!".format(
-                                f"</profile settings set:{profile_cmd_id}>"
-                                if profile_cmd_id
-                                else "`/profile settings set`"
-                            ),
-                        )
+                        use_coachmark = True
 
             case _:
                 raise RuntimeError("Unknown error in time parsing")
@@ -423,9 +403,24 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             epoch=epoch,
             deliver_in=interaction.channel_id if in_channel is True else None,
         )
-        await interaction.response.send_message(
-            message.format(timestamp), embed=coachmark
+        view = ui.LayoutView().add_item(
+            ui.Container(ui.TextDisplay(message.format(timestamp)))
         )
+        if use_coachmark:
+            profile_cmd_id = self.bot.command_ids.get("profile")
+            view.add_item(
+                ui.Container(
+                    ui.TextDisplay("### \u2139\ufe0f Heads up!"),
+                    ui.TextDisplay(
+                        "Not the time you expected? Consider setting your timezone with {}!".format(
+                            f"</profile settings set:{profile_cmd_id}>"
+                            if profile_cmd_id
+                            else "`/profile settings set`"
+                        )
+                    ),
+                )
+            )
+        await interaction.response.send_message(view=view)
 
     @app_commands.command(name="list")
     async def remind_list(self, interaction: discord.Interaction):
@@ -440,11 +435,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             )
             formatted_reminders.append(
                 "- {0} (<t:{1}:R>) {2}".format(
-                    (
-                        "\U0001f501"
-                        if reminder.repeating
-                        else "\u0031\ufe0f\u20e3"
-                    ),
+                    ("\U0001f501" if reminder.repeating else "\u0031\ufe0f\u20e3"),
                     int(reminder.end_time.timestamp()),
                     content,
                 )
@@ -470,33 +461,27 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         except IndexError:
             raise IndexError("Couldn't find that reminder.")
 
-        embed = (
-            fuchsia.Embed(description=reminder.content)
-            .add_field(
-                name="This reminder will be delivered at:",
-                value=(f"<t:{int(reminder.end_time.timestamp())}>"),
-                inline=False,
-            )
-            .set_author(
-                name="Viewing a reminder",
-                icon_url=interaction.user.display_avatar,
-            )
+        container = ui.Container(
+            ui.TextDisplay(reminder.content or "No content"),
+            ui.Separator(),
+            ui.TextDisplay(
+                f"**Will be delivered at** <t:{int(reminder.end_time.timestamp())}>"
+                + (
+                    f"\n**Will repeat every** `{humanize_timedelta(reminder.delta)}`"
+                    if reminder.repeating
+                    else ""
+                )
+            ),
+            ui.TextDisplay(f"-# Reminder ID: `{reminder.reminder_id}`"),
         )
 
-        if reminder.repeating:
-            embed.add_field(
-                name="This reminder will repeat every:",
-                value=f"`{humanize_timedelta(reminder.delta)}`",
-                inline=False,
-            )
-
-        embed.add_field(
-            name="Reminder ID", value=f"`{reminder.reminder_id}`", inline=False
+        view = (
+            ui.LayoutView()
+            .add_item(container)
+            .add_item(ReminderShowRow(self.bot.db, reminder=reminder))
         )
 
-        view = ReminderShowView(self.bot.db, reminder=reminder)
-
-        await interaction.response.send_message(embed=embed, view=view)
+        await interaction.response.send_message(view=view)
 
     @app_commands.command(name="edit")
     @app_commands.rename(index="reminder")
@@ -533,13 +518,9 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
 
         elif is_valid_index(index):
             try:
-                reminders = [
-                    self.reminders[interaction.user.id].pop(int(index) - 1)
-                ]
+                reminders = [self.reminders[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
-                raise IndexError(
-                    "One or more of the provided indices is invalid."
-                )
+                raise IndexError("One or more of the provided indices is invalid.")
 
         else:
             raise TypeError("Invalid input provided.")
@@ -556,9 +537,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             return []
 
         reminders = [rem.content for rem in self.reminders[interaction.user.id]]
-        return generate_autocomplete_list(
-            reminders, current, insert_wildcard=True
-        )
+        return generate_autocomplete_list(reminders, current, insert_wildcard=True)
 
 
 async def setup(bot: fuchsia.Fuchsia):

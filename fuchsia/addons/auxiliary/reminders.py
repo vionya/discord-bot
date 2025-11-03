@@ -58,7 +58,7 @@ class ReminderEditModal(discord.ui.Modal):
         )
 
 
-class ReminderShowView(discord.ui.View):
+class ReminderShowRow(discord.ui.ActionRow):
     def __init__(self, db: Pool, *, reminder: Reminder):
         self.db = db
         self.reminder = reminder
@@ -103,4 +103,4 @@ class ReminderShowView(discord.ui.View):
         button.label = "Reminder Deleted"
         button.disabled = True
 
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(view=self.view)
