@@ -475,11 +475,8 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             ui.TextDisplay(f"-# Reminder ID: `{reminder.reminder_id}`"),
         )
 
-        view = (
-            ui.LayoutView()
-            .add_item(container)
-            .add_item(ReminderShowRow(self.bot.db, reminder=reminder))
-        )
+        container.add_item(ReminderShowRow(self.bot.db, reminder=reminder))
+        view = ui.LayoutView().add_item(container)
 
         await interaction.response.send_message(view=view)
 
