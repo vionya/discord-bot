@@ -689,7 +689,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
 
         return [
             discord.app_commands.Choice(
-                name=transform_mention(_id), value=str(_id)
+                name=transform_mention(int(_id)), value=str(_id)
             )
             for _id in filter(
                 lambda block: current in block, map(str, profile.hl_blocks)
