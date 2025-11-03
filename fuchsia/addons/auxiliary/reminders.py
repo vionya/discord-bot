@@ -5,7 +5,7 @@ An auxiliary module for the `Reminders` addon
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import discord
 
@@ -82,12 +82,9 @@ class ReminderShowRow(discord.ui.ActionRow):
         if not interaction.message:
             return
 
-        # copy embed from message
-        embed = interaction.message.embeds[0]
-        # update its description with the new content
-        embed.description = self.reminder.content
-        # edit the original response
-        await interaction.edit_original_response(embeds=[embed])
+        view = discord.ui.LayoutView.from_message(interaction.message)
+        cast(discord.ui.TextDisplay, view.find_item(67)).content = self.reminder.content
+        await interaction.edit_original_response(view=view)
 
     @discord.ui.button(
         label="Delete Reminder", emoji="🗑️", style=discord.ButtonStyle.red

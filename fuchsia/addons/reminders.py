@@ -462,7 +462,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             raise IndexError("Couldn't find that reminder.")
 
         container = ui.Container(
-            ui.TextDisplay(reminder.content or "No content"),
+            ui.TextDisplay(reminder.content or "No content", id=67),
             ui.Separator(),
             ui.TextDisplay(
                 f"**Will be delivered at** <t:{int(reminder.end_time.timestamp())}>"
