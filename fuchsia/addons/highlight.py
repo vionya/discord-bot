@@ -681,7 +681,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
                 getattr(
                     self.bot.get_channel(id),
                     "name",
-                    getattr(self.bot.get_user(id), "name"),
+                    getattr(self.bot.get_user(id), "name", None),
                 ),
             )
 
