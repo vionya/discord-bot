@@ -195,6 +195,113 @@ class InfoButtons(discord.ui.View):
         )
 
 
+class AssetsSwapRow(ui.ActionRow["AssetsView"]):
+    view: AssetsView
+
+    def __init__(
+        self, *args, block_save: bool = False, asset_name: str, **kwargs
+    ):
+        if block_save is True:
+            self.save_current_asset.disabled = True
+
+        self.guild_asset_button.label = f"Server {asset_name.title()}"
+        self.user_asset_button.label = f"User {asset_name.title()}"
+
+        # remove the button for the asset that doesn't exist and set the other
+        # to blurple
+        if self.view.guild_asset is None:
+            self.remove_item(self.guild_asset_button)
+            self.user_asset_button.style = discord.ButtonStyle.blurple
+
+        if self.view.user_asset is None:
+            self.remove_item(self.user_asset_button)
+            self.guild_asset_button.style = discord.ButtonStyle.blurple
+
+    @ui.button(style=discord.ButtonStyle.blurple)
+    async def guild_asset_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        assert (
+            self.view.guild_asset is not None
+        )  # this button will not exist if this isn't true
+        if not interaction.message:
+            return
+
+        cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
+            media=self.view.guild_asset.url
+        )
+        cast(
+            ui.TextDisplay, self.view.find_item(101)
+        ).content = "**View in browser**\n" + get_browser_links(
+            self.view.guild_asset
+        )
+        self.state = AssetState.GUILD
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.style = discord.ButtonStyle.grey
+        button.style = discord.ButtonStyle.blurple
+        await interaction.response.edit_message(view=self.view)
+
+    @ui.button(style=discord.ButtonStyle.grey)
+    async def user_asset_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        assert (
+            self.view.user_asset is not None
+        )  # this button will not exist if this isn't true
+        if not interaction.message:
+            return
+
+        cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
+            media=self.view.user_asset.url
+        )
+        cast(
+            ui.TextDisplay, self.view.find_item(101)
+        ).content = "**View in browser**\n" + get_browser_links(
+            self.view.user_asset
+        )
+        self.state = AssetState.USER
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.style = discord.ButtonStyle.grey
+        button.style = discord.ButtonStyle.blurple
+        await interaction.response.edit_message(view=self.view)
+
+    @ui.button(label="💾", style=discord.ButtonStyle.grey)
+    async def save_current_asset(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if not interaction.message:
+            return
+
+        avatar: discord.Asset
+        match self.state:
+            case AssetState.USER:
+                assert self.view.user_asset is not None
+                avatar = self.view.user_asset
+            case AssetState.GUILD:
+                assert self.view.guild_asset is not None
+                avatar = self.view.guild_asset
+
+        file = await avatar.to_file()
+        cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
+            media=f"attachment://{file.filename}"
+        )
+        self.view.remove_item(cast(ui.TextDisplay, self.view.find_item(101)))
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        button.style = discord.ButtonStyle.green
+        await interaction.response.edit_message(
+            view=self.view, attachments=[file]
+        )
+        await interaction.followup.send(
+            f"The selected {self.view.asset_name.lower()} has been saved in this message for future reference!",
+            ephemeral=True,
+        )
+        self.view.stop()
+
+
 class AssetState(Enum):
     USER = auto()
     GUILD = auto()
@@ -206,9 +313,6 @@ class AssetsView(ui.LayoutView):
     user_asset: discord.Asset | None
     guild_asset: discord.Asset | None
     asset_name: str
-
-    container: ui.Container = ui.Container()
-    row: ui.ActionRow = ui.ActionRow(id=1)
 
     def __init__(
         self,
@@ -235,119 +339,23 @@ class AssetsView(ui.LayoutView):
             guild_asset if self.state == AssetState.GUILD else user_asset
         )
         assert active_asset is not None
-        self.container.add_item(ui.TextDisplay(f"-# {header}")).add_item(
+        container = ui.Container(
+            ui.TextDisplay(f"-# {header}"),
             ui.TextDisplay(
                 "**View in browser**\n" + get_browser_links(active_asset),
                 id=101,
-            )
-        ).add_item(ui.MediaGallery(id=67).add_item(media=active_asset.url))
+            ),
+            ui.MediaGallery(id=67).add_item(media=active_asset.url),
+            AssetsSwapRow(block_save=block_save, asset_name=asset_name),
+        )
+        self.add_item(container)
 
         super().__init__()
-        self.remove_item(cast(ui.ActionRow, self.find_item(1)))
-        self.container.add_item(self.row)
-
-        if block_save is True:
-            self.save_current_asset.disabled = True
-
-        self.guild_asset_button.label = f"Server {asset_name.title()}"
-        self.user_asset_button.label = f"User {asset_name.title()}"
-
-        # remove the button for the asset that doesn't exist and set the other
-        # to blurple
-        if guild_asset is None:
-            self.remove_item(self.guild_asset_button)
-            self.user_asset_button.style = discord.ButtonStyle.blurple
-
-        if user_asset is None:
-            self.remove_item(self.user_asset_button)
-            self.guild_asset_button.style = discord.ButtonStyle.blurple
 
     async def interaction_check(
         self, interaction: discord.Interaction, /
     ) -> bool:
         return interaction.user.id == self.user_id
-
-    @row.button(style=discord.ButtonStyle.blurple)
-    async def guild_asset_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        assert (
-            self.guild_asset is not None
-        )  # this button will not exist if this isn't true
-        if not interaction.message:
-            return
-
-        cast(ui.MediaGallery, self.find_item(67)).clear_items().add_item(
-            media=self.guild_asset.url
-        )
-        cast(
-            ui.TextDisplay, self.find_item(101)
-        ).content = "**View in browser**\n" + get_browser_links(
-            self.guild_asset
-        )
-        self.state = AssetState.GUILD
-        for child in self.row.children:
-            if isinstance(child, discord.ui.Button):
-                child.style = discord.ButtonStyle.grey
-        button.style = discord.ButtonStyle.blurple
-        await interaction.response.edit_message(view=self)
-
-    @row.button(style=discord.ButtonStyle.grey)
-    async def user_asset_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        assert (
-            self.user_asset is not None
-        )  # this button will not exist if this isn't true
-        if not interaction.message:
-            return
-
-        cast(ui.MediaGallery, self.find_item(67)).clear_items().add_item(
-            media=self.user_asset.url
-        )
-        cast(
-            ui.TextDisplay, self.find_item(101)
-        ).content = "**View in browser**\n" + get_browser_links(self.user_asset)
-        self.state = AssetState.USER
-        for child in self.row.children:
-            if isinstance(child, discord.ui.Button):
-                child.style = discord.ButtonStyle.grey
-        button.style = discord.ButtonStyle.blurple
-        await interaction.response.edit_message(view=self)
-
-    @row.button(label="💾", style=discord.ButtonStyle.grey)
-    async def save_current_asset(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        if not interaction.message:
-            return
-
-        avatar: discord.Asset
-        match self.state:
-            case AssetState.USER:
-                assert self.user_asset is not None
-                avatar = self.user_asset
-            case AssetState.GUILD:
-                assert self.guild_asset is not None
-                avatar = self.guild_asset
-
-        file = await avatar.to_file()
-        embed = interaction.message.embeds[0].set_image(
-            url=f"attachment://{file.filename}"
-        )
-        embed.description = None
-        for child in self.row.children:
-            if isinstance(child, discord.ui.Button):
-                child.disabled = True
-        button.style = discord.ButtonStyle.green
-        await interaction.response.edit_message(
-            view=self, embed=embed, attachments=[file]
-        )
-        await interaction.followup.send(
-            f"The selected {self.asset_name.lower()} has been saved in this message for future reference!",
-            ephemeral=True,
-        )
-        self.stop()
 
 
 class StickerInfoView(discord.ui.View):
