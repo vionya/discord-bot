@@ -286,7 +286,7 @@ class AssetsView(ui.LayoutView):
             self.guild_asset
         )
         self.state = AssetState.GUILD
-        for child in self.children:
+        for child in self.row.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
         button.style = discord.ButtonStyle.blurple
@@ -309,7 +309,7 @@ class AssetsView(ui.LayoutView):
             ui.TextDisplay, self.find_item(101)
         ).content = "**View in browser**\n" + get_browser_links(self.user_asset)
         self.state = AssetState.USER
-        for child in self.children:
+        for child in self.row.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
         button.style = discord.ButtonStyle.blurple
@@ -336,7 +336,7 @@ class AssetsView(ui.LayoutView):
             url=f"attachment://{file.filename}"
         )
         embed.description = None
-        for child in self.children:
+        for child in self.row.children:
             if isinstance(child, discord.ui.Button):
                 child.disabled = True
         button.style = discord.ButtonStyle.green
