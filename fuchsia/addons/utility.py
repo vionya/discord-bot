@@ -322,9 +322,8 @@ class Utility(fuchsia.Addon):
         (selection, table) = get_choice(options)
 
         container = ui.Container(
-            ui.TextDisplay("-# Choice Results"),
             ui.TextDisplay("```\n" + table + "\n```", id=67),
-            ui.TextDisplay(f"**Selection** `{shorten(selection, 250)}`", id=68)
+            ui.TextDisplay(f"**Selection** `{shorten(selection, 250)}`", id=68),
         )
         view = ui.LayoutView().add_item(container)
         await interaction.response.send_message(view=view)
@@ -365,6 +364,7 @@ class Utility(fuchsia.Addon):
                 guild_asset=user_object.guild_avatar,
                 block_save=allow_save,
                 asset_name="Avatar",
+                header=f"{user_object.display_name} ({user_object})",
             )
             avatar = user_object.guild_avatar
         else:
@@ -374,6 +374,7 @@ class Utility(fuchsia.Addon):
                 guild_asset=None,
                 block_save=allow_save,
                 asset_name="Avatar",
+                header=f"{user_object.display_name} ({user_object})",
             )
 
         embed.description += "**View in browser**\n" + get_browser_links(avatar)
@@ -381,7 +382,7 @@ class Utility(fuchsia.Addon):
             name=f"{user_object.display_name} ({user_object})"
         )
 
-        await interaction.response.send_message(embed=embed, view=view)
+        await interaction.response.send_message(view=view)
 
     @app_commands.command(name="banner")
     @app_commands.describe(
@@ -424,6 +425,7 @@ class Utility(fuchsia.Addon):
                 guild_asset=user_object.guild_banner,
                 block_save=allow_save,
                 asset_name="Banner",
+                header=f"{user_object.display_name} ({user_object})",
             )
             banner = user_object.guild_banner
         else:
@@ -433,6 +435,7 @@ class Utility(fuchsia.Addon):
                 guild_asset=None,
                 block_save=allow_save,
                 asset_name="Banner",
+                header=f"{user_object.display_name} ({user_object})",
             )
 
         embed.description += "**View in browser**\n" + get_browser_links(banner)  # type: ignore
@@ -440,7 +443,7 @@ class Utility(fuchsia.Addon):
             name=f"{user_object.display_name} ({user_object})"
         )
 
-        await interaction.response.send_message(embed=embed, view=view)
+        await interaction.response.send_message(view=view)
 
     @app_commands.command(name="serverinfo")
     @app_commands.allowed_contexts(

@@ -200,12 +200,15 @@ class AssetState(Enum):
     GUILD = auto()
 
 
-class AssetsView(discord.ui.View):
+class AssetsView(ui.LayoutView):
     state: AssetState
     user_id: int
     user_asset: discord.Asset | None
     guild_asset: discord.Asset | None
     asset_name: str
+
+    container: ui.Container = ui.Container()
+    row: ui.ActionRow = ui.ActionRow(id=1)
 
     def __init__(
         self,
@@ -214,6 +217,7 @@ class AssetsView(discord.ui.View):
         user_asset: discord.Asset | None,
         guild_asset: discord.Asset | None,
         asset_name: str,
+        header: str,
         block_save: bool = False,
     ):
         if user_asset is None and guild_asset is None:
@@ -227,7 +231,20 @@ class AssetsView(discord.ui.View):
             AssetState.GUILD if guild_asset is not None else AssetState.USER
         )
 
+        active_asset = (
+            guild_asset if self.state == AssetState.GUILD else user_asset
+        )
+        assert active_asset is not None
+        self.container.add_item(ui.TextDisplay(f"-# {header}")).add_item(
+            ui.TextDisplay(
+                "**View in browser**\n" + get_browser_links(active_asset),
+                id=101,
+            )
+        ).add_item(ui.MediaGallery(id=67).add_item(media=active_asset.url))
+
         super().__init__()
+        self.remove_item(cast(ui.ActionRow, self.find_item(1)))
+        self.container.add_item(self.row)
 
         if block_save is True:
             self.save_current_asset.disabled = True
@@ -250,7 +267,7 @@ class AssetsView(discord.ui.View):
     ) -> bool:
         return interaction.user.id == self.user_id
 
-    @discord.ui.button(style=discord.ButtonStyle.blurple)
+    @row.button(style=discord.ButtonStyle.blurple)
     async def guild_asset_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -260,10 +277,12 @@ class AssetsView(discord.ui.View):
         if not interaction.message:
             return
 
-        embed = interaction.message.embeds[0].set_image(
-            url=self.guild_asset.url
+        cast(ui.MediaGallery, self.find_item(67)).clear_items().add_item(
+            media=self.guild_asset.url
         )
-        embed.description = "**View in browser**\n" + get_browser_links(
+        cast(
+            ui.TextDisplay, self.find_item(101)
+        ).content = "**View in browser**\n" + get_browser_links(
             self.guild_asset
         )
         self.state = AssetState.GUILD
@@ -271,9 +290,9 @@ class AssetsView(discord.ui.View):
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
         button.style = discord.ButtonStyle.blurple
-        await interaction.response.edit_message(view=self, embed=embed)
+        await interaction.response.edit_message(view=self)
 
-    @discord.ui.button(style=discord.ButtonStyle.grey)
+    @row.button(style=discord.ButtonStyle.grey)
     async def user_asset_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -283,18 +302,20 @@ class AssetsView(discord.ui.View):
         if not interaction.message:
             return
 
-        embed = interaction.message.embeds[0].set_image(url=self.user_asset.url)
-        embed.description = "**View in browser**\n" + get_browser_links(
-            self.user_asset
+        cast(ui.MediaGallery, self.find_item(67)).clear_items().add_item(
+            media=self.user_asset.url
         )
+        cast(
+            ui.TextDisplay, self.find_item(101)
+        ).content = "**View in browser**\n" + get_browser_links(self.user_asset)
         self.state = AssetState.USER
         for child in self.children:
             if isinstance(child, discord.ui.Button):
                 child.style = discord.ButtonStyle.grey
         button.style = discord.ButtonStyle.blurple
-        await interaction.response.edit_message(view=self, embed=embed)
+        await interaction.response.edit_message(view=self)
 
-    @discord.ui.button(label="💾", style=discord.ButtonStyle.grey)
+    @row.button(label="💾", style=discord.ButtonStyle.grey)
     async def save_current_asset(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
