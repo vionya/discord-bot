@@ -63,7 +63,7 @@ class ReminderShowRow(discord.ui.ActionRow):
         self.db = db
         self.reminder = reminder
 
-        super().__init__()
+        super().__init__(id=100)
 
     async def interaction_check(self, interaction: discord.Interaction):
         return interaction.user.id == self.reminder.user_id
@@ -82,9 +82,9 @@ class ReminderShowRow(discord.ui.ActionRow):
         if not interaction.message:
             return
 
-        view = discord.ui.LayoutView.from_message(interaction.message)
-        cast(discord.ui.TextDisplay, view.find_item(67)).content = self.reminder.content
-        await interaction.edit_original_response(view=view)
+        assert isinstance(self.view, discord.ui.LayoutView)
+        cast(discord.ui.TextDisplay, self.view.find_item(67)).content = self.reminder.content
+        await interaction.edit_original_response(view=self.view)
 
     @discord.ui.button(
         label="Delete", emoji="🗑️", style=discord.ButtonStyle.red
