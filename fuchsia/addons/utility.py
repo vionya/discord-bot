@@ -40,7 +40,6 @@ from fuchsia.tools.formatters import full_timestamp, user_to_default_avatar
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
-    ChooseRerollButtonn,
     InfoButtons,
     StickerInfoView,
     AssetsView,
@@ -327,8 +326,6 @@ class Utility(fuchsia.Addon):
             ui.TextDisplay("```\n" + table + "\n```", id=67),
             ui.TextDisplay(f"**Selection** `{shorten(selection, 250)}`", id=68)
         )
-        button = ChooseRerollButtonn(options, interaction.user.id)
-        container.add_item(ui.ActionRow(button))
         view = ui.LayoutView().add_item(container)
         await interaction.response.send_message(view=view)
 

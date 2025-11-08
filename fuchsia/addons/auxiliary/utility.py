@@ -406,33 +406,6 @@ def get_choice(options: list[str]) -> tuple[str, str]:
     return (data.most_common(1)[0][0], table.display())
 
 
-class ChooseRerollButtonn(ui.Button):
-    def __init__(self, options: list[str], user_id: int, **kwargs):
-        kwargs["label"] = "Reroll"
-        kwargs["style"] = discord.ButtonStyle.primary
-        self.options = options
-        self.user_id = user_id
-        super().__init__(**kwargs)
-
-    async def interaction_check(
-        self, interaction: discord.Interaction, /
-    ) -> bool:
-        return interaction.user.id == self.user_id
-
-    async def callback(self, interaction: discord.Interaction):
-        (selection, table) = get_choice(self.options)
-        assert interaction.message
-
-        view = ui.LayoutView.from_message(interaction.message)
-        cast(ui.TextDisplay, view.find_item(67)).content = (
-            "```\n" + table + "\n```"
-        )
-        cast(
-            ui.TextDisplay, view.find_item(68)
-        ).content = f"**Selection** `{shorten(selection, 250)}`"
-        await interaction.response.edit_message(view=view)
-
-
 async def get_member_message_data(
     http: HTTPClient, guild: discord.Guild, member: discord.Member | None = None
 ) -> tuple[int, datetime | None, str | None]:
