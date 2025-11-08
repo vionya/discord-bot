@@ -107,7 +107,7 @@ class TodoShowView(discord.ui.View):
         return interaction.user.id == self.todo.user_id
 
     @discord.ui.button(
-        label="Edit Todo", emoji="✏️", style=discord.ButtonStyle.primary
+        label="Edit", emoji="✏️", style=discord.ButtonStyle.primary
     )
     async def edit_todo(
         self, interaction: discord.Interaction, _: discord.ui.Button
@@ -128,7 +128,7 @@ class TodoShowView(discord.ui.View):
         await interaction.edit_original_response(embeds=[embed])
 
     @discord.ui.button(
-        label="Delete Todo", emoji="🗑️", style=discord.ButtonStyle.red
+        label="Delete", emoji="🗑️", style=discord.ButtonStyle.red
     )
     async def delete_todo(
         self, interaction: discord.Interaction, button: discord.ui.Button
@@ -147,7 +147,7 @@ class TodoShowView(discord.ui.View):
         # remove edit button
         self.remove_item(self.edit_todo)
         # update this button to be disabled and say Todo Deleted
-        button.label = "Todo Deleted"
+        button.label = "Todo"
         button.disabled = True
 
         await interaction.response.edit_message(view=self)

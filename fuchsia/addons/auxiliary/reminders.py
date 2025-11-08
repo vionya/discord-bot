@@ -69,7 +69,7 @@ class ReminderShowRow(discord.ui.ActionRow):
         return interaction.user.id == self.reminder.user_id
 
     @discord.ui.button(
-        label="Edit Reminder", emoji="✏️", style=discord.ButtonStyle.primary
+        label="Edit", emoji="✏️", style=discord.ButtonStyle.primary
     )
     async def edit_reminder(
         self, interaction: discord.Interaction, _: discord.ui.Button
@@ -87,7 +87,7 @@ class ReminderShowRow(discord.ui.ActionRow):
         await interaction.edit_original_response(view=view)
 
     @discord.ui.button(
-        label="Delete Reminder", emoji="🗑️", style=discord.ButtonStyle.red
+        label="Delete", emoji="🗑️", style=discord.ButtonStyle.red
     )
     async def delete_reminder(
         self, interaction: discord.Interaction, button: discord.ui.Button
@@ -97,7 +97,7 @@ class ReminderShowRow(discord.ui.ActionRow):
         # remove edit button
         self.remove_item(self.edit_reminder)
         # update this button to be disabled and say Reminder Deleted
-        button.label = "Reminder Deleted"
+        button.label = "Deleted"
         button.disabled = True
 
         await interaction.response.edit_message(view=self.view)
