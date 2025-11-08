@@ -210,12 +210,14 @@ class AssetsSwapRow(ui.ActionRow):
 
     def __init__(
         self,
+        *,
         user_asset: discord.Asset | None,
         guild_asset: discord.Asset | None,
         asset_name: str,
         block_save: bool = False,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.user_asset = user_asset
         self.guild_asset = guild_asset
         self.asset_name = asset_name
@@ -351,7 +353,6 @@ class AssetsView(ui.LayoutView):
             ),
             ui.MediaGallery(id=67).add_item(media=active_asset.url),
             AssetsSwapRow(
-                user_id,
                 asset_name=asset_name,
                 user_asset=user_asset,
                 guild_asset=guild_asset,
