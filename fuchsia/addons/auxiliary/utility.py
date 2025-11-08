@@ -195,18 +195,21 @@ class InfoButtons(discord.ui.View):
         )
 
 
+class AssetState(Enum):
+    USER = auto()
+    GUILD = auto()
+
+
 class AssetsSwapRow(ui.ActionRow):
     view: AssetsView
 
     state: AssetState
-    user_id: int
     user_asset: discord.Asset | None
     guild_asset: discord.Asset | None
     asset_name: str
 
     def __init__(
         self,
-        user_id: int,
         *args,
         user_asset: discord.Asset | None,
         guild_asset: discord.Asset | None,
@@ -215,7 +218,6 @@ class AssetsSwapRow(ui.ActionRow):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.user_id = user_id
         self.user_asset = user_asset
         self.guild_asset = guild_asset
         self.asset_name = asset_name
@@ -322,17 +324,8 @@ class AssetsSwapRow(ui.ActionRow):
         self.view.stop()
 
 
-class AssetState(Enum):
-    USER = auto()
-    GUILD = auto()
-
-
 class AssetsView(ui.LayoutView):
-    state: AssetState
     user_id: int
-    user_asset: discord.Asset | None
-    guild_asset: discord.Asset | None
-    asset_name: str
 
     def __init__(
         self,
@@ -346,6 +339,8 @@ class AssetsView(ui.LayoutView):
     ):
         if user_asset is None and guild_asset is None:
             raise ValueError("At least one asset must be provided")
+
+        self.user_id = user_id
 
         super().__init__()
         active_asset = guild_asset if guild_asset is not None else user_asset
