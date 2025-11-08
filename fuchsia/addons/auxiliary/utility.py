@@ -336,6 +336,7 @@ class AssetsView(ui.LayoutView):
             AssetState.GUILD if guild_asset is not None else AssetState.USER
         )
 
+        super().__init__()
         active_asset = (
             guild_asset if self.state == AssetState.GUILD else user_asset
         )
@@ -350,8 +351,6 @@ class AssetsView(ui.LayoutView):
             AssetsSwapRow(block_save=block_save, asset_name=asset_name),
         )
         self.add_item(container)
-
-        super().__init__()
 
     async def interaction_check(
         self, interaction: discord.Interaction, /
