@@ -201,6 +201,7 @@ class AssetsSwapRow(ui.ActionRow["AssetsView"]):
     def __init__(
         self, *args, block_save: bool = False, asset_name: str, **kwargs
     ):
+        super().__init__(*args, **kwargs)
         if block_save is True:
             self.save_current_asset.disabled = True
 
