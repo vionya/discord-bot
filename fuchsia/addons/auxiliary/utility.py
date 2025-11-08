@@ -195,13 +195,34 @@ class InfoButtons(discord.ui.View):
         )
 
 
-class AssetsSwapRow(ui.ActionRow["AssetsView"]):
+class AssetsSwapRow(ui.ActionRow):
     view: AssetsView
 
+    state: AssetState
+    user_id: int
+    user_asset: discord.Asset | None
+    guild_asset: discord.Asset | None
+    asset_name: str
+
     def __init__(
-        self, *args, block_save: bool = False, asset_name: str, **kwargs
+        self,
+        user_id: int,
+        *args,
+        user_asset: discord.Asset | None,
+        guild_asset: discord.Asset | None,
+        asset_name: str,
+        block_save: bool = False,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
+        self.user_id = user_id
+        self.user_asset = user_asset
+        self.guild_asset = guild_asset
+        self.asset_name = asset_name
+        self.state = (
+            AssetState.GUILD if guild_asset is not None else AssetState.USER
+        )
+
         if block_save is True:
             self.save_current_asset.disabled = True
 
@@ -210,11 +231,11 @@ class AssetsSwapRow(ui.ActionRow["AssetsView"]):
 
         # remove the button for the asset that doesn't exist and set the other
         # to blurple
-        if self.view.guild_asset is None:
+        if self.guild_asset is None:
             self.remove_item(self.guild_asset_button)
             self.user_asset_button.style = discord.ButtonStyle.blurple
 
-        if self.view.user_asset is None:
+        if self.user_asset is None:
             self.remove_item(self.user_asset_button)
             self.guild_asset_button.style = discord.ButtonStyle.blurple
 
@@ -223,18 +244,18 @@ class AssetsSwapRow(ui.ActionRow["AssetsView"]):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         assert (
-            self.view.guild_asset is not None
+            self.guild_asset is not None
         )  # this button will not exist if this isn't true
         if not interaction.message:
             return
 
         cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
-            media=self.view.guild_asset.url
+            media=self.guild_asset.url
         )
         cast(
             ui.TextDisplay, self.view.find_item(101)
         ).content = "**View in browser**\n" + get_browser_links(
-            self.view.guild_asset
+            self.guild_asset
         )
         self.state = AssetState.GUILD
         for child in self.children:
@@ -248,19 +269,17 @@ class AssetsSwapRow(ui.ActionRow["AssetsView"]):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         assert (
-            self.view.user_asset is not None
+            self.user_asset is not None
         )  # this button will not exist if this isn't true
         if not interaction.message:
             return
 
         cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
-            media=self.view.user_asset.url
+            media=self.user_asset.url
         )
         cast(
             ui.TextDisplay, self.view.find_item(101)
-        ).content = "**View in browser**\n" + get_browser_links(
-            self.view.user_asset
-        )
+        ).content = "**View in browser**\n" + get_browser_links(self.user_asset)
         self.state = AssetState.USER
         for child in self.children:
             if isinstance(child, discord.ui.Button):
@@ -278,11 +297,11 @@ class AssetsSwapRow(ui.ActionRow["AssetsView"]):
         avatar: discord.Asset
         match self.state:
             case AssetState.USER:
-                assert self.view.user_asset is not None
-                avatar = self.view.user_asset
+                assert self.user_asset is not None
+                avatar = self.user_asset
             case AssetState.GUILD:
-                assert self.view.guild_asset is not None
-                avatar = self.view.guild_asset
+                assert self.guild_asset is not None
+                avatar = self.guild_asset
 
         file = await avatar.to_file()
         cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
@@ -297,7 +316,7 @@ class AssetsSwapRow(ui.ActionRow["AssetsView"]):
             view=self.view, attachments=[file]
         )
         await interaction.followup.send(
-            f"The selected {self.view.asset_name.lower()} has been saved in this message for future reference!",
+            f"The selected {self.asset_name.lower()} has been saved in this message for future reference!",
             ephemeral=True,
         )
         self.view.stop()
@@ -328,18 +347,8 @@ class AssetsView(ui.LayoutView):
         if user_asset is None and guild_asset is None:
             raise ValueError("At least one asset must be provided")
 
-        self.user_id = user_id
-        self.user_asset = user_asset
-        self.guild_asset = guild_asset
-        self.asset_name = asset_name
-        self.state = (
-            AssetState.GUILD if guild_asset is not None else AssetState.USER
-        )
-
         super().__init__()
-        active_asset = (
-            guild_asset if self.state == AssetState.GUILD else user_asset
-        )
+        active_asset = guild_asset if guild_asset is not None else user_asset
         assert active_asset is not None
         container = ui.Container(
             ui.TextDisplay(f"-# {header}"),
@@ -348,7 +357,13 @@ class AssetsView(ui.LayoutView):
                 id=101,
             ),
             ui.MediaGallery(id=67).add_item(media=active_asset.url),
-            AssetsSwapRow(block_save=block_save, asset_name=asset_name),
+            AssetsSwapRow(
+                user_id,
+                asset_name=asset_name,
+                user_asset=user_asset,
+                guild_asset=guild_asset,
+                block_save=block_save,
+            ),
         )
         self.add_item(container)
 
