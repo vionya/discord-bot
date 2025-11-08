@@ -210,14 +210,12 @@ class AssetsSwapRow(ui.ActionRow):
 
     def __init__(
         self,
-        *args,
         user_asset: discord.Asset | None,
         guild_asset: discord.Asset | None,
         asset_name: str,
         block_save: bool = False,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.user_asset = user_asset
         self.guild_asset = guild_asset
         self.asset_name = asset_name
