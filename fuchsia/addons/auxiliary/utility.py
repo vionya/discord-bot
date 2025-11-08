@@ -408,6 +408,8 @@ def get_choice(options: list[str]) -> tuple[str, str]:
 
 class ChooseRerollButtonn(ui.Button):
     def __init__(self, options: list[str], user_id: int, **kwargs):
+        kwargs["label"] = "Reroll"
+        kwargs["style"] = discord.ButtonStyle.primary
         self.options = options
         self.user_id = user_id
         super().__init__(**kwargs)
