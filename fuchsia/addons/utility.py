@@ -40,7 +40,7 @@ from fuchsia.tools.formatters import full_timestamp, user_to_default_avatar
 from fuchsia.tools.time_parse import parse_absolute, parse_relative
 
 from .auxiliary.utility import (
-    ChooseOutputView,
+    ChooseRerollButtonn,
     InfoButtons,
     StickerInfoView,
     AssetsView,
@@ -322,20 +322,15 @@ class Utility(fuchsia.Addon):
         ]
         (selection, table) = get_choice(options)
 
-        embed = (
-            fuchsia.Embed(description="```\n" + table + "\n```")
-            .add_field(
-                name="Selection",
-                value=f"`{shorten(selection, 250)}`",
-            )
-            .set_author(
-                name=f"{interaction.user.display_name}'s choice results",
-                icon_url=interaction.user.display_avatar,
-            )
+        container = ui.Container(
+            ui.TextDisplay("-# Choice Results"),
+            ui.TextDisplay("```\n" + table + "\n```", id=67),
+            ui.TextDisplay(f"**Selection** `{shorten(selection, 250)}`", id=68)
         )
-
-        view = ChooseOutputView(options, interaction.user.id)
-        await interaction.response.send_message(embed=embed, view=view)
+        button = ChooseRerollButtonn(options, interaction.user.id)
+        container.add_item(ui.ActionRow(button))
+        view = ui.LayoutView().add_item(container)
+        await interaction.response.send_message(view=view)
 
     # Information commands below
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 import random
 from collections import Counter
 from enum import Enum, auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from datetime import datetime
 
 import discord
@@ -406,7 +406,7 @@ def get_choice(options: list[str]) -> tuple[str, str]:
     return (data.most_common(1)[0][0], table.display())
 
 
-class ChooseOutputView(discord.ui.View):
+class ChooseRerollButtonn(ui.Button):
     def __init__(self, options: list[str], user_id: int, **kwargs):
         self.options = options
         self.user_id = user_id
@@ -417,17 +417,18 @@ class ChooseOutputView(discord.ui.View):
     ) -> bool:
         return interaction.user.id == self.user_id
 
-    @discord.ui.button(label="Reroll", style=discord.ButtonStyle.primary)
-    async def reroll_button(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
+    async def callback(self, interaction: discord.Interaction):
         (selection, table) = get_choice(self.options)
         assert interaction.message
-        embed = interaction.message.embeds[0]
-        embed.description = "```\n" + table + "\n```"
-        embed.clear_fields()
-        embed.add_field(name="Selection", value=f"`{shorten(selection, 250)}`")
-        await interaction.response.edit_message(embeds=[embed])
+
+        view = ui.LayoutView.from_message(interaction.message)
+        cast(ui.TextDisplay, view.find_item(67)).content = (
+            "```\n" + table + "\n```"
+        )
+        cast(
+            ui.TextDisplay, view.find_item(68)
+        ).content = f"**Selection** `{shorten(selection, 250)}`"
+        await interaction.response.edit_message(view=view)
 
 
 async def get_member_message_data(
