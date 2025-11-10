@@ -16,6 +16,7 @@ from fuchsia.tools import (
     is_registered_profile,
     prompt_user,
 )
+from fuchsia.tools.message_helpers import container_view
 
 from .auxiliary.profile import (
     SETTINGS_MAPPING,
@@ -50,16 +51,12 @@ class Profile(fuchsia.Addon, app_group=True):
     async def set_option(
         self, interaction: discord.Interaction, setting: str, new_value: str
     ):
-        value = await convert_setting(
-            interaction, SETTINGS_MAPPING, setting, new_value
-        )
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
         profile = self.bot.profiles[interaction.user.id]
         setattr(profile, setting, value)
         self.bot.broadcast("user_settings_update", interaction.user, profile)
 
-    async def reset_option(
-        self, interaction: discord.Interaction, setting: str
-    ):
+    async def reset_option(self, interaction: discord.Interaction, setting: str):
         if not SETTINGS_MAPPING.get(setting):
             raise NameError(
                 "That's not a valid setting! "
@@ -90,9 +87,7 @@ class Profile(fuchsia.Addon, app_group=True):
                     ui.TextDisplay(f"### {setting_info.display_name}"),
                     ui.Section(
                         ui.TextDisplay(description, id=1),
-                        accessory=ui.Thumbnail(
-                            interaction.user.display_avatar.url
-                        ),
+                        accessory=ui.Thumbnail(interaction.user.display_avatar.url),
                     ),
                 )
                 if setting_info["enabled"] is False:
@@ -145,7 +140,9 @@ class Profile(fuchsia.Addon, app_group=True):
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                f"Setting `{SETTINGS_MAPPING[setting].display_name}` has been changed!"
+                view=container_view(
+                    f"Setting `{SETTINGS_MAPPING[setting].display_name}` has been changed!"
+                )
             )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
@@ -162,7 +159,9 @@ class Profile(fuchsia.Addon, app_group=True):
             """
             await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
-                f"Setting `{SETTINGS_MAPPING[setting].display_name}` has been reset!"
+                view=container_view(
+                    f"Setting `{SETTINGS_MAPPING[setting].display_name}` has been reset!"
+                )
             )
 
         # @profile_settings_set.autocomplete("setting")
@@ -180,7 +179,7 @@ class Profile(fuchsia.Addon, app_group=True):
 
         await self.bot.add_profile(interaction.user.id)
         await interaction.response.send_message(
-            "Successfully initialized your profile!"
+            view=container_view("Successfully initialized your profile!")
         )
 
     @app_commands.command(name="delete")

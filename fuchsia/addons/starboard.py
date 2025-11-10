@@ -22,6 +22,7 @@ from fuchsia.tools import (
 )
 from fuchsia.tools.checks import is_valid_starboard_env
 from fuchsia.tools.formatters import humanize_snake_case
+from fuchsia.tools.message_helpers import container_view, send_confirmation
 
 from .auxiliary.starboard import (
     SETTINGS_MAPPING,
@@ -724,7 +725,9 @@ class StarboardAddon(
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
+                view=container_view(
+                    f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
+                )
             )
 
     async def set_option(
@@ -822,9 +825,7 @@ class StarboardAddon(
             ):
                 await starboard.delete_star(id)
 
-        await interaction.response.send_message(
-            "Successfully ignored the provided entity!"
-        )
+        await send_confirmation(interaction, predicate="ignored the provided entity!")
 
     @app_commands.command(name="unignore")
     @app_commands.checks.has_permissions(manage_messages=True)
@@ -884,9 +885,7 @@ class StarboardAddon(
                 interaction.guild.id,
             )
 
-        await interaction.response.send_message(
-            "Successfully unignored the provided entity!"
-        )
+        await send_confirmation(interaction, predicate="unignored the provided entity!")
 
     @app_commands.command(name="ignored")
     @app_commands.checks.has_permissions(manage_messages=True)
@@ -949,7 +948,8 @@ class StarboardAddon(
         # ignore natural stars
         if star is not None and star.forced is False:
             await interaction.response.send_message(
-                "Cannot force-star an already-starred message", ephemeral=True
+                view=container_view("Cannot force-star an already-starred message"),
+                ephemeral=True,
             )
             return
 
@@ -959,7 +959,7 @@ class StarboardAddon(
             await starboard.delete_star(star.message_id)
 
         await interaction.response.send_message(
-            "Toggled force-star status", ephemeral=True
+            view=container_view("Toggled force-star status"), ephemeral=True
         )
 
 

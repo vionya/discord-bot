@@ -210,9 +210,11 @@ class Fuchsia(commands.Bot):
     ):
         async def send(content: str):
             if isinstance(origin, context.FuchsiaContext):
-                await origin.send(content, ephemeral=True)
+                await origin.send(view=container_view(content), ephemeral=True)
             elif isinstance(origin, discord.Interaction):
-                await origin.response.send_message(content, ephemeral=True)
+                await origin.response.send_message(
+                    view=container_view(content), ephemeral=True
+                )
 
         original_error: BaseException = recursive_getattr(
             exception, "__cause__"

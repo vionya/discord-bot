@@ -10,14 +10,17 @@ from discord import ui
 import fuchsia
 
 
-def container_view(content: str) -> ui.LayoutView:
+def container_view(content: str, *, header: str | None = None) -> ui.LayoutView:
     """
     Creates a simple view with a CV2 container containing only ``content``
 
     :param content: What the container should contain
     :type content: ``str``
     """
-    container = ui.Container(ui.TextDisplay(content))
+    container = ui.Container()
+    if header is not None:
+        container.add_item(ui.TextDisplay(f"### {header}"))
+    container.add_item(ui.TextDisplay(content))
     return ui.LayoutView().add_item(container)
 
 

@@ -13,6 +13,7 @@ import fuchsia
 from fuchsia.classes.app_commands import no_defer
 from fuchsia.classes.containers import TimedCache
 from fuchsia.tools.checks import is_registered_profile_predicate
+from fuchsia.tools.message_helpers import container_view, send_confirmation
 
 TAG_NAME_MIN_LEN = 2
 TAG_NAME_MAX_LEN = 100
@@ -131,10 +132,13 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
                 content,
             )
             self.tags[user_id][name] = content
-            await response.send_message(f"Created a new tag `{name}`", ephemeral=True)
+            await response.send_message(
+                view=container_view(f"Created a new tag `{name}`"), ephemeral=True
+            )
         except asyncpg.UniqueViolationError:
             await response.send_message(
-                f"You already have a tag named `{name}`", ephemeral=True
+                view=container_view(f"You already have a tag named `{name}`"),
+                ephemeral=True,
             )
 
     async def fetch_tag_names(self, user_id: int) -> None:
@@ -168,7 +172,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         content = await self.getch_tag(interaction.user.id, name)
         if content is None:
             return await interaction.followup.send(
-                f"You have no tag named `{name}`", ephemeral=True
+                view=container_view(f"You have no tag named `{name}`"), ephemeral=True
             )
         # plausible_deniability = fuchsia.Embed(
         #     title="\u2139\uFE0F Heads up!",
@@ -213,7 +217,7 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         content = await self.getch_tag(interaction.user.id, name)
         if content is None:
             return await interaction.followup.send(
-                f"You have no tag named `{name}`", ephemeral=True
+                view=container_view(f"You have no tag named `{name}`"), ephemeral=True
             )
         modal = TagEditModal(name=name, content=content)
         await interaction.response.send_modal(modal)
@@ -240,10 +244,13 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             )
             self.tags[interaction.user.id].pop(name, None)
             self.tags[interaction.user.id][new_name] = new_content
-            await response.send_message("Successfully edited this tag", ephemeral=True)
+            await response.send_message(
+                view=container_view("Successfully edited this tag"), ephemeral=True
+            )
         except asyncpg.UniqueViolationError:
             await response.send_message(
-                "You already have a tag by this name", ephemeral=True
+                view=container_view("You already have a tag by this name"),
+                ephemeral=True,
             )
 
     @app_commands.command(name="delete")
@@ -261,11 +268,9 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         )
         if was_deleted is True:
             self.tags[interaction.user.id].pop(name, None)
-            return await interaction.response.send_message(
-                "Successfully deleted this tag"
-            )
+            return await send_confirmation(interaction, predicate="deleted this tag")
         await interaction.response.send_message(
-            "There was no tag by this name to delete"
+            view=container_view("There was no tag by this name to delete")
         )
 
     @tag_get.autocomplete("name")
@@ -294,7 +299,8 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
         """Create a tag from the content of the selected message"""
         if not message.content:
             return await interaction.response.send_message(
-                "Message must have content to add it as a tag", ephemeral=True
+                view=container_view("Message must have content to add it as a tag"),
+                ephemeral=True,
             )
         modal = TagEditModal(content=message.content)
         await interaction.response.send_modal(modal)

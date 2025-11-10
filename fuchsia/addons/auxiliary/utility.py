@@ -409,7 +409,7 @@ class StickerInfoRow(ui.ActionRow):
             f"**Emoji** :{new_sticker.emoji}:",
         )
         container = ui.Container(
-            ui.TextDisplay("Sticker has been stolen!"),
+            ui.TextDisplay("### Sticker has been stolen!"),
             ui.Section(
                 "\n".join(raw_description), accessory=ui.Thumbnail(new_sticker.url)
             ),

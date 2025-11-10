@@ -17,6 +17,7 @@ from fuchsia.tools import (
     prompt_user,
 )
 from fuchsia.tools.checks import owner_or_admin_predicate
+from fuchsia.tools.message_helpers import container_view
 
 from .auxiliary.server_settings import (
     SETTINGS_MAPPING,
@@ -61,16 +62,12 @@ class ServerConfig(
     ):
         assert interaction.guild
 
-        value = await convert_setting(
-            interaction, SETTINGS_MAPPING, setting, new_value
-        )
+        value = await convert_setting(interaction, SETTINGS_MAPPING, setting, new_value)
         config = self.bot.configs[interaction.guild.id]
         setattr(config, setting, value)
         self.bot.broadcast("config_update", interaction.guild, config)
 
-    async def reset_option(
-        self, interaction: discord.Interaction, setting: str
-    ):
+    async def reset_option(self, interaction: discord.Interaction, setting: str):
         assert interaction.guild
 
         if not SETTINGS_MAPPING.get(setting):
@@ -82,9 +79,7 @@ class ServerConfig(
         await config.reset_attribute(setting)
         self.bot.broadcast("config_update", interaction.guild, config)
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await owner_or_admin_predicate(interaction)
 
     @singleton
@@ -171,7 +166,9 @@ class ServerConfig(
             """
             await self.addon.set_option(interaction, setting, new_value)
             await interaction.response.send_message(
-                f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
+                view=container_view(
+                    f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
+                )
             )
 
         @add_setting_autocomplete(SETTINGS_MAPPING, setting_param="setting")
@@ -188,7 +185,9 @@ class ServerConfig(
             """
             await self.addon.reset_option(interaction, setting)
             await interaction.response.send_message(
-                f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
+                view=container_view(
+                    f"Setting {SETTINGS_MAPPING[setting].display_name} has been updated!"
+                )
             )
 
     @app_commands.command(name="create")
@@ -207,7 +206,7 @@ class ServerConfig(
         config = await self.bot.add_config(interaction.guild.id)
         self.bot.broadcast("config_update", interaction.guild, config)
         await interaction.response.send_message(
-            "Successfully initialized your server's config!"
+            view=container_view("Successfully initialized your server's config!")
         )
 
     @app_commands.command(name="delete")
