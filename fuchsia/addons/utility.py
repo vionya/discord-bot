@@ -801,7 +801,7 @@ class Utility(fuchsia.Addon):
         avatar = user_object.display_avatar.url
         # unsure about this so A/B testing with it until i decide
         if (
-            ab_test("circle_pfp", interaction.user.id, 0.5)
+            ab_test("circle_pfp", interaction.user.id, 0.75)
             and not user_object.display_avatar.is_animated()
         ):
             data = (
