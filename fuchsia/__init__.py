@@ -209,11 +209,14 @@ class Fuchsia(commands.Bot):
         exception: discord.DiscordException,
     ):
         async def send(content: str):
+            header = "Oops! Something went wrong"
             if isinstance(origin, context.FuchsiaContext):
-                await origin.send(view=container_view(content), ephemeral=True)
+                await origin.send(
+                    view=container_view(content, header=header), ephemeral=True
+                )
             elif isinstance(origin, discord.Interaction):
                 await origin.response.send_message(
-                    view=container_view(content), ephemeral=True
+                    view=container_view(content, header=header), ephemeral=True
                 )
 
         original_error: BaseException = recursive_getattr(
