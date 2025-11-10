@@ -21,6 +21,7 @@ from fuchsia.modules.dictionary import (
     UrbanDictionaryResponse,
 )
 from fuchsia.tools.formatters import Table, shorten
+from fuchsia.tools.message_helpers import container_view
 
 if TYPE_CHECKING:
     from fuchsia.modules.cse import SearchResult
@@ -36,9 +37,7 @@ def result_to_container(query: str, result: SearchResult):
         container.add_item(
             ui.MediaGallery().add_item(
                 media=result.image_url,
-                description=(
-                    shorten(result.snippet, 256) if result.snippet else None
-                ),
+                description=(shorten(result.snippet, 256) if result.snippet else None),
             )
         )
     elif result.snippet:
@@ -55,9 +54,7 @@ def definitions_to_embed(
             # construct embed
             # n.b. the shorten calls might accidentally cut off a link but lol
             container = discord.ui.Container(
-                ui.TextDisplay(
-                    f"### {definition.word} (by {definition.author})"
-                ),
+                ui.TextDisplay(f"### {definition.word} (by {definition.author})"),
                 ui.TextDisplay(shorten(definition.definition, 4000)),
                 ui.TextDisplay("**Example**"),
                 ui.TextDisplay(
@@ -70,9 +67,7 @@ def definitions_to_embed(
                         definition.thumbs_up,
                         definition.thumbs_down,
                         # want timestamp relative
-                        discord.utils.format_dt(
-                            definition.written_on, style="R"
-                        ),
+                        discord.utils.format_dt(definition.written_on, style="R"),
                     ),
                 ),
             )
@@ -85,15 +80,11 @@ def definitions_to_embed(
             ]:  # Slice at 25 to fit within dropdown limits
                 for definition in meaning.definitions:
                     container = discord.ui.Container(
-                        ui.TextDisplay(
-                            f"### {word.word}: {meaning.part_of_speech}"
-                        ),
+                        ui.TextDisplay(f"### {word.word}: {meaning.part_of_speech}"),
                         ui.TextDisplay(shorten(definition.definition, 4000)),
                     )
                     if definition.synonyms:
-                        container.add_item(
-                            ui.TextDisplay("**Synonyms**")
-                        ).add_item(
+                        container.add_item(ui.TextDisplay("**Synonyms**")).add_item(
                             ui.TextDisplay(", ".join(definition.synonyms[:5]))
                         )
                     yield container, (word.word, definition.definition)
@@ -179,9 +170,7 @@ class InfoButtons(discord.ui.View):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
         self.add_item(
-            InviteButton(
-                view_kwargs=invite_menu_kwargs, disabled=invite_disabled
-            )
+            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
         )
         for button in buttons:
             self.add_item(button)
@@ -201,8 +190,6 @@ class AssetState(Enum):
 
 
 class AssetsSwapRow(ui.ActionRow):
-    view: AssetsView
-
     state: AssetState
     user_asset: discord.Asset | None
     guild_asset: discord.Asset | None
@@ -221,9 +208,7 @@ class AssetsSwapRow(ui.ActionRow):
         self.user_asset = user_asset
         self.guild_asset = guild_asset
         self.asset_name = asset_name
-        self.state = (
-            AssetState.GUILD if guild_asset is not None else AssetState.USER
-        )
+        self.state = AssetState.GUILD if guild_asset is not None else AssetState.USER
 
         if block_save is True:
             self.save_current_asset.disabled = True
@@ -248,16 +233,14 @@ class AssetsSwapRow(ui.ActionRow):
         assert (
             self.guild_asset is not None
         )  # this button will not exist if this isn't true
-        if not interaction.message:
+        if not interaction.message or self.view is None:
             return
 
         cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
             media=self.guild_asset.url
         )
-        cast(
-            ui.TextDisplay, self.view.find_item(101)
-        ).content = "**View in browser**\n" + get_browser_links(
-            self.guild_asset
+        cast(ui.TextDisplay, self.view.find_item(101)).content = (
+            "**View in browser**\n" + get_browser_links(self.guild_asset)
         )
         self.state = AssetState.GUILD
         for child in self.children:
@@ -273,15 +256,15 @@ class AssetsSwapRow(ui.ActionRow):
         assert (
             self.user_asset is not None
         )  # this button will not exist if this isn't true
-        if not interaction.message:
+        if not interaction.message or self.view is None:
             return
 
         cast(ui.MediaGallery, self.view.find_item(67)).clear_items().add_item(
             media=self.user_asset.url
         )
-        cast(
-            ui.TextDisplay, self.view.find_item(101)
-        ).content = "**View in browser**\n" + get_browser_links(self.user_asset)
+        cast(ui.TextDisplay, self.view.find_item(101)).content = (
+            "**View in browser**\n" + get_browser_links(self.user_asset)
+        )
         self.state = AssetState.USER
         for child in self.children:
             if isinstance(child, discord.ui.Button):
@@ -293,7 +276,7 @@ class AssetsSwapRow(ui.ActionRow):
     async def save_current_asset(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        if not interaction.message:
+        if not interaction.message or self.view is None:
             return
 
         avatar: discord.Asset
@@ -314,11 +297,11 @@ class AssetsSwapRow(ui.ActionRow):
             if isinstance(child, discord.ui.Button):
                 child.disabled = True
         button.style = discord.ButtonStyle.green
-        await interaction.response.edit_message(
-            view=self.view, attachments=[file]
-        )
+        await interaction.response.edit_message(view=self.view, attachments=[file])
         await interaction.followup.send(
-            f"The selected {self.asset_name.lower()} has been saved in this message for future reference!",
+            view=container_view(
+                f"The selected {self.asset_name.lower()} has been saved in this message for future reference!"
+            ),
             ephemeral=True,
         )
         self.view.stop()
@@ -361,13 +344,11 @@ class AssetsView(ui.LayoutView):
         )
         self.add_item(container)
 
-    async def interaction_check(
-        self, interaction: discord.Interaction, /
-    ) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         return interaction.user.id == self.user_id
 
 
-class StickerInfoView(discord.ui.View):
+class StickerInfoRow(ui.ActionRow):
     def __init__(
         self,
         sticker: discord.Sticker,
@@ -392,12 +373,8 @@ class StickerInfoView(discord.ui.View):
             self.steal.disabled = True
 
     @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
-    async def steal(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
-        assert interaction.guild and isinstance(
-            self.sticker, discord.GuildSticker
-        )
+    async def steal(self, interaction: discord.Interaction, _: discord.ui.Button):
+        assert interaction.guild and isinstance(self.sticker, discord.GuildSticker)
 
         try:
             # try to create the sticker
@@ -412,13 +389,16 @@ class StickerInfoView(discord.ui.View):
                 # sticker limit reached
                 case 30039:
                     return await interaction.response.send_message(
-                        "This server has no available sticker slots",
+                        view=container_view(
+                            "This server has no available sticker slots"
+                        ),
                         ephemeral=True,
                     )
                 case _:
                     # default response for anything else
                     return await interaction.response.send_message(
-                        f"Something went wrong: {e}", ephemeral=True
+                        view=container_view(f"Something went wrong: {e}"),
+                        ephemeral=True,
                     )
 
         # create something nice to show to users once sticker created
@@ -428,11 +408,14 @@ class StickerInfoView(discord.ui.View):
             f"**Image Format** `{new_sticker.format.name}`",
             f"**Emoji** :{new_sticker.emoji}:",
         )
-        embed = fuchsia.Embed(
-            title="Sticker has been stolen!",
-            description="\n".join(raw_description),
-        ).set_thumbnail(url=new_sticker.url)
-        await interaction.response.send_message(embeds=[embed], ephemeral=True)
+        container = ui.Container(
+            ui.TextDisplay("Sticker has been stolen!"),
+            ui.Section(
+                "\n".join(raw_description), accessory=ui.Thumbnail(new_sticker.url)
+            ),
+        )
+        view = ui.LayoutView().add_item(container)
+        await interaction.response.send_message(view=view, ephemeral=True)
 
 
 def get_choice(options: list[str]) -> tuple[str, str]:

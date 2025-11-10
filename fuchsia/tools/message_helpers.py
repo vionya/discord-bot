@@ -10,6 +10,17 @@ from discord import ui
 import fuchsia
 
 
+def container_view(content: str) -> ui.LayoutView:
+    """
+    Creates a simple view with a CV2 container containing only ``content``
+
+    :param content: What the container should contain
+    :type content: ``str``
+    """
+    container = ui.Container(ui.TextDisplay(content))
+    return ui.LayoutView().add_item(container)
+
+
 async def send_confirmation(
     interaction: discord.Interaction,
     *,
