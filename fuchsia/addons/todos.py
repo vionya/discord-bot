@@ -20,6 +20,7 @@ from fuchsia.addons.auxiliary.todos import (
     TodoShowView,
 )
 from fuchsia.classes.app_commands import no_defer
+from fuchsia.classes.exceptions import UserLimitError, UserValueError
 from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
     generate_autocomplete_list,
@@ -92,7 +93,7 @@ class Todos(fuchsia.Addon, app_group=True, group_name="todo"):
     ):
         """Add a new todo"""
         if len(self.todos[interaction.user.id]) >= MAX_TODOS:
-            raise ValueError("You've used up all your todo slots!")
+            raise UserLimitError("You've used up all your todo slots!")
 
         # delegate to custom Interaction by default
         ephemeral = None
@@ -158,12 +159,12 @@ class Todos(fuchsia.Addon, app_group=True, group_name="todo"):
             try:
                 todos = [self.todos[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
-                raise IndexError(
+                raise UserValueError(
                     "One or more of the provided indices is invalid."
                 )
 
         else:
-            raise TypeError("Invalid input provided.")
+            raise UserValueError("Invalid input provided.")
 
         await self.bot.db.execute(
             """
@@ -194,7 +195,7 @@ class Todos(fuchsia.Addon, app_group=True, group_name="todo"):
         try:
             todo = self.todos[interaction.user.id][index - 1]
         except IndexError:
-            raise IndexError("Couldn't find that todo.")
+            raise UserValueError("Couldn't find that todo.")
 
         embed = (
             fuchsia.Embed(description=todo.content)
@@ -223,7 +224,7 @@ class Todos(fuchsia.Addon, app_group=True, group_name="todo"):
         try:
             todo: TodoItem = self.todos[interaction.user.id][index - 1]
         except IndexError:
-            raise IndexError("Couldn't find that todo.")
+            raise UserValueError("Couldn't find that todo.")
 
         modal = TodoEditModal(self, todo=todo)
         await interaction.response.send_modal(modal)

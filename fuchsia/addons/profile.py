@@ -8,6 +8,7 @@ import discord
 from discord import app_commands, ui
 
 import fuchsia
+from fuchsia.classes.exceptions import UserGenericError, UserValueError
 from fuchsia.modules import ButtonsMenu, ContainerPages
 from fuchsia.tools import (
     add_setting_autocomplete,
@@ -58,7 +59,7 @@ class Profile(fuchsia.Addon, app_group=True):
 
     async def reset_option(self, interaction: discord.Interaction, setting: str):
         if not SETTINGS_MAPPING.get(setting):
-            raise NameError(
+            raise UserValueError(
                 "That's not a valid setting! "
                 "Try `profile settings list` for a list of settings!"
             )
@@ -175,7 +176,7 @@ class Profile(fuchsia.Addon, app_group=True):
     async def profile_create(self, interaction: discord.Interaction):
         """Creates your fuchsia profile!"""
         if interaction.user.id in self.bot.profiles:
-            raise RuntimeError("You already have a profile!")
+            raise UserGenericError("You already have a profile!")
 
         await self.bot.add_profile(interaction.user.id)
         await interaction.response.send_message(

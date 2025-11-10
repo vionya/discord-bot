@@ -208,15 +208,29 @@ class Fuchsia(commands.Bot):
         origin: context.FuchsiaContext | discord.Interaction,
         exception: discord.DiscordException,
     ):
-        async def send(content: str):
+        async def send(content: str, error: BaseException | None = None):
             header = "Oops! Something went wrong"
+            footer = None
+            if error:
+                if exceptions.is_user_facing(error):
+                    header = error.flavor_text
+                elif isinstance(
+                    error,
+                    discord.app_commands.MissingPermissions
+                    | commands.MissingPermissions,
+                ):
+                    header = "You don't have permission to use this"
+                else:
+                    footer = f"Exception type: {error.__class__.__name__}"
             if isinstance(origin, context.FuchsiaContext):
                 await origin.send(
-                    view=container_view(content, header=header), ephemeral=True
+                    view=container_view(content, header=header, footer=footer),
+                    ephemeral=True,
                 )
             elif isinstance(origin, discord.Interaction):
                 await origin.response.send_message(
-                    view=container_view(content, header=header), ephemeral=True
+                    view=container_view(content, header=header, footer=footer),
+                    ephemeral=True,
                 )
 
         original_error: BaseException = recursive_getattr(
@@ -238,17 +252,18 @@ class Fuchsia(commands.Bot):
                     # In the event of interactions, exceptions can be displayed ephemerally
                     return
 
-            await send(str(original_error))
+            await send(str(original_error), original_error)
 
         except discord.Forbidden:
             pass
 
         finally:
-            log.log(
-                level,
-                f"In command: {getattr(origin.command, 'qualified_name', '[unknown command]')}\n"  # type: ignore
-                + formatters.format_exception(original_error),
-            )
+            if not exceptions.is_user_facing(original_error):
+                log.log(
+                    level,
+                    f"In command: {getattr(origin.command, 'qualified_name', '[unknown command]')}\n"  # type: ignore
+                    + formatters.format_exception(original_error),
+                )
 
     async def get_context(
         self,

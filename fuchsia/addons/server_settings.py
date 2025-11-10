@@ -8,6 +8,7 @@ import discord
 from discord import app_commands, ui
 
 import fuchsia
+from fuchsia.classes.exceptions import UserGenericError, UserValueError
 from fuchsia.modules import ButtonsMenu, ContainerPages
 from fuchsia.tools import (
     add_setting_autocomplete,
@@ -71,7 +72,7 @@ class ServerConfig(
         assert interaction.guild
 
         if not SETTINGS_MAPPING.get(setting):
-            raise NameError(
+            raise UserValueError(
                 "That's not a valid setting! "
                 "Try `server settings list` for a list of settings!"
             )
@@ -201,7 +202,7 @@ class ServerConfig(
         assert interaction.guild
 
         if interaction.guild.id in self.bot.configs:
-            raise RuntimeError("Your server already has a config entry!")
+            raise UserGenericError("Your server already has a config entry!")
 
         config = await self.bot.add_config(interaction.guild.id)
         self.bot.broadcast("config_update", interaction.guild, config)

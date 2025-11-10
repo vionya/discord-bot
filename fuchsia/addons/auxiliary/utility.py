@@ -16,6 +16,7 @@ from discord import ui
 from discord.http import Route, HTTPClient
 
 import fuchsia
+from fuchsia.classes.exceptions import UserValueError
 from fuchsia.modules.dictionary import (
     StandardDictionaryResponse,
     UrbanDictionaryResponse,
@@ -321,7 +322,7 @@ class AssetsView(ui.LayoutView):
         block_save: bool = False,
     ):
         if user_asset is None and guild_asset is None:
-            raise ValueError("At least one asset must be provided")
+            raise UserValueError("At least one asset must be provided")
 
         self.user_id = user_id
 

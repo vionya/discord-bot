@@ -10,6 +10,8 @@ from typing import NoReturn
 
 from dateutil.parser import ParserError, parse
 
+from fuchsia.classes.exceptions import UserValueError
+
 RELATIVE_FORMATS = re.compile(
     r"""
     ((?P<years>[0-9]{1,2})\s?(?:y(ears?)?,?))?         # Parse years, allow 1-2 digits
@@ -102,7 +104,7 @@ def parse_absolute(string: str, *, tz: tzinfo) -> tuple[datetime, str]:
         dt = parse(string, default=datetime.now(tz))
         return (dt, string)
     except ParserError:
-        raise ValueError("An invalid date format was provided.")
+        raise UserValueError("An invalid date format was provided.")
     except Exception:
         raise RuntimeError("There was an unknown error :(")
 
@@ -135,4 +137,4 @@ def parse_relative(
         )
 
     else:  # Nothing matched
-        raise ValueError("Failed to find a valid offset.")
+        raise UserValueError("Failed to find a valid offset.")

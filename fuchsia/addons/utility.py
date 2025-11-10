@@ -19,6 +19,7 @@ from discord.utils import format_dt, escape_markdown
 
 import fuchsia
 from fuchsia.classes.app_commands import get_ephemeral, no_defer
+from fuchsia.classes.exceptions import UserGenericError, UserValueError
 from fuchsia.modules import (
     ButtonsMenu,
     DropdownMenu,
@@ -168,7 +169,7 @@ class Utility(fuchsia.Addon):
 
         components = [*map(lambda r: result_to_container(query, r), resp)]
         if not components:
-            raise RuntimeError("Search returned no results")
+            raise UserGenericError("Search returned no results")
 
         pages = ContainerPages(components)
         menu = DropdownMenu.from_pages(
@@ -208,7 +209,7 @@ class Utility(fuchsia.Addon):
                 msg = "No definition found"
             else:
                 msg = f"Something went wrong fetching a definition (status: {e.status})"
-            raise RuntimeError(msg)
+            raise UserGenericError(msg)
 
         components, label_descs = [], []
         for comp, (l, d) in definitions_to_embed(resp):
@@ -217,7 +218,7 @@ class Utility(fuchsia.Addon):
             components.append(comp)
             label_descs.append((l, d))
         if not components:
-            raise RuntimeError("No definition found")
+            raise UserGenericError("No definition found")
 
         pages = ContainerPages(components)
         menu = DropdownMenu.from_pages(
@@ -251,7 +252,7 @@ class Utility(fuchsia.Addon):
     ):
         """Clear messages from the current channel - checks are ANDed together"""
         if not hasattr(interaction.channel, "purge"):
-            raise RuntimeError("`clear` command called in invalid context")
+            raise UserGenericError("`clear` command called in invalid context")
         assert isinstance(  # guaranteed by check above
             interaction.channel,
             discord.TextChannel | discord.VoiceChannel | discord.Thread,
@@ -547,7 +548,7 @@ class Utility(fuchsia.Addon):
         """Upscale a static or animated emoji and send the image"""
         partial = discord.PartialEmoji.from_str(emoji)
         if partial.is_unicode_emoji():
-            raise ValueError("Only custom emojis can be upscaled")
+            raise UserValueError("Only custom emojis can be upscaled")
 
         session = self.bot.session
         async with session.get(partial.url) as resp:
@@ -637,12 +638,12 @@ class Utility(fuchsia.Addon):
 
         src = source_emoji or file
         if src is None:
-            raise TypeError("You need to provide a source for the emoji")
+            raise UserValueError("You need to provide a source for the emoji")
 
         if isinstance(src, str):
             partial = discord.PartialEmoji.from_str(src.strip())
             if not partial.is_custom_emoji():
-                raise ValueError("You need to provide a valid custom emoji")
+                raise UserValueError("You need to provide a valid custom emoji")
 
             async with self.bot.session.get(partial.url) as resp:
                 data = await resp.read()
@@ -652,13 +653,13 @@ class Utility(fuchsia.Addon):
             )
         else:
             if not src.filename.lower().endswith(("jpg", "jpeg", "png", "gif")):
-                raise ValueError("The file must be a JPEG, PNG, or GIF image")
+                raise UserValueError("The file must be a JPEG, PNG, or GIF image")
 
             if src.size > 2_048_000:
-                raise ValueError("The file can't be larger than 2048kb")
+                raise UserValueError("The file can't be larger than 2048kb")
 
             if new_name is None:
-                raise TypeError("You need to provide a name for this emoji")
+                raise UserValueError("You need to provide a name for this emoji")
 
             emoji = await interaction.guild.create_custom_emoji(
                 name=new_name, image=await src.read()
@@ -700,7 +701,7 @@ class Utility(fuchsia.Addon):
         ):
             """Get the current time in a given timezone"""
             if source_tz not in TIMEZONE_STRS:
-                raise ValueError("Invalid timezone provided")
+                raise UserValueError("Invalid timezone provided")
             tz = ZoneInfo(source_tz)
             target = datetime.now(tz)
             time_info = target.strftime(
@@ -741,7 +742,7 @@ class Utility(fuchsia.Addon):
             """
             if source_tz is not None:
                 if source_tz not in TIMEZONE_STRS:
-                    raise ValueError("Invalid timezone provided")
+                    raise UserValueError("Invalid timezone provided")
                 tz = ZoneInfo(source_tz)
             else:
                 tz = timezone.utc

@@ -8,6 +8,8 @@ from random import Random
 
 from discord import app_commands, utils
 
+from fuchsia.classes.exceptions import UserValueError
+
 # Module exports
 from .autocomplete_helpers import (
     ClearAllOption,
@@ -57,11 +59,11 @@ async def convert_setting(
     new_value: str,
 ):
     if setting not in mapping:
-        raise NameError("That's not a valid setting!")
+        raise UserValueError("That's not a valid setting!")
     valid_setting = mapping[setting]
 
     if valid_setting["enabled"] is False:
-        raise ValueError("This setting cannot be changed.")
+        raise UserValueError("This setting cannot be changed.")
 
     value = None
 
@@ -80,7 +82,7 @@ async def convert_setting(
         value = converted
 
     else:
-        raise ValueError("Bad value provided for setting `{}`".format(setting))
+        raise UserValueError("Bad value provided for setting `{}`".format(setting))
 
     return value
 

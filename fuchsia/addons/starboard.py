@@ -11,6 +11,7 @@ from discord import app_commands, ui
 
 import fuchsia
 from fuchsia.classes.containers import TimedCache, TimedSet
+from fuchsia.classes.exceptions import UserGenericError, UserValueError
 from fuchsia.modules import ButtonsMenu, ContainerPages
 from fuchsia.tools import (
     add_setting_autocomplete,
@@ -801,7 +802,7 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError("You must provide at least one valid argument to ignore.")
+            raise UserValueError("You must provide at least one valid argument to ignore.")
 
         starboard = self.starboards[interaction.guild.id]
         for snowflake in filter(None, [channel, user, message_obj]):
@@ -864,7 +865,7 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise TypeError("You must provide at least one valid argument to unignore.")
+            raise UserValueError("You must provide at least one valid argument to unignore.")
 
         starboard = self.starboards[interaction.guild.id]
         target_id = int(id) if id.isdigit() else None
@@ -935,7 +936,7 @@ class StarboardAddon(
 
         starboard = self.starboards[interaction.guild.id]
         if starboard.channel is None:
-            raise RuntimeError("This server hasn't set its starboard channel")
+            raise UserGenericError("This server hasn't set its starboard channel")
 
         assert self.bot.user
         star = await starboard.get_star(

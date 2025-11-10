@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import discord
 from discord import app_commands
 
-from fuchsia.classes.exceptions import SilentFail
+from fuchsia.classes.exceptions import SilentFail, UserGenericError, UserValueError
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
@@ -114,7 +114,7 @@ def is_registered_guild_predicate(interaction: discord.Interaction):
     if not guild or guild.id not in bot.configs:
         raise app_commands.CommandInvokeError(
             interaction.command,
-            AttributeError(
+            UserGenericError(
                 "Looks like this server doesn't have an existing config entry. "
                 "You can fix this with the `server create` command."
             ),
@@ -135,7 +135,7 @@ def is_valid_starboard_env(interaction: discord.Interaction):
     if not getattr(config, "starboard", False):
         raise app_commands.CommandInvokeError(
             interaction.command,
-            AttributeError("Starboard is not enabled for this server!"),
+            UserGenericError("Starboard is not enabled for this server!"),
         )
 
     return True

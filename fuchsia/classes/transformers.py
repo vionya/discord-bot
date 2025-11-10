@@ -11,6 +11,7 @@ import discord
 from discord.app_commands import Choice, Transformer
 from typing_extensions import Self
 
+from fuchsia.classes.exceptions import UserValueError
 from fuchsia.tools import recursive_get_command
 from fuchsia.types.commands import AnyCommand
 
@@ -61,7 +62,7 @@ def bool_transformer(maybe_bool: str) -> bool:
         return True
     elif normalized in ("no", "n", "false", "f", "0", "disable", "off"):
         return False
-    raise ValueError("Value must be interpretable as a boolean.")
+    raise UserValueError("Value must be interpretable as a boolean.")
 
 
 @wrap_transformer()
@@ -78,7 +79,7 @@ def timezone_transformer(timezone: str) -> str:
     try:
         zone = zoneinfo.ZoneInfo(timezone)
     except zoneinfo.ZoneInfoNotFoundError:
-        raise ValueError("Provided timezone was invalid.")
+        raise UserValueError("Provided timezone was invalid.")
     return str(zone)
 
 
@@ -86,7 +87,7 @@ def timezone_transformer(timezone: str) -> str:
 def mention_transformer(mention: str) -> int:
     match = EXTRACT_MENTION_REGEX.match(mention)
     if not match:
-        raise ValueError("Could not find a valid mention.")
+        raise UserValueError("Could not find a valid mention.")
 
     return int(match[1])
 
@@ -94,22 +95,22 @@ def mention_transformer(mention: str) -> int:
 @wrap_transformer(("1", "2", "3", "4", "5"))
 def timeout_transformer(provided_timeout: str) -> int:
     if not provided_timeout.isnumeric():
-        raise ValueError("`timeout` must be a number.")
+        raise UserValueError("`timeout` must be a number.")
 
     timeout = int(provided_timeout)
     if not 1 <= timeout <= 5:
-        raise ValueError("`timeout` must be between 1 and 5.")
+        raise UserValueError("`timeout` must be between 1 and 5.")
     return timeout
 
 
 @wrap_transformer()
 def gt_zero_transformer(provided_val: str) -> int:
     if not provided_val.isnumeric():
-        raise ValueError("Value must be a number.")
+        raise UserValueError("Value must be a number.")
 
     val = int(provided_val)
     if val < 1:
-        raise ValueError("Value may not be less than 1.")
+        raise UserValueError("Value may not be less than 1.")
     return val
 
 
@@ -119,7 +120,7 @@ class text_channel_transformer(Transformer):
         cls, interaction: discord.Interaction, value: str
     ) -> discord.TextChannel:
         if not interaction.guild:
-            raise AttributeError("This must be used in a guild.")
+            raise UserValueError("This must be used in a guild.")
 
         if match := EXTRACT_CHANNEL_REGEX.match(value):
             channel_id = int(match.group(1))
@@ -130,7 +131,7 @@ class text_channel_transformer(Transformer):
             ):
                 return channel
             else:
-                raise TypeError("A valid text channel must be provided.")
+                raise UserValueError("A valid text channel must be provided.")
 
         else:
             try:
@@ -141,7 +142,7 @@ class text_channel_transformer(Transformer):
                     )
                 )
             except StopIteration:
-                raise TypeError("A valid text channel must be provided.")
+                raise UserValueError("A valid text channel must be provided.")
 
 
 class command_transformer(Transformer):
@@ -153,7 +154,7 @@ class command_transformer(Transformer):
 
         command = recursive_get_command(bot.tree, command_name)
         if not command:
-            raise NameError(
+            raise UserValueError(
                 f"There is no command by the identifier `{command_name}`."
             )
         return command

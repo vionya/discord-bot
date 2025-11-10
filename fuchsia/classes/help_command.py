@@ -11,6 +11,7 @@ from discord import app_commands, ui
 
 import fuchsia
 from fuchsia.classes.app_commands import AutoEphemeralAppCommand
+from fuchsia.classes.exceptions import UserValueError
 from fuchsia.modules import DropdownMenu, ContainerPages
 from fuchsia.tools import recursive_get_command
 from fuchsia.types.commands import AnyCommand
@@ -183,7 +184,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
             or recursive_get_command(self.bot.tree, command)
         )
         if not cmd:
-            raise NameError(f"Command `{command}` does not exist")
+            raise UserValueError(f"Command `{command}` does not exist")
         else:
             return await self.send_command_help(interaction, cmd)
 

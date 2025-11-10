@@ -16,6 +16,7 @@ from discord import app_commands, ui
 
 import fuchsia
 from fuchsia.classes.containers import TimedSet
+from fuchsia.classes.exceptions import UserGenericError, UserLimitError, UserValueError
 from fuchsia.classes.partials import PartialUser
 from fuchsia.classes.timer import periodic
 from fuchsia.modules import ButtonsMenu
@@ -458,14 +459,14 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         Add a new highlight
         """
         if len(self.highlights.get(interaction.user.id, [])) >= MAX_TRIGGERS:
-            raise ValueError("You've used up all of your highlight slots!")
+            raise UserLimitError("You've used up all of your highlight slots!")
 
         content = content.casefold()
         if content in [
             hl.content.casefold()
             for hl in self.highlights.get(interaction.user.id, [])
         ]:
-            raise ValueError(
+            raise UserGenericError(
                 "Cannot have multiple highlights with the same content."
             )
 
@@ -508,12 +509,12 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
                     self.highlights[interaction.user.id].pop(int(index) - 1)
                 ]
             except IndexError:
-                raise IndexError(
+                raise UserValueError(
                     "One or more of the provided indices is invalid."
                 )
 
         else:
-            raise TypeError("Invalid input provided.")
+            raise UserValueError("Invalid input provided.")
 
         await self.bot.db.execute(
             """
@@ -576,7 +577,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
     ):
         """Block a target from highlighting you"""
         if not (id or "").isnumeric() and not any([user, channel]):
-            raise TypeError("Please input a valid ID.")
+            raise UserValueError("Please input a valid ID.")
 
         profile = self.bot.profiles[interaction.user.id]
 
@@ -642,7 +643,7 @@ class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
         One *or more* IDs can be provided to this command
         """
         if not (id or "").isnumeric() and not any([user, channel]):
-            raise TypeError("Please input a valid ID.")
+            raise UserValueError("Please input a valid ID.")
 
         profile = self.bot.profiles[interaction.user.id]
 

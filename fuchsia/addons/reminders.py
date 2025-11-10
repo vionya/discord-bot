@@ -13,6 +13,7 @@ from discord import app_commands, utils, ui
 
 import fuchsia
 from fuchsia.classes.app_commands import no_defer
+from fuchsia.classes.exceptions import UserLimitError, UserValueError
 from fuchsia.classes.timer import periodic
 from fuchsia.modules import ButtonsMenu
 from fuchsia.tools import (
@@ -332,7 +333,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         tz = profile.timezone or timezone.utc
 
         if len(self.reminders[interaction.user.id]) >= MAX_REMINDERS:
-            raise ValueError("You've used up all of your reminder slots!")
+            raise UserLimitError("You've used up all of your reminder slots!")
 
         (time_data, _) = try_or_none(parse_relative, when) or parse_absolute(
             when, tz=tz
@@ -346,7 +347,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                 if repeat:
                     delta = parse_relative(repeat)[0]
                     if delta.total_seconds() < REPEATING_MINIMUM_SECONDS:
-                        raise ValueError(
+                        raise UserValueError(
                             "Reminders may repeat no more than once a minute"
                         )
 
@@ -367,7 +368,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                     # Parse the repetition frequency
                     delta = parse_relative(repeat)[0]
                     if delta.total_seconds() < REPEATING_MINIMUM_SECONDS:
-                        raise ValueError(
+                        raise UserValueError(
                             "Reminders may repeat no more than once an minute"
                         )
 
@@ -459,7 +460,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         try:
             reminder = self.reminders[interaction.user.id][index - 1]
         except IndexError:
-            raise IndexError("Couldn't find that reminder.")
+            raise UserValueError("Couldn't find that reminder.")
 
         container = ui.Container(
             ui.TextDisplay("### Viewing a Reminder"),
@@ -490,7 +491,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         try:
             reminder = self.reminders[interaction.user.id][index - 1]
         except IndexError:
-            raise IndexError("Couldn't find that reminder.")
+            raise UserValueError("Couldn't find that reminder.")
 
         modal = ReminderEditModal(self.bot.db, reminder=reminder)
         await interaction.response.send_modal(modal)
@@ -518,10 +519,10 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             try:
                 reminders = [self.reminders[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
-                raise IndexError("One or more of the provided indices is invalid.")
+                raise UserValueError("One or more of the provided indices is invalid.")
 
         else:
-            raise TypeError("Invalid input provided.")
+            raise UserValueError("Invalid input provided.")
 
         for reminder in reminders:
             await reminder.delete()
