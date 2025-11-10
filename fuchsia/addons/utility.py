@@ -801,7 +801,7 @@ class Utility(fuchsia.Addon):
         avatar = user_object.display_avatar.url
         # unsure about this so A/B testing with it until i decide
         if (
-            ab_test("circle_pfp", interaction.user.id, 0.1)
+            ab_test("circle_pfp", interaction.user.id, 0.5)
             and not user_object.display_avatar.is_animated()
         ):
             data = (
@@ -885,7 +885,7 @@ class Utility(fuchsia.Addon):
             )
 
             # idk if i should leave this in or not so i'll A/B test on it lol
-            if ab_test("see_first_message", interaction.user.id) and first_link:
+            if ab_test("see_first_message", interaction.user.id, 0.75) and first_link:
                 container.add_item(
                     ui.ActionRow(ui.Button(url=first_link, label="See first message"))
                 )
