@@ -225,12 +225,14 @@ class Utility(fuchsia.Addon):
 
         components, label_descs = [], []
         for comp, (l, d) in definitions_to_embed(resp):
+            if len(components) >= 25:
+                break
             components.append(comp)
             label_descs.append((l, d))
         if not components:
             raise RuntimeError("No definition found")
 
-        pages = ContainerPages(components[:25])
+        pages = ContainerPages(components)
         menu = DropdownMenu.from_pages(
             pages,
             option_labels=[label for (label, _) in label_descs],
