@@ -34,6 +34,8 @@ from .auxiliary.starboard import (
 if TYPE_CHECKING:
     from asyncpg import Pool
 
+    from collections.abc import Sequence
+
 
 class Star:
     __slots__ = (
@@ -229,6 +231,10 @@ class Starboard:
                         container.add_item(
                             ui.TextDisplay(shorten(ref.resolved.content, 500))
                         )
+                    if attachments := (*ref.resolved.attachments, *ref.resolved.embeds):
+                        gallery = self.create_media_gallery(attachments)
+                        if gallery.items:
+                            container.add_item(gallery)
                     row.add_item(ui.Button(url=ref.jump_url, label="Go to reply"))
 
             if ref:
@@ -294,27 +300,7 @@ class Starboard:
                 *display_message.attachments,
                 *display_message.embeds,
             ):
-                gallery = ui.MediaGallery()
-                for attach in attachments[:10]:
-                    if (
-                        isinstance(attach, discord.Attachment)
-                        and not attach.is_voice_message()
-                    ):
-                        gallery.add_item(media=attach.url, spoiler=attach.is_spoiler())
-                    elif isinstance(attach, discord.Embed):
-                        match attach.type:
-                            case "gifv":
-                                if attach.provider.name == "Tenor":
-                                    gallery.add_item(
-                                        media=str(extract_tenor_gif(attach))
-                                    )
-                            case "image" | "video":
-                                if attach.url:
-                                    gallery.add_item(media=attach.url)
-                            case "rich" | "article":
-                                if attach.image and attach.image.url:
-                                    gallery.add_item(media=attach.image.url)
-
+                gallery = self.create_media_gallery(attachments)
                 if gallery.items:
                     container.add_item(gallery)
 
@@ -375,6 +361,25 @@ class Starboard:
             self.star_ids.add(message.id)
             self.cached_stars[message.id] = star
             return star
+
+    @staticmethod
+    def create_media_gallery(attachments: Sequence[discord.Attachment | discord.Embed]):
+        gallery = ui.MediaGallery()
+        for attach in attachments[:10]:
+            if isinstance(attach, discord.Attachment) and not attach.is_voice_message():
+                gallery.add_item(media=attach.url, spoiler=attach.is_spoiler())
+            elif isinstance(attach, discord.Embed):
+                match attach.type:
+                    case "gifv":
+                        if attach.provider.name == "Tenor":
+                            gallery.add_item(media=str(extract_tenor_gif(attach)))
+                    case "image" | "video":
+                        if attach.url:
+                            gallery.add_item(media=attach.url)
+                    case "rich" | "article":
+                        if attach.image and attach.image.url:
+                            gallery.add_item(media=attach.image.url)
+        return gallery
 
     async def delete_star(self, id: int):
         star = await self.get_star(id)
@@ -802,7 +807,9 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise UserValueError("You must provide at least one valid argument to ignore.")
+            raise UserValueError(
+                "You must provide at least one valid argument to ignore."
+            )
 
         starboard = self.starboards[interaction.guild.id]
         for snowflake in filter(None, [channel, user, message_obj]):
@@ -865,7 +872,9 @@ class StarboardAddon(
                 isinstance(message_obj, discord.PartialMessage),
             ]
         ):
-            raise UserValueError("You must provide at least one valid argument to unignore.")
+            raise UserValueError(
+                "You must provide at least one valid argument to unignore."
+            )
 
         starboard = self.starboards[interaction.guild.id]
         target_id = int(id) if id.isdigit() else None
