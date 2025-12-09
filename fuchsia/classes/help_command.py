@@ -93,7 +93,7 @@ def generate_signature(command: AnyCommand) -> str:
     return " ".join(signature)
 
 
-def generate_param_help(command: app_commands.Command) -> str:
+def generate_param_help(command: app_commands.Command) -> list[str]:
     """Generates a string with help for all parameters for a command.
 
     A help string consists of the parameter's name, whether it's required,
@@ -104,7 +104,7 @@ def generate_param_help(command: app_commands.Command) -> str:
     :type command: ``discord.app_commands.Command``
 
     :return: A help string for the command's parameters
-    :rtype: ``str``
+    :rtype: ``list[str]``
     """
     descriptions = []
     for param in command.parameters:
@@ -124,6 +124,7 @@ def generate_param_help(command: app_commands.Command) -> str:
         elif ma is not None:
             desc += f"\n↳ **Max Value**: `{ma}`"
         descriptions.append(desc)
+    return descriptions
     return "\n\n".join(descriptions)
 
 
@@ -178,9 +179,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
 
         cmd = (
             self.bot.tree.get_command(command, type=discord.AppCommandType.user)
-            or self.bot.tree.get_command(
-                command, type=discord.AppCommandType.message
-            )
+            or self.bot.tree.get_command(command, type=discord.AppCommandType.message)
             or recursive_get_command(self.bot.tree, command)
         )
         if not cmd:
@@ -202,8 +201,7 @@ class AppHelpCommand(AutoEphemeralAppCommand):
                 value=k.qualified_name,
             )
             for k in all_commands
-            if current.casefold().removeprefix("/")
-            in k.qualified_name.casefold()
+            if current.casefold().removeprefix("/") in k.qualified_name.casefold()
         ][:25]
 
     def get_mapping(self) -> HelpMapping:
@@ -251,10 +249,10 @@ class AppHelpCommand(AutoEphemeralAppCommand):
             component = ui.Container(
                 ui.TextDisplay(f"### {cog_name}"),
                 ui.TextDisplay(getattr(cog, "description", "No description")),
-                ui.Separator(visible=False),
-                ui.TextDisplay("**Commands:**"),
+                ui.Separator(visible=True),
+                # ui.TextDisplay("**Commands:**"),
                 ui.TextDisplay("\n".join(map(format_command, cog_commands))),
-                ui.Separator(visible=False),
+                ui.Separator(visible=True),
                 ui.TextDisplay(
                     "-# Lost? Try `/help command: help` to learn more about fuchsia"
                 ),
@@ -297,44 +295,39 @@ class AppHelpCommand(AutoEphemeralAppCommand):
         )  # join multiline strings
 
         signature = generate_signature(command)
-        embed = fuchsia.Embed(
-            title=signature,
-            description=description,
+        container = ui.Container(
+            ui.TextDisplay(f"### {signature}"),
+            ui.TextDisplay(description),
         )
 
         if isinstance(command, app_commands.Command):
-            embed.add_field(
-                name="Parameters",
-                value=generate_param_help(command),
-                inline=False,
-            )
+            container.add_item(ui.Separator(visible=True))
+            for param_help in generate_param_help(command):
+                container.add_item(ui.TextDisplay(param_help))
 
-        if isinstance(command, app_commands.Group):
-            embed.add_field(
-                name="Subcommands",
-                value="\n".join(
-                    map(
-                        lambda sub: f"{get_ancestral_path(sub)} **{sub.name}**",
-                        command.walk_commands(),
-                    )
+        if isinstance(command, app_commands.Group) and command.commands:
+            container.add_item(ui.Separator(visible=True))
+            for sub in command.walk_commands():
+                container.add_item(
+                    ui.TextDisplay(f"/{get_ancestral_path(sub)} **{sub.name}**")
                 )
-                or "No subcommands",
-                inline=False,
-            )
 
         if hasattr(command, "callback") and (
             deprecation := getattr(command.callback, "_deprecated", None)  # type: ignore
         ):
-            embed.description = (
-                "**==DEPRECATION NOTICE==**\nThis command is deprecated and "
-                "will be removed in the future.{0}\n\n{1}".format(
-                    (
-                        f"\nExtra Info: {deprecation}"
-                        if isinstance(deprecation, str)
-                        else ""
-                    ),
-                    embed.description,
+            container.add_item(ui.Separator(visible=True))
+            container.add_item(
+                ui.TextDisplay(
+                    "**==DEPRECATION NOTICE==**\nThis command is deprecated and "
+                    "will be removed in the future.{0}\n\n{1}".format(
+                        (
+                            f"\nExtra Info: {deprecation}"
+                            if isinstance(deprecation, str)
+                            else ""
+                        )
+                    )
                 )
             )
-
-        await interaction.response.send_message(embed=embed)
+    
+        view = ui.LayoutView().add_item(container)
+        await interaction.response.send_message(view=view)
