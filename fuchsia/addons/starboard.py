@@ -373,6 +373,8 @@ class Starboard:
                     case "gifv":
                         if attach.provider.name == "Tenor":
                             gallery.add_item(media=str(extract_tenor_gif(attach)))
+                        elif attach.provider.name == "Klipy":
+                            gallery.add_item(media=str(attach.thumbnail.url))
                     case "image" | "video":
                         if attach.url:
                             gallery.add_item(media=attach.url)
