@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 import fuchsia
+from fuchsia.classes.containers import StateStore
 from fuchsia.classes.transformers import codeblock_transformer
 from fuchsia.modules import ButtonsMenu, Pages
 from fuchsia.modules.exec import ExecWrapper
@@ -26,6 +27,7 @@ class Devel(fuchsia.Addon):
         self.bot = bot
         self._exec_scope: dict[str, Any] = {}
         self._last_exec_result: Any = None
+        self._exec_state_store: StateStore = StateStore()
 
     async def cog_check(self, ctx):
         if not await self.bot.is_owner(ctx.author):
@@ -41,6 +43,7 @@ class Devel(fuchsia.Addon):
             "channel": ctx.channel,
             "bot": ctx.bot,
             "_": self._last_exec_result,
+            "state": self._exec_state_store
         }
 
     @commands.guild_only()

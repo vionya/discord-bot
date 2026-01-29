@@ -93,7 +93,8 @@ class RecordContainer(metaclass=ABCMeta):
         return value
 
     @abstractmethod
-    async def update_relation(self, attribute: str, value: Any): ...
+    async def update_relation(self, attribute: str, value: Any):
+        ...
 
     @abstractmethod
     async def reset_attribute(self, attribute: str):
@@ -339,7 +340,7 @@ class Setting(MutableMapping):
 
         if "description" not in data:
             data["description"] = None
-        
+
         if "enabled" not in data:
             data["enabled"] = True
 
@@ -397,3 +398,41 @@ class SettingsMapping(Mapping):
 
     def values(self):
         return self.__settings_data.values()
+
+
+class StateStore:
+    """
+    Simple state storage utility class
+
+    Stores the initial and current value of all values stored in it,
+    allowing for values to be reset to their original state as-needed.
+    """
+    def __init__(self):
+        super().__setattr__("_live_data", {})
+        super().__setattr__("_default_data", {})
+
+    def __getattribute__(self, name: str):
+        if name in (data := object.__getattribute__(self, "_live_data")):
+            return data[name]
+        return object.__getattribute__(self, name)
+
+    def __setattr__(self, name: str, value: Any):
+        if name in dir(self):
+            raise ValueError(f"Writing to the {name} attribute is forbidden")
+        data = object.__getattribute__(self, "_live_data")
+        if name in data:
+            data[name] = value
+        else:
+            data[name] = value
+            object.__getattribute__(self, "_default_data")[name] = value
+
+    def reset(self, name: str):
+        """
+        Resets a state variable to its original value
+        
+        :param name: the name of the attribute to reset
+        :type name: str
+        """
+        live_data = object.__getattribute__(self, "_live_data")
+        default_data = object.__getattribute__(self, "_default_data")
+        live_data[name] = default_data[name]
