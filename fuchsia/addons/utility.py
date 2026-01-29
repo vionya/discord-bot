@@ -575,8 +575,8 @@ class Utility(fuchsia.Addon):
         ) as resp:
             upscaled_data = await resp.read()
             (width, height) = (
-                resp.headers["x-width"],
-                resp.headers["x-height"],
+                resp.headers.get("x-width", "???"),
+                resp.headers.get("x-height", "???"),
             )
 
             container = ui.Container(
@@ -588,8 +588,15 @@ class Utility(fuchsia.Addon):
             if content_type == "gif":
                 container.add_item(
                     ui.TextDisplay(
-                        "Note: only the first 250 frames of"
+                        "-# Note: only the first 250 frames of"
                         " this animated emoji have been upscaled"
+                    ),
+                )
+            if content_type == "webp" and partial.animated:
+                container.add_item(
+                    ui.TextDisplay(
+                        "-# Additionally, animated WebP upscaling is not"
+                        " available at this time"
                     ),
                 )
             container.add_item(ui.TextDisplay(f"-# New size: {width}x{height} px"))
