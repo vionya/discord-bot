@@ -16,6 +16,7 @@ import discord
 from aiohttp import FormData
 from discord import app_commands, ui
 from discord.utils import format_dt, escape_markdown
+from yarl import URL
 
 import fuchsia
 from fuchsia.classes.app_commands import get_ephemeral, no_defer
@@ -551,15 +552,16 @@ class Utility(fuchsia.Addon):
             raise UserValueError("Only custom emojis can be upscaled")
 
         session = self.bot.session
+        
         async with session.get(partial.url) as resp:
             emoji_data = await resp.read()
 
-        content_type = "gif" if partial.animated else "png"
+        extension = URL(partial.url).suffix
         (form := FormData()).add_field(
             name="data",
             value=emoji_data,
-            filename=f"emoji.{content_type}",
-            content_type=f"image/{content_type}",
+            filename=f"emoji{extension}",
+            content_type=f"image/{extension.strip('.')}",
         )
 
         dim = 256 if partial.animated else 512
@@ -578,32 +580,26 @@ class Utility(fuchsia.Addon):
                 resp.headers.get("x-width", "???"),
                 resp.headers.get("x-height", "???"),
             )
+            new_content_type = resp.content_type.removeprefix("image/")
 
             container = ui.Container(
                 ui.TextDisplay(f"### `{partial.name}` upscaled!"),
                 ui.MediaGallery().add_item(
-                    media=f"attachment://upscaled.{content_type}"
+                    media=f"attachment://upscaled.{new_content_type}"
                 ),
             )
-            if content_type == "gif":
+            if new_content_type in ("gif", "webp"):
                 container.add_item(
                     ui.TextDisplay(
                         "-# Note: only the first 250 frames of"
-                        " this animated emoji have been upscaled"
-                    ),
-                )
-            if content_type == "webp" and partial.animated:
-                container.add_item(
-                    ui.TextDisplay(
-                        "-# Additionally, animated WebP upscaling is not"
-                        " available at this time"
+                        " animated emojis are upscaled"
                     ),
                 )
             container.add_item(ui.TextDisplay(f"-# New size: {width}x{height} px"))
             view = ui.LayoutView().add_item(container)
             await interaction.response.send_message(
                 view=view,
-                file=discord.File(BytesIO(upscaled_data), f"upscaled.{content_type}"),
+                file=discord.File(BytesIO(upscaled_data), f"upscaled.{new_content_type}"),
             )
 
     @app_commands.command(name="steal")
