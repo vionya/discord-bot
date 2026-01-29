@@ -22,16 +22,36 @@ OUTPUT_FILE = next(iter(argv[2:]), "config.example.toml")
 ORIGINAL = toml.load("config.toml")
 
 
-class PrettyListEncoder(toml.TomlEncoder):  # Dump lists with newlines
+class InlineDictStr(str):
+    pass
+
+
+class PrettyListEncoder(toml.TomlPreserveInlineDictEncoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dump_funcs[InlineDictStr] = lambda v: str(v).strip("\n")
+
+    def dump_sections(self, o, sup: str):
+        for section in o:
+            if not isinstance(o[section], dict):
+                arrayoftables = False
+                if isinstance(o[section], list):
+                    for a in o[section]:
+                        if isinstance(a, dict):
+                            arrayoftables = True
+                if arrayoftables:
+                    o[section][0] = InlineDictStr(
+                        self.dump_inline_table(o[section][0])
+                    )
+
+        return super().dump_sections(o, sup)
+
     def dump_list(self, value):
         retval = "["
-        endpoint = len(value)
-        for index in range(endpoint):
+        for index in range(len(value)):
             item = value[index]
-            lineterm = ","
-            if (index + 1) == endpoint:
-                lineterm = ""
-            retval += "\n    " + str(self.dump_value(item)) + lineterm
+            retval += "\n    " + str(self.dump_value(item)) + ","
+        retval += "\n    # ..."
         retval += "\n]"
         return retval
 
@@ -42,8 +62,10 @@ def generate_template(data: dict) -> dict:
         if isinstance(v, dict):
             v = generate_template(v)
         elif isinstance(v, list):
+            v = v[:1]
             for index, value in enumerate(v):
                 if isinstance(value, dict):
+                    # print(value)
                     v[index] = generate_template(value)
                 else:
                     v[index] = type(value).__name__
