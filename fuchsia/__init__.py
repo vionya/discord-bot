@@ -56,6 +56,7 @@ class Fuchsia(commands.Bot):
         self.command_ids: dict[str, int] = {}
 
         kwargs["command_prefix"] = self.cfg["bot"]["prefix"]
+        kwargs["owner_ids"] = set(self.cfg["bot"]["owner_ids"])
         kwargs["activity"] = discord.Activity(
             name=config["bot"]["activity_name"].format(version=__version__),
             state=config["bot"]["activity_state"].format(version=__version__),

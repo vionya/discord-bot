@@ -14,6 +14,7 @@ class FuchsiaInfoLink(TypedDict):
 
 class FuchsiaBotConfig(TypedDict):
     token: str
+    owner_ids: list[int]
     cse_keys: list[str]
     cse_engine: str
     prefix: str
