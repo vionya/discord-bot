@@ -68,6 +68,7 @@ def bool_transformer(maybe_bool: str) -> bool:
 @wrap_transformer()
 def codeblock_transformer(codeblock: str) -> str:
     new = None
+    codeblock = codeblock.strip("\u2068").strip("\u2069")
     if codeblock.startswith("`") and codeblock.endswith("`"):
         new = codeblock.strip("`")
         return re.sub(CODEBLOCK_REGEX, "", new)
