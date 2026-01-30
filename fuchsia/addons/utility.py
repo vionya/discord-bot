@@ -570,7 +570,7 @@ class Utility(fuchsia.Addon):
             params={
                 "width": dim,
                 "height": dim,
-                "frames": 250,
+                "frames": 1000,
                 "keep_aspect": "true",
             },
             data=form,
@@ -591,11 +591,11 @@ class Utility(fuchsia.Addon):
             if new_content_type in ("gif", "webp"):
                 container.add_item(
                     ui.TextDisplay(
-                        "-# Note: only the first 250 frames of"
+                        "-# Note: only the first 1000 frames of"
                         " animated emojis are upscaled"
                     ),
                 )
-            container.add_item(ui.TextDisplay(f"-# New size: {width}x{height} px"))
+            container.add_item(ui.TextDisplay(f"-# New size: {width}x{height}px"))
             view = ui.LayoutView().add_item(container)
             await interaction.response.send_message(
                 view=view,
