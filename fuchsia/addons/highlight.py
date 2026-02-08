@@ -16,7 +16,11 @@ from discord import app_commands, ui
 
 import fuchsia
 from fuchsia.classes.containers import TimedSet
-from fuchsia.classes.exceptions import UserGenericError, UserLimitError, UserValueError
+from fuchsia.classes.exceptions import (
+    UserGenericError,
+    UserLimitError,
+    UserValueError,
+)
 from fuchsia.classes.partials import PartialUser
 from fuchsia.classes.timer import periodic
 from fuchsia.modules import ButtonsMenu
@@ -290,7 +294,12 @@ QueuedHighlightsType = defaultdict[
 ]
 
 
-class Highlights(fuchsia.Addon, app_group=True, group_name="highlight"):
+class Highlights(
+    fuchsia.Addon,
+    app_group=True,
+    group_name="highlight",
+    group_description="Commands for managing highlights",
+):
     """
     Commands for managing highlights
 

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import time
 import zoneinfo
 from abc import ABCMeta, abstractmethod
 from collections.abc import Mapping, MutableMapping, MutableSet
 from functools import cache
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, TypeVar
 
 from fuchsia.tools import humanize_snake_case
 
@@ -285,52 +286,84 @@ KT = TypeVar("KT")
 VT = TypeVar("VT")
 
 
-class TimedCache(MutableMapping[KT, VT]):
-    __slots__ = ("_store", "loop", "timeout")
+class ExpiringEntry[T](NamedTuple):
+    value: T
+    """the actual value of this entry"""
 
-    loop: asyncio.AbstractEventLoop
+    created_at: float
+    """when this entry was created, as a result of time.monotonic()"""
+
+
+class TimedCache[KT, VT](MutableMapping):
+    __slots__ = ("__underlying_store", "__size", "timeout")
+
     timeout: int
-    _store: dict[KT, tuple[asyncio.tasks.Task[None], VT]]
+    __underlying_store: dict[KT, ExpiringEntry[VT]]
+    __size: int
 
     def __init__(
         self,
         timeout: int = 60,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
     ):
         self.timeout = timeout
-        self.loop = loop or asyncio.get_event_loop()
+        self.__underlying_store = {}
+        self.__size = 0
 
-        self._store = {}
-
-    async def invalidate(self, key: KT):
-        await asyncio.sleep(self.timeout)
-        del self[key]
+    # abstract methods
 
     def clear(self):
-        for task, _ in self._store.values():
-            task.cancel()
-        self._store.clear()
+        self.__size = 0
+        self.__underlying_store.clear()
 
     def __setitem__(self, key: KT, value: VT):
         if key in self:
-            active = self._store.pop(key)[0]
-            active.cancel()
+            del self.__underlying_store[key]
 
-        self._store[key] = (self.loop.create_task(self.invalidate(key)), value)
+        self.__size += 1
+        self.__underlying_store[key] = ExpiringEntry(value, time.monotonic())
 
     def __getitem__(self, key: KT):
-        return self._store[key][1]
+        # check if the entry is stale, evict and raise an error if it is
+        if self._is_stale(key):
+            del self[key]
+            raise KeyError(f"'{key}' is a stale entry")
+
+        # handles standard KeyErrors automatically
+        return self.__underlying_store[key].value
 
     def __delitem__(self, key: KT):
-        self._store[key][0].cancel()
-        del self._store[key]
+        self.__size -= 1
+        del self.__underlying_store[key]
 
     def __iter__(self):
-        return iter(self._store)
+        """
+        Iterate over the keys of this TimedCache
+
+        NOTE: this method skips over stale entries, but does NOT evict them
+        """
+        for key in self.__underlying_store:
+            if not self._is_stale(key):
+                yield key
 
     def __len__(self):
-        return len(self._store)
+        return self.__size
 
+    # public API
+
+    def evict_all(self):
+        """
+        Force-evicts all stale entries from the cache
+        """
+        for key in list(self.__underlying_store.keys()):
+            if self._is_stale(key):
+                del self[key]
+
+    # private API
+
+    def _is_stale(self, key: KT) -> bool:
+        return (
+            time.monotonic() - self.__underlying_store[key].created_at
+        ) >= self.timeout
 
 class Setting(MutableMapping):
     __slots__ = ("__setting_key", "__setting_data")

@@ -12,6 +12,7 @@ from discord import app_commands
 import fuchsia
 from fuchsia.classes.app_commands import no_defer
 from fuchsia.classes.containers import TimedCache
+from fuchsia.classes.timer import periodic
 from fuchsia.tools.checks import is_registered_profile_predicate
 from fuchsia.tools.message_helpers import container_view, send_confirmation
 
@@ -79,8 +80,17 @@ class Tags(fuchsia.Addon, app_group=True, group_name="tag"):
             partial(TimedCache, timeout=300)
         )
         self.tag_name_cache: TimedCache[int, list[str]] = TimedCache(timeout=30)
-
         self.bot.tree.context_menu(name="Create Tag")(self.tag_create_ctx_menu)
+        self.clear_caches.start()
+
+    async def cog_unload(self):
+        self.clear_caches.shutdown()
+
+    @periodic(600)
+    async def clear_caches(self):
+        for cache in self.tags.values():
+            cache.evict_all()
+        self.tag_name_cache.evict_all()
 
     async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)

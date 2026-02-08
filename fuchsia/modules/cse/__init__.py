@@ -2,3 +2,4 @@
 # Copyright (C) 2025 vionya
 from .objects import GoogleResponse, SearchResult
 from .search import Search
+from .suggest import Suggest
