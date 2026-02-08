@@ -196,7 +196,7 @@ class Utility(fuchsia.Addon):
         self, interaction: discord.Interaction, current: str
     ):
         if len(current) < 2:
-            self.suggest_cache[interaction.user.id] = []
+            return []
         if interaction.user.id in self.suggest_cache:
             return self.suggest_cache[interaction.user.id]
         try:
