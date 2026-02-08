@@ -121,7 +121,7 @@ class Utility(fuchsia.Addon):
             self.sticker_info_context_command
         )
 
-        self.suggest_cache = TimedCache[int, list[app_commands.Choice]](3)
+        self.suggest_cache = TimedCache[int, list[app_commands.Choice]](2)
 
         asyncio.create_task(self.__ainit__())
 
@@ -195,6 +195,8 @@ class Utility(fuchsia.Addon):
     async def google_search_autocomplete(
         self, interaction: discord.Interaction, current: str
     ):
+        if len(current) < 2:
+            self.suggest_cache[interaction.user.id] = []
         if interaction.user.id in self.suggest_cache:
             return self.suggest_cache[interaction.user.id]
         try:
