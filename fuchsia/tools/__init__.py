@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, overload
 from random import Random
+from collections.abc import Iterator
 
 from discord import app_commands, utils
 
@@ -309,3 +310,13 @@ def ab_test(test_name: str, user_id: int, experimental_ratio: float = 0.5) -> bo
     if experimental_ratio == 0.5:
         return bool(rng.getrandbits(1))
     return rng.random() < experimental_ratio
+
+
+def chunk_list[T](items: list[T], chunk_size: int) -> Iterator[list[T]]:
+    """
+    Yields the given list, chunked to the specified size.
+    """
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be > 0")
+    for i in range(0, len(items), chunk_size):
+        yield items[i : i + chunk_size]
