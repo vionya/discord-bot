@@ -302,9 +302,7 @@ class Highlights(
     - Highlights will **never** be triggered from private threads that you are not a member of
     - Highlights will **never** be triggered by bots
     - You must be a member of a channel/thread to be highlighted in it
-    - Rarely, a highlight may be triggered/not triggered when losing/gaining access[JOIN]
-    to a server or channel. This is due to internal caching reasons, and will resolve[JOIN]
-    itself within 30 seconds
+    - Rarely, a highlight may be triggered/not triggered when losing/gaining access to a server or channel. This is due to internal caching reasons, and will resolve itself within 30 seconds
     """
 
     def __init__(self, bot: fuchsia.Fuchsia):
