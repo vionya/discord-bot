@@ -372,10 +372,12 @@ class Highlights(
 
         # get all highlights matching the message content, ignoring any
         # whose owners are in a grace period for the channel
-        matched_hls = filter(
-            lambda hl: hl.matches(message.content)
-            and (message.channel.id not in self.grace_periods.get(hl.user_id, {})),
-            self.flat_highlights,
+        matched_hls = list(
+            filter(
+                lambda hl: hl.matches(message.content)
+                and (message.channel.id not in self.grace_periods.get(hl.user_id, {})),
+                self.flat_highlights,
+            )
         )
 
         # query all distinct matched highlight owners who are not already cached
