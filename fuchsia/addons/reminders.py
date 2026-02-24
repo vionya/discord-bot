@@ -468,6 +468,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             ui.Separator(),
             ui.TextDisplay(
                 f"**Will be delivered at** <t:{int(reminder.end_time.timestamp())}>"
+                +f" (<t:{int(reminder.end_time.timestamp())}:R>)"
                 + (
                     f"\n**Will repeat every** `{humanize_timedelta(reminder.delta)}`"
                     if reminder.repeating
