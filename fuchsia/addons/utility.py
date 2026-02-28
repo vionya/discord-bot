@@ -10,6 +10,7 @@ from functools import partial
 from io import BytesIO
 from sys import version as py_version
 from typing import Literal, Optional
+import re
 from zoneinfo import ZoneInfo, available_timezones
 
 import discord
@@ -87,6 +88,7 @@ BADGE_MAPPING = {
     # "verified_bot": "",
     "verified_bot_developer": "<:_:1417956438445396192>",
 }
+EMOJI_SPLITTER = re.compile(r"(?<=\>)(?=\<)|\s+|\s*,")
 
 
 class Utility(fuchsia.Addon):
@@ -717,17 +719,24 @@ class Utility(fuchsia.Addon):
         if src is None:
             raise UserValueError("You need to provide a source for the emoji")
 
+        created_emoji = []
+        failed_emoji = []
         if isinstance(src, str):
-            partial = discord.PartialEmoji.from_str(src.strip())
-            if not partial.is_custom_emoji():
-                raise UserValueError("You need to provide a valid custom emoji")
+            for emoji_str in EMOJI_SPLITTER.split(src):
+                if not emoji_str:
+                    continue
+                partial = discord.PartialEmoji.from_str(emoji_str.strip())
+                if not partial.is_custom_emoji():
+                    failed_emoji.append(emoji_str)
 
-            async with self.bot.session.get(partial.url) as resp:
-                data = await resp.read()
+                async with self.bot.session.get(partial.url) as resp:
+                    data = await resp.read()
 
-            emoji = await interaction.guild.create_custom_emoji(
-                name=new_name or partial.name, image=data
-            )
+                created_emoji.append(
+                    await interaction.guild.create_custom_emoji(
+                        name=new_name or partial.name, image=data
+                    )
+                )
         else:
             if not src.filename.lower().endswith(("jpg", "jpeg", "png", "gif")):
                 raise UserValueError(
@@ -742,13 +751,22 @@ class Utility(fuchsia.Addon):
                     "You need to provide a name for this emoji"
                 )
 
-            emoji = await interaction.guild.create_custom_emoji(
-                name=new_name, image=await src.read()
+            created_emoji.append(
+                await interaction.guild.create_custom_emoji(
+                    name=new_name, image=await src.read()
+                )
             )
 
-        await send_confirmation(
-            interaction, predicate=f"created emoji `{emoji.name}` {emoji}"
+        if not created_emoji:
+            raise UserValueError("You need to provide a valid custom emoji")
+        success_pred = "created emoji {}".format(
+            ", ".join(f"`{e.name}` {e}" for e in created_emoji)
         )
+        if failed_emoji:
+            success_pred += "\nFailed to create {}".format(
+                ", ".join(f"`{e}`" for e in failed_emoji)
+            )
+        await send_confirmation(interaction, predicate=success_pred)
 
     @app_commands.command(name="unicode")
     @app_commands.describe(content="The text to get the unicode data for")
