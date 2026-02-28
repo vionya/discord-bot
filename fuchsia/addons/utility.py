@@ -728,6 +728,7 @@ class Utility(fuchsia.Addon):
                 partial = discord.PartialEmoji.from_str(emoji_str.strip())
                 if not partial.is_custom_emoji():
                     failed_emoji.append(emoji_str)
+                    continue
 
                 async with self.bot.session.get(partial.url) as resp:
                     data = await resp.read()
