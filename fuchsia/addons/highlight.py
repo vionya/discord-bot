@@ -35,8 +35,11 @@ from fuchsia.tools import (
     shorten,
     user_to_default_avatar,
     chunk_list,
+    ab_test,
 )
 from fuchsia.tools.checks import is_registered_profile_predicate
+
+from .auxiliary.highlight import HighlightsV2Item
 
 if TYPE_CHECKING:
     from fuchsia.classes.containers import FuchsiaUser
@@ -206,7 +209,9 @@ class Highlight:
         # with how cv2 notifications are rendered (i.e. they arent) so until the new
         # design for highlights has to be restricted to bot owners only until
         # the regression is fixed :DDDDDDDDD
-        if self.bot.owner_ids and self.user_id in self.bot.owner_ids:
+        if (
+            self.bot.owner_ids and self.user_id in self.bot.owner_ids
+        ) or ab_test("highlights_design_v2", self.user_id, 0.67):
             messages = [
                 m
                 async for m in message.channel.history(limit=7, around=message)
@@ -240,26 +245,11 @@ class Highlight:
                     container.add_item(ui.Separator())
             container.add_item(
                 ui.ActionRow(
-                    ui.Button(label="Jump to Message", url=message.jump_url)
+                    ui.Button(label="Jump to Message", url=message.jump_url),
+                    HighlightsV2Item(),  # type: ignore
                 )
             )
-            view = (
-                ui.LayoutView(timeout=0)
-                .add_item(
-                    ui.TextDisplay(
-                        "{0}: {1}".format(
-                            message.author,
-                            shorten(
-                                SPOILER_PATTERN.sub(
-                                    "[Spoiler]", message.content
-                                ),
-                                75,
-                            ),
-                        )
-                    )
-                )
-                .add_item(container)
-            )
+            view = ui.LayoutView(timeout=0).add_item(container)
 
             return {
                 "view": view,
@@ -338,6 +328,8 @@ class Highlights(
 
     async def __ainit__(self):
         await self.bot.wait_until_ready()
+
+        self.bot.add_dynamic_items(HighlightsV2Item)
 
         # fetch reminders ordered by content
         for record in await self.bot.db.fetch(

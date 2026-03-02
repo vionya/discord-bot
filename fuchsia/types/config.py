@@ -8,9 +8,11 @@ class FuchsiaInvitePreset(TypedDict):
     desc: str
     value: str
 
+
 class FuchsiaInfoLink(TypedDict):
     url: str
     disabled: bool
+
 
 class FuchsiaBotConfig(TypedDict):
     token: str
@@ -33,6 +35,9 @@ class FuchsiaDataBaseConfig(TypedDict):
     host: str
 
 
+FuchsiaStringsConfig = dict[str, "str | FuchsiaStringsConfig"]
+
+
 class FuchsiaConfig(TypedDict):
     addons: list[str]
     privacy_policy_path: str
@@ -43,3 +48,5 @@ class FuchsiaConfig(TypedDict):
 
     bot: FuchsiaBotConfig
     database: FuchsiaDataBaseConfig
+
+    strings: FuchsiaStringsConfig

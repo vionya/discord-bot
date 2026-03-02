@@ -45,3 +45,6 @@ user = "str"
 password = "str"
 database = "str"
 host = "str"
+
+[strings.info]
+hv2 = "str"

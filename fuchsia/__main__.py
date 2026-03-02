@@ -7,6 +7,7 @@ from typing import cast
 
 import toml
 
+from fuchsia.config import Config
 from fuchsia.types.config import FuchsiaConfig
 
 try:
@@ -48,6 +49,7 @@ runtime.patch_all()
 async def main():
     with open("config.toml", "r") as file:
         config: FuchsiaConfig = cast(FuchsiaConfig, toml.load(file))
+        Config().set_config(config)
 
     fuchsia = Fuchsia(config)
 
