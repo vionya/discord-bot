@@ -329,8 +329,6 @@ class Highlights(
     async def __ainit__(self):
         await self.bot.wait_until_ready()
 
-        self.bot.add_dynamic_items(HighlightsV2Item)
-
         # fetch reminders ordered by content
         for record in await self.bot.db.fetch(
             "SELECT * FROM highlights ORDER BY content ASC"
@@ -784,4 +782,5 @@ class Highlights(
 
 
 async def setup(bot: fuchsia.Fuchsia):
+    bot.add_dynamic_items(HighlightsV2Item)
     await bot.add_cog(Highlights(bot))

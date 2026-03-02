@@ -4,7 +4,10 @@ from discord import ui
 from fuchsia.config import Config
 
 
-class HighlightsV2Item(ui.DynamicItem[ui.Button[ui.LayoutView]], template=""):
+class HighlightsV2Item(
+    ui.DynamicItem[ui.Button[ui.LayoutView]],
+    template="fuchsia:highlights_v2_coachmark",
+):
     def __init__(self):
         super().__init__(
             ui.Button(
@@ -14,7 +17,7 @@ class HighlightsV2Item(ui.DynamicItem[ui.Button[ui.LayoutView]], template=""):
         )
 
     @classmethod
-    def from_custom_id(
+    async def from_custom_id(
         cls, interaction: discord.Interaction, item: ui.Button, _
     ):
         return cls()
