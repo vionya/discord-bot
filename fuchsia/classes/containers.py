@@ -45,7 +45,7 @@ class RecordContainer(metaclass=ABCMeta):
     Provides an OOP interface for getting data from and updating a database record
     """
 
-    __slots__ = ("ready", "pool", "hooks")
+    __slots__ = ("ready", "pool", "hooks", "__weakref__")
 
     ready: bool
     pool: Pool
