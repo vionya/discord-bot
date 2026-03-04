@@ -18,7 +18,7 @@ class Config(metaclass=Singleton):
         self._config = config
 
     def get_config(self) -> FuchsiaConfig | None:
-        return self._config
+        return self._config or None
 
     def get(self, key: str) -> Any:
         layer = self._config or {}

@@ -10,6 +10,7 @@ from functools import cached_property
 from operator import attrgetter
 from typing import TYPE_CHECKING, Optional
 import logging
+from weakref import ReferenceType, ref
 
 import discord
 from discord import app_commands, ui
@@ -18,7 +19,7 @@ from discord import app_commands, ui
 from typing_extensions import Sentinel
 
 import fuchsia
-from fuchsia.classes.containers import TimedSet
+from fuchsia.classes.containers import TimedSet, FuchsiaUser
 from fuchsia.classes.exceptions import (
     UserGenericError,
     UserLimitError,
@@ -96,13 +97,24 @@ class Highlight:
     # Max number of characters in a trigger
     MAX_LEN = 100
 
-    __slots__ = ("bot", "content", "user_id", "pattern")
+    __slots__ = ("content", "user_id", "pattern", "profile_ref")
 
-    def __init__(self, bot: fuchsia.Fuchsia, *, content: str, user_id: int):
-        self.bot = bot
+    content: str
+    user_id: int
+    pattern: re.Pattern[str]
+    profile_ref: ReferenceType[FuchsiaUser]
+
+    def __init__(
+        self,
+        profile_ref: ReferenceType[FuchsiaUser],
+        *,
+        content: str,
+        user_id: int,
+    ):
         self.content = content
         self.user_id = user_id
         self.pattern = re.compile(rf"\b{re.escape(self.content)}\b", re.I)
+        self.profile_ref = profile_ref
 
     def __repr__(self):
         return (
@@ -116,13 +128,17 @@ class Highlight:
         prefetched_member: discord.Member | NO_MEMBERSHIP | None = None,
     ) -> bool:
         if prefetched_member == NO_MEMBERSHIP:
+            log.debug(f"exiting predicate due to NO_MEMBERSHIP ({self!r})")
+            return False
+        if (profile := self.profile_ref()) is None:
+            log.warning(f"exiting predicate due to deref failure ({self!r})")
             return False
         # The bot and the highlight user cannot trigger a highlight
         if any([message.author.id == self.user_id, message.author.bot]):
             return False
 
         # Don't highlight users who have disabled highlight receipt
-        if self.bot.profiles[self.user_id].receive_highlights is False:
+        if profile.receive_highlights is False:
             return False
 
         # If any of the following IDs:
@@ -131,7 +147,7 @@ class Highlight:
         # - channel
         # - author
         # are in the user's ignored list, fail the check
-        blacklist = self.bot.profiles[self.user_id].hl_blocks
+        blacklist = profile.hl_blocks
         if any(
             attrgetter(attr)(message) in blacklist
             for attr in ("id", "guild.id", "channel.id", "author.id")
@@ -145,6 +161,9 @@ class Highlight:
         # This lets us update the channel members and make sure the user exists
         if prefetched_member is None:
             try:
+                log.debug(
+                    f"prefetch unavailable, falling back to member fetch ({self!r})"
+                )
                 member = await message.guild.fetch_member(self.user_id, cache=True)  # type: ignore
             except discord.NotFound:
                 return False
@@ -203,15 +222,14 @@ class Highlight:
     async def to_send_kwargs(
         self, message: discord.Message, later_triggers: set[discord.Message]
     ):
+        if (profile := self.profile_ref()) is None:
+            raise RuntimeError("profile reference was deleted unexpectedly")
         triggers: set[discord.Message] = {message, *later_triggers}
-
         # this is a dumb bandaid solution to the fact that Discord introduced a regression
         # with how cv2 notifications are rendered (i.e. they arent) so until the new
         # design for highlights has to be restricted to bot owners only until
         # the regression is fixed :DDDDDDDDD
-        if (
-            self.bot.owner_ids and self.user_id in self.bot.owner_ids
-        ) or ab_test("highlights_design_v2", self.user_id, 0.67):
+        if ab_test("highlights_v2", self.user_id, 0.95, owner_override=True):
             messages = [
                 m
                 async for m in message.channel.history(limit=7, around=message)
@@ -226,9 +244,7 @@ class Highlight:
             for i, msg in enumerate(messages):
                 if len(msg.content) + container.content_length() > 1500:
                     msg.content = "[Omitted due to length]"
-                is_blocked = (
-                    msg.author.id in self.bot.profiles[self.user_id].hl_blocks
-                )
+                is_blocked = msg.author.id in profile.hl_blocks
                 formatted = format_hl_context(
                     msg, msg in triggers, is_blocked, use_highlights_v2=True
                 )
@@ -251,18 +267,17 @@ class Highlight:
             )
             view = ui.LayoutView(timeout=0).add_item(container)
 
+            log.debug(f"created HLv2 highlight ({self!r})")
             return {
                 "view": view,
-                "silent": self.bot.profiles[self.user_id].silence_hl,
+                "silent": profile.silence_hl,
             }
         else:
             content = ""
             async for m in message.channel.history(limit=7, around=message):
                 if len(content + m.content) > 1500:  # Don't exceed embed limits
                     m.content = "[Omitted due to length]"
-                is_blocked = (
-                    m.author.id in self.bot.profiles[self.user_id].hl_blocks
-                )
+                is_blocked = m.author.id in profile.hl_blocks
                 formatted = format_hl_context(
                     m, m in triggers, is_blocked, use_highlights_v2=False
                 )
@@ -278,6 +293,7 @@ class Highlight:
                 discord.ui.Button(url=message.jump_url, label="Jump to message")
             )
 
+            log.debug(f"created HLv1 highlight ({self!r})")
             return {
                 "content": "{0}: {1}".format(
                     message.author,
@@ -287,7 +303,7 @@ class Highlight:
                 ),
                 "embed": embed,
                 "view": view,
-                "silent": self.bot.profiles[self.user_id].silence_hl,
+                "silent": profile.silence_hl,
             }
 
     def matches(self, other: str):
@@ -333,8 +349,11 @@ class Highlights(
         for record in await self.bot.db.fetch(
             "SELECT * FROM highlights ORDER BY content ASC"
         ):
+            profile = self.bot.profiles.get(record["user_id"])
+            if not profile:
+                continue
             self.highlights[record["user_id"]].append(
-                Highlight(self.bot, **record)
+                Highlight(ref(profile), **record)
             )
 
         for profile in self.bot.profiles.values():
@@ -423,7 +442,7 @@ class Highlights(
                 )
             except asyncio.TimeoutError:
                 log.warning(
-                    "Timed out on highlight member query, falling back to HTTP API"
+                    "timed out on highlight member query, falling back to HTTP API"
                 )
                 queried_members = []
                 for m_id in id_chunk:
@@ -479,6 +498,11 @@ class Highlights(
                 # then disable highlight receipt for that profile to avoid
                 # wasting future API calls
                 self.bot.profiles[hl.user_id].receive_highlights = False
+            except RuntimeError:
+                log.warning(
+                    f"failed to deref profile in kwarg creation ({hl!r})"
+                )
+                continue
 
     @periodic(30)
     async def clear_membership_cache(self):
@@ -567,7 +591,7 @@ class Highlights(
         # use bisect insort to maintain ordering
         insort(
             self.highlights[interaction.user.id],
-            Highlight(self.bot, **result),
+            Highlight(ref(self.bot.profiles[interaction.user.id]), **result),
             key=lambda h: h.content,
         )
         self.recompute_flattened()
