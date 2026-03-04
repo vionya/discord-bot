@@ -61,7 +61,7 @@ def format_hl_context(
     use_highlights_v2,
 ):
     if use_highlights_v2:
-        fmt = "{0} **{1.author.display_name}** {1.content}"
+        fmt = "{0} **{1.author.display_name}**\n{1.content}"
     else:
         fmt = (
             "**{0} [{1.author.display_name}]({1.jump_url})** {1.content}"
@@ -239,6 +239,7 @@ class Highlight:
                 ui.TextDisplay(
                     "### In {0.guild.name}/#{0.channel.name}".format(message)
                 ),
+                ui.Separator(visible=False),
                 accent_colour=None,
             )
             for i, msg in enumerate(messages):
@@ -259,6 +260,7 @@ class Highlight:
                     and messages[i + 1] not in triggers
                 ):
                     container.add_item(ui.Separator())
+            container.add_item(ui.Separator(visible=False))
             container.add_item(
                 ui.ActionRow(
                     ui.Button(label="Jump to Message", url=message.jump_url),
@@ -493,6 +495,7 @@ class Highlights(
                 await self.bot.get_user(hl.user_id, as_partial=True).send(
                     **await hl.to_send_kwargs(message, later_triggers)
                 )
+                log.debug(f"successfully delivered highlight ({hl!r})")
             except discord.Forbidden:
                 # If a highlight delivery results in a Forbidden response,
                 # then disable highlight receipt for that profile to avoid
