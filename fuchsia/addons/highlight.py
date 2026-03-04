@@ -61,7 +61,7 @@ def format_hl_context(
     use_highlights_v2,
 ):
     if use_highlights_v2:
-        fmt = "{0} **{1.author.display_name}**{1.content}"
+        fmt = "{0} **{1.author.display_name} **{1.content}"
     else:
         fmt = (
             "**{0} [{1.author.display_name}]({1.jump_url})** {1.content}"
