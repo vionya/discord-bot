@@ -634,7 +634,7 @@ class Utility(fuchsia.Addon):
             container.add_item(
                 ui.ActionRow(
                     ui.Button(
-                        label="View Emoji Asset",
+                        label="View Original Emoji Asset",
                         url=partial.url,
                     )
                 )
