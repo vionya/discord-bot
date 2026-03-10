@@ -628,7 +628,17 @@ class Utility(fuchsia.Addon):
                         " animated emojis are upscaled"
                     ),
                 )
-            container.add_item(ui.TextDisplay(f"-# New size: {width}x{height}px"))
+            container.add_item(
+                ui.TextDisplay(f"-# New size: {width}x{height}px")
+            )
+            container.add_item(
+                ui.ActionRow(
+                    ui.Button(
+                        label="View Emoji Asset",
+                        url=partial.url,
+                    )
+                )
+            )
             view = ui.LayoutView().add_item(container)
             await interaction.response.send_message(
                 view=view,
