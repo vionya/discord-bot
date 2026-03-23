@@ -248,9 +248,6 @@ class Starboard:
                         gallery = self.create_media_gallery(attachments)
                         if gallery.items:
                             container.add_item(gallery)
-                    row.add_item(
-                        ui.Button(url=ref.jump_url, label="Go to reply")
-                    )
 
             if ref:
                 if ref.type == discord.MessageReferenceType.reply and (
@@ -269,6 +266,9 @@ class Starboard:
                         )
                     row.add_item(
                         ui.Button(url=message.jump_url, label="Go to message")
+                    )
+                    row.add_item(
+                        ui.Button(url=ref.jump_url, label="Go to reply")
                     )
                 elif ref.type == discord.MessageReferenceType.forward:
                     container.add_item(
