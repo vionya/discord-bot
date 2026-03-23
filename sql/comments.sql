@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
--- Copyright (C) 2025 vionya
+-- Copyright (C) 2026 vionya
 -- Table: profiles | Documentation for settings --
 COMMENT ON COLUMN profiles.receive_highlights IS
 'Dictates whether you''ll receive highlights from fuchsia.
