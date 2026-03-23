@@ -10,7 +10,7 @@ import discord
 from discord import app_commands, ui
 
 import fuchsia
-from fuchsia.classes.containers import TimedCache, TimedSet
+from fuchsia.classes.containers import TimedCache, TimedSet, FuchsiaGuildConfig
 from fuchsia.classes.exceptions import UserGenericError, UserValueError
 from fuchsia.classes.timer import periodic
 from fuchsia.modules import ButtonsMenu, ContainerPages
@@ -514,7 +514,7 @@ class StarboardAddon(
                 col_name,
             )
             SETTINGS_MAPPING[col_name]["description"] = col_desc
-        
+
         self.clean_cached_stars.start()
 
     async def cog_unload(self):
@@ -680,7 +680,9 @@ class StarboardAddon(
             starboard.channel = None
 
     @fuchsia.Addon.recv("config_update")
-    async def handle_starboard_setting(self, guild, settings):
+    async def handle_starboard_setting(
+        self, guild: discord.Guild, settings: FuchsiaGuildConfig
+    ):
         if settings.starboard is True:
             if guild.id in self.starboards:
                 return
