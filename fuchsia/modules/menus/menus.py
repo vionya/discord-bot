@@ -21,6 +21,7 @@ import discord
 
 from fuchsia.classes.context import FuchsiaContext
 from fuchsia.tools import shorten
+from fuchsia.tools.message_helpers import container_view
 
 from .pages import EmbedPages, Pages
 
@@ -337,7 +338,13 @@ class BaseMenu[T: Pages](ui.LayoutView):
                 )
             )
 
-        return all(predicates)
+        _can_use = all(predicates)
+        if _can_use is False:
+            await interaction.response.send_message(
+                view=container_view("You're not allowed to control this menu!"),
+                ephemeral=True,
+            )
+        return _can_use
 
     @final
     async def on_timeout(self):

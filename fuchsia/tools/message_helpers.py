@@ -25,7 +25,7 @@ def container_view(
     container.add_item(ui.TextDisplay(content))
     if footer is not None:
         container.add_item(ui.TextDisplay(f"-# {footer}"))
-    return ui.LayoutView().add_item(container)
+    return ui.LayoutView(timeout=0).add_item(container)
 
 
 async def send_confirmation(
