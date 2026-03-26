@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Optional, ParamSpec, TypeVar, overload, Literal
 from random import Random
 from collections.abc import Iterator
 
@@ -47,9 +47,7 @@ U = TypeVar("U")
 P = ParamSpec("P")
 
 
-def try_or_none(
-    func: Callable[P, T], *args: P.args, **kwargs: P.kwargs
-) -> T | None:
+def try_or_none(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T | None:
     try:
         return func(*args, **kwargs)
     except Exception:
@@ -86,9 +84,7 @@ async def convert_setting(
         value = converted
 
     else:
-        raise UserValueError(
-            "Bad value provided for setting `{}`".format(setting)
-        )
+        raise UserValueError("Bad value provided for setting `{}`".format(setting))
 
     return value
 
@@ -240,9 +236,7 @@ def recursive_get_command(
         return new_container
 
     # If there's another layer of tree/group, recurse
-    elif isinstance(
-        new_container, app_commands.Group | app_commands.CommandTree
-    ):
+    elif isinstance(new_container, app_commands.Group | app_commands.CommandTree):
         return recursive_get_command(new_container, " ".join(command_path))
 
     # If all else fails, return None
@@ -250,12 +244,12 @@ def recursive_get_command(
 
 
 @overload
-def parse_id(content: str) -> int: ...
+def parse_id(content: str, *, with_channel: Literal[False] = False) -> int: ...
 
 
 @overload
 def parse_id(
-    content: str, *, with_channel: bool = True
+    content: str, *, with_channel: Literal[True]
 ) -> tuple[int, int | None]: ...
 
 
