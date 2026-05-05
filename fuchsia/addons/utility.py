@@ -744,7 +744,7 @@ class Utility(fuchsia.Addon):
         """
         output_lines = [
             "`{0}` | `U+{1:04X}` {2}".format(
-                char, ord(char), unicodedata.name(char, "Unkown Character")
+                char, ord(char), unicodedata.name(char, "Unknown Character")
             )
             for char in set(content)
         ]
