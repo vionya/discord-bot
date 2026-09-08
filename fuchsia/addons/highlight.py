@@ -248,7 +248,7 @@ class Highlight:
                 is_blocked = msg.author.id in profile.hl_blocks
                 formatted = format_hl_context(
                     triggers.get(msg.id, msg),
-                    msg in triggers,
+                    msg.id in triggers,
                     is_blocked,
                     use_highlights_v2=True,
                 )
@@ -285,7 +285,7 @@ class Highlight:
                 is_blocked = m.author.id in profile.hl_blocks
                 formatted = format_hl_context(
                     triggers.get(m.id, m),
-                    m in triggers,
+                    m.id in triggers,
                     is_blocked,
                     use_highlights_v2=False,
                 )
