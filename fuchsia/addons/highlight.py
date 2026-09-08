@@ -19,7 +19,7 @@ from discord import app_commands, ui
 from typing_extensions import Sentinel
 
 import fuchsia
-from fuchsia.classes.containers import TimedSet, FuchsiaUser
+from fuchsia.classes.containers import TimedSet
 from fuchsia.classes.exceptions import (
     UserGenericError,
     UserLimitError,
@@ -224,11 +224,11 @@ class Highlight:
     ):
         if (profile := self.profile_ref()) is None:
             raise RuntimeError("profile reference was deleted unexpectedly")
-        triggers: set[discord.Message] = {message, *later_triggers}
-        # this is a dumb bandaid solution to the fact that Discord introduced a regression
-        # with how cv2 notifications are rendered (i.e. they arent) so until the new
-        # design for highlights has to be restricted to bot owners only until
-        # the regression is fixed :DDDDDDDDD
+        triggers: dict[int, discord.Message] = {
+            m.id: m for m in {message, *later_triggers}
+        }  # freeze original messages here to make sure deleted triggers aren't lost
+        # Discord introduced a regression with how cv2 notifications are
+        # rendered (i.e. they arent) :DDDDDDDDD
         if ab_test("highlights_v2", self.user_id, 0.95, owner_override=True):
             messages = [
                 m
@@ -247,7 +247,10 @@ class Highlight:
                     msg.content = "[Omitted due to length]"
                 is_blocked = msg.author.id in profile.hl_blocks
                 formatted = format_hl_context(
-                    msg, msg in triggers, is_blocked, use_highlights_v2=True
+                    triggers.get(msg.id, msg),
+                    msg in triggers,
+                    is_blocked,
+                    use_highlights_v2=True,
                 )
                 if msg in triggers and (
                     i == 0 or i > 0 and messages[i - 1] not in triggers
@@ -281,7 +284,10 @@ class Highlight:
                     m.content = "[Omitted due to length]"
                 is_blocked = m.author.id in profile.hl_blocks
                 formatted = format_hl_context(
-                    m, m in triggers, is_blocked, use_highlights_v2=False
+                    triggers.get(m.id, m),
+                    m in triggers,
+                    is_blocked,
+                    use_highlights_v2=False,
                 )
                 content = f"{formatted}\n{content}"
 

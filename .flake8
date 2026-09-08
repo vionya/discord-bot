@@ -2,11 +2,11 @@
 exclude =
     .venv
 ignore =
-    E501, # Line too long
-    E302,
-    E305,
-    F401,  # Unused import
-    E731,
-    W503,  # Despite flake8 complaints, best practice is line break before operator
-    E704,  # Allow multiple defs on one line
-    E203   # black likes to format things like this
+    E501,
+    E302
+    E305
+    F401,
+    E731
+    W503,
+    E704,
+    E203 
