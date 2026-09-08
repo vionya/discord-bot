@@ -232,9 +232,7 @@ class Highlight:
             }
             # merge triggers into live messages to include deletions
             live_messages |= triggers
-            messages = [
-                *sorted(live_messages.values(), key=lambda m: m.id, reverse=True)
-            ]
+            messages = [*sorted(live_messages.values(), key=lambda m: m.id)]
             container = ui.Container(
                 ui.TextDisplay(
                     "### In {0.guild.name}/#{0.channel.name}".format(message)
