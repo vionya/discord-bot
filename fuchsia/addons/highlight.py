@@ -82,9 +82,7 @@ def format_hl_context(
             ),
         )
         if message.attachments:
-            message.content += " [Attachment x{}]".format(
-                len(message.attachments)
-            )
+            message.content += " [Attachment x{}]".format(len(message.attachments))
         if message.embeds:
             message.content += " [Embed x{}]".format(len(message.embeds))
         if message.stickers:
@@ -118,8 +116,7 @@ class Highlight:
 
     def __repr__(self):
         return (
-            "<{0.__class__.__name__} user_id={0.user_id!r} "
-            "content={0.content!r}>"
+            "<{0.__class__.__name__} user_id={0.user_id!r} " "content={0.content!r}>"
         ).format(self)
 
     async def predicate(
@@ -230,11 +227,14 @@ class Highlight:
         # Discord introduced a regression with how cv2 notifications are
         # rendered (i.e. they arent) :DDDDDDDDD
         if ab_test("highlights_v2", self.user_id, 0.95, owner_override=True):
+            live_messages = {
+                m.id: m async for m in message.channel.history(limit=7, around=message)
+            }
+            # merge triggers into live messages to include deletions
+            live_messages |= triggers
             messages = [
-                m
-                async for m in message.channel.history(limit=7, around=message)
+                *sorted(live_messages.values(), key=lambda m: m.id, reverse=True)
             ]
-            messages.reverse()
             container = ui.Container(
                 ui.TextDisplay(
                     "### In {0.guild.name}/#{0.channel.name}".format(message)
@@ -247,20 +247,20 @@ class Highlight:
                     msg.content = "[Omitted due to length]"
                 is_blocked = msg.author.id in profile.hl_blocks
                 formatted = format_hl_context(
-                    triggers.get(msg.id, msg),
+                    msg,
                     msg.id in triggers,
                     is_blocked,
                     use_highlights_v2=True,
                 )
-                if msg in triggers and (
-                    i == 0 or i > 0 and messages[i - 1] not in triggers
+                if msg.id in triggers and (
+                    i == 0 or i > 0 and messages[i - 1].id not in triggers
                 ):
                     container.add_item(ui.Separator())
                 container.add_item(ui.TextDisplay(formatted))
-                if msg in triggers and (
+                if msg.id in triggers and (
                     i == len(messages) - 1
                     or i < len(messages) - 1
-                    and messages[i + 1] not in triggers
+                    and messages[i + 1].id not in triggers
                 ):
                     container.add_item(ui.Separator())
             container.add_item(ui.Separator(visible=False))
@@ -305,9 +305,7 @@ class Highlight:
             return {
                 "content": "{0}: {1}".format(
                     message.author,
-                    shorten(
-                        SPOILER_PATTERN.sub("[Spoiler]", message.content), 75
-                    ),
+                    shorten(SPOILER_PATTERN.sub("[Spoiler]", message.content), 75),
                 ),
                 "embed": embed,
                 "view": view,
@@ -345,9 +343,9 @@ class Highlights(
         self.highlights: defaultdict[int, list[Highlight]] = defaultdict(list)
         self.grace_periods: dict[int, TimedSet[int]] = {}
         self.queued_highlights: QueuedHighlightsType = defaultdict(dict)
-        self.membership_cache: dict[
-            int, dict[int, discord.Member | NO_MEMBERSHIP]
-        ] = defaultdict(dict)
+        self.membership_cache: dict[int, dict[int, discord.Member | NO_MEMBERSHIP]] = (
+            defaultdict(dict)
+        )
         asyncio.create_task(self.__ainit__())
 
     async def __ainit__(self):
@@ -360,9 +358,7 @@ class Highlights(
             profile = self.bot.profiles.get(record["user_id"])
             if not profile:
                 continue
-            self.highlights[record["user_id"]].append(
-                Highlight(ref(profile), **record)
-            )
+            self.highlights[record["user_id"]].append(Highlight(ref(profile), **record))
 
         for profile in self.bot.profiles.values():
             self.grace_periods[profile.user_id] = TimedSet(
@@ -415,10 +411,7 @@ class Highlights(
         matched_hls = list(
             filter(
                 lambda hl: hl.matches(message.content)
-                and (
-                    message.channel.id
-                    not in self.grace_periods.get(hl.user_id, {})
-                ),
+                and (message.channel.id not in self.grace_periods.get(hl.user_id, {})),
                 self.flat_highlights,
             )
         )
@@ -442,9 +435,7 @@ class Highlights(
                 queried_members = await message.guild.query_members(
                     user_ids=id_chunk, limit=min(100, len(id_chunk))
                 )
-                missing_members = set(id_chunk) - set(
-                    m.id for m in queried_members
-                )
+                missing_members = set(id_chunk) - set(m.id for m in queried_members)
                 self.membership_cache[message.guild.id].update(
                     dict.fromkeys(missing_members, NO_MEMBERSHIP)
                 )
@@ -455,13 +446,9 @@ class Highlights(
                 queried_members = []
                 for m_id in id_chunk:
                     try:
-                        queried_members.append(
-                            await message.guild.fetch_member(m_id)
-                        )
+                        queried_members.append(await message.guild.fetch_member(m_id))
                     except discord.NotFound:
-                        self.membership_cache[message.guild.id][
-                            m_id
-                        ] = NO_MEMBERSHIP
+                        self.membership_cache[message.guild.id][m_id] = NO_MEMBERSHIP
             mem_dict = {m.id: m for m in queried_members}
             # we cache membership for 30 seconds at a time to account for bursty
             # highlight activity. this *can* cause a scenario where a member may
@@ -508,9 +495,7 @@ class Highlights(
                 # wasting future API calls
                 self.bot.profiles[hl.user_id].receive_highlights = False
             except RuntimeError:
-                log.warning(
-                    f"failed to deref profile in kwarg creation ({hl!r})"
-                )
+                log.warning(f"failed to deref profile in kwarg creation ({hl!r})")
                 continue
 
     @periodic(30)
@@ -525,9 +510,7 @@ class Highlights(
                 return
             self.grace_periods.pop(user_id).clear()
 
-        self.grace_periods[profile.user_id] = TimedSet(
-            timeout=profile.hl_timeout * 60
-        )
+        self.grace_periods[profile.user_id] = TimedSet(timeout=profile.hl_timeout * 60)
 
     # Need to dynamically account for deleted profiles
     @fuchsia.Addon.recv("profile_delete")
@@ -537,9 +520,7 @@ class Highlights(
         self.highlights.pop(user_id, None)
         self.recompute_flattened()
 
-    async def addon_interaction_check(
-        self, interaction: discord.Interaction
-    ) -> bool:
+    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
         return await is_registered_profile_predicate(interaction)
 
     @app_commands.command(name="list")
@@ -558,9 +539,7 @@ class Highlights(
             use_container=True,
             template_embed=fuchsia.Embed(
                 title=f"{interaction.user}'s highlights"
-            ).set_footer(
-                text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"
-            ),
+            ).set_footer(text=f"{len(user_highlights)}/{MAX_TRIGGERS} slots used"),
         )
         await menu.start(interaction)
 
@@ -579,8 +558,7 @@ class Highlights(
 
         content = content.casefold()
         if content in [
-            hl.content.casefold()
-            for hl in self.highlights.get(interaction.user.id, [])
+            hl.content.casefold() for hl in self.highlights.get(interaction.user.id, [])
         ]:
             raise UserGenericError(
                 "Cannot have multiple highlights with the same content."
@@ -611,9 +589,7 @@ class Highlights(
     @app_commands.command(name="remove")
     @app_commands.rename(index="highlight")
     @app_commands.describe(index="A highlight to remove")
-    async def highlight_remove(
-        self, interaction: discord.Interaction, index: str
-    ):
+    async def highlight_remove(self, interaction: discord.Interaction, index: str):
         """Remove a highlight"""
         if is_clear_all(index):
             highlights = self.highlights.get(interaction.user.id, []).copy()
@@ -621,13 +597,9 @@ class Highlights(
 
         elif is_valid_index(index):
             try:
-                highlights = [
-                    self.highlights[interaction.user.id].pop(int(index) - 1)
-                ]
+                highlights = [self.highlights[interaction.user.id].pop(int(index) - 1)]
             except IndexError:
-                raise UserValueError(
-                    "One or more of the provided indices is invalid."
-                )
+                raise UserValueError("One or more of the provided indices is invalid.")
 
         else:
             raise UserValueError("Invalid input provided.")
@@ -654,12 +626,9 @@ class Highlights(
             return []
 
         highlights = [
-            highlight.content
-            for highlight in self.highlights[interaction.user.id]
+            highlight.content for highlight in self.highlights[interaction.user.id]
         ]
-        return generate_autocomplete_list(
-            highlights, current, insert_wildcard=True
-        )
+        return generate_autocomplete_list(highlights, current, insert_wildcard=True)
 
     def perform_blocklist_action(
         self, *, profile: FuchsiaUser, ids: list[int], action="block"
@@ -700,9 +669,7 @@ class Highlights(
         ids = [
             *map(
                 lambda obj: (
-                    obj.id
-                    if isinstance(obj, discord.abc.Snowflake)
-                    else int(obj)
+                    obj.id if isinstance(obj, discord.abc.Snowflake) else int(obj)
                 ),
                 filter(None, [user, channel, id]),
             )
@@ -727,8 +694,7 @@ class Highlights(
             return "`{0}` [{1}]".format(id, mention)
 
         menu = ButtonsMenu.from_iterable(
-            [*map(transform_mention, profile.hl_blocks)]
-            or ["No highlight blocks"],
+            [*map(transform_mention, profile.hl_blocks)] or ["No highlight blocks"],
             per_page=10,
             use_container=True,
             template_embed=fuchsia.Embed().set_author(
@@ -766,17 +732,13 @@ class Highlights(
         ids = [
             *map(
                 lambda obj: (
-                    obj.id
-                    if isinstance(obj, discord.abc.Snowflake)
-                    else int(obj)
+                    obj.id if isinstance(obj, discord.abc.Snowflake) else int(obj)
                 ),
                 filter(None, [user, channel, id]),
             )
         ]
 
-        self.perform_blocklist_action(
-            profile=profile, ids=ids, action="unblock"
-        )
+        self.perform_blocklist_action(profile=profile, ids=ids, action="unblock")
         await send_confirmation(interaction, predicate="updated your blocklist")
 
     @highlight_unblock.autocomplete("id")
@@ -787,11 +749,7 @@ class Highlights(
 
         def transform_mention(id):
             mention: Optional[
-                discord.Guild
-                | discord.TextChannel
-                | PartialUser
-                | discord.User
-                | str
+                discord.Guild | discord.TextChannel | PartialUser | discord.User | str
             ] = getattr(
                 self.bot.get_guild(id),
                 "name",
