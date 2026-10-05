@@ -445,7 +445,7 @@ def get_choice(options: list[str]) -> tuple[str, str]:
     data_display: list[str] = []
     for i, (item, hits) in enumerate(data.most_common()):
         data_display.append(
-            f"{i + 1}. [`{(hits / 1000) * 100:.1f}`] {shorten(item, 300)}"
+            f"{i + 1}. [`{(hits / 1000) * 100:.1f}%`] {shorten(item, 300)}"
         )
     return (data.most_common(1)[0][0], "\n".join(data_display))
 
