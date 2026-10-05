@@ -38,7 +38,9 @@ def result_to_container(query: str, result: SearchResult):
         container.add_item(
             ui.MediaGallery().add_item(
                 media=result.image_url,
-                description=(shorten(result.snippet, 256) if result.snippet else None),
+                description=(
+                    shorten(result.snippet, 256) if result.snippet else None
+                ),
             )
         )
     elif result.snippet:
@@ -55,7 +57,9 @@ def definitions_to_embed(
             # construct embed
             # n.b. the shorten calls might accidentally cut off a link but lol
             container = discord.ui.Container(
-                ui.TextDisplay(f"### {definition.word} (by {definition.author})"),
+                ui.TextDisplay(
+                    f"### {definition.word} (by {definition.author})"
+                ),
                 ui.TextDisplay(shorten(definition.definition, 4000)),
                 ui.TextDisplay("**Example**"),
                 ui.TextDisplay(
@@ -68,7 +72,9 @@ def definitions_to_embed(
                         definition.thumbs_up,
                         definition.thumbs_down,
                         # want timestamp relative
-                        discord.utils.format_dt(definition.written_on, style="R"),
+                        discord.utils.format_dt(
+                            definition.written_on, style="R"
+                        ),
                     ),
                 ),
             )
@@ -81,11 +87,15 @@ def definitions_to_embed(
             ]:  # Slice at 25 to fit within dropdown limits
                 for definition in meaning.definitions:
                     container = discord.ui.Container(
-                        ui.TextDisplay(f"### {word.word}: {meaning.part_of_speech}"),
+                        ui.TextDisplay(
+                            f"### {word.word}: {meaning.part_of_speech}"
+                        ),
                         ui.TextDisplay(shorten(definition.definition, 4000)),
                     )
                     if definition.synonyms:
-                        container.add_item(ui.TextDisplay("**Synonyms**")).add_item(
+                        container.add_item(
+                            ui.TextDisplay("**Synonyms**")
+                        ).add_item(
                             ui.TextDisplay(", ".join(definition.synonyms[:5]))
                         )
                     yield container, (word.word, definition.definition)
@@ -171,7 +181,9 @@ class InfoButtons(discord.ui.View):
         self.privacy_embed = privacy_embed
         super().__init__(timeout=None)
         self.add_item(
-            InviteButton(view_kwargs=invite_menu_kwargs, disabled=invite_disabled)
+            InviteButton(
+                view_kwargs=invite_menu_kwargs, disabled=invite_disabled
+            )
         )
         for button in buttons:
             self.add_item(button)
@@ -209,7 +221,9 @@ class AssetsSwapRow(ui.ActionRow):
         self.user_asset = user_asset
         self.guild_asset = guild_asset
         self.asset_name = asset_name
-        self.state = AssetState.GUILD if guild_asset is not None else AssetState.USER
+        self.state = (
+            AssetState.GUILD if guild_asset is not None else AssetState.USER
+        )
 
         if block_save is True:
             self.save_current_asset.disabled = True
@@ -298,7 +312,9 @@ class AssetsSwapRow(ui.ActionRow):
             if isinstance(child, discord.ui.Button):
                 child.disabled = True
         button.style = discord.ButtonStyle.green
-        await interaction.response.edit_message(view=self.view, attachments=[file])
+        await interaction.response.edit_message(
+            view=self.view, attachments=[file]
+        )
         await interaction.followup.send(
             view=container_view(
                 f"The selected {self.asset_name.lower()} has been saved in this message for future reference!"
@@ -345,7 +361,7 @@ class AssetsView(ui.LayoutView):
         )
         self.add_item(container)
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user.id == self.user_id
 
 
@@ -374,8 +390,12 @@ class StickerInfoRow(ui.ActionRow):
             self.steal.disabled = True
 
     @discord.ui.button(label="Steal Sticker", style=discord.ButtonStyle.primary)
-    async def steal(self, interaction: discord.Interaction, _: discord.ui.Button):
-        assert interaction.guild and isinstance(self.sticker, discord.GuildSticker)
+    async def steal(
+        self, interaction: discord.Interaction, _: discord.ui.Button
+    ):
+        assert interaction.guild and isinstance(
+            self.sticker, discord.GuildSticker
+        )
 
         try:
             # try to create the sticker
@@ -412,7 +432,8 @@ class StickerInfoRow(ui.ActionRow):
         container = ui.Container(
             ui.TextDisplay("### Sticker has been stolen!"),
             ui.Section(
-                "\n".join(raw_description), accessory=ui.Thumbnail(new_sticker.url)
+                "\n".join(raw_description),
+                accessory=ui.Thumbnail(new_sticker.url),
             ),
         )
         view = ui.LayoutView().add_item(container)
@@ -421,11 +442,12 @@ class StickerInfoRow(ui.ActionRow):
 
 def get_choice(options: list[str]) -> tuple[str, str]:
     data = Counter(random.choice(options) for _ in range(1000))
-    table = Table()
-    table.init_columns("Item", "%")
-    for item, hits in data.most_common():
-        table.add_row(shorten(item, 19), f"{(hits / 1000) * 100:.1f}%")
-    return (data.most_common(1)[0][0], table.display())
+    data_display: list[str] = []
+    for i, (item, hits) in enumerate(data.most_common()):
+        data_display.append(
+            f"{i + 1}. [`{(hits / 1000) * 100:.1f}`] {shorten(item, 300)}"
+        )
+    return (data.most_common(1)[0][0], "\n".join(data_display))
 
 
 async def get_member_message_data(

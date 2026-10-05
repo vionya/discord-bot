@@ -339,12 +339,12 @@ class Utility(fuchsia.Addon):
     ):
         """Make a (pseudo-)random choice from up to 5 different options"""
         options = [opt.strip() for opt in (opt_0, opt_1, opt_2, opt_3, opt_4) if opt]
-        selection, table = get_choice(options)
+        selection, data_display = get_choice(options)
 
         container = ui.Container(
             ui.TextDisplay("### Choice Results"),
-            ui.TextDisplay("```\n" + table + "\n```", id=67),
-            ui.TextDisplay(f"**Selection** `{shorten(selection, 250)}`", id=68),
+            ui.TextDisplay(data_display, id=67),
+            ui.TextDisplay(f"**Selection** `{shorten(selection, 300)}`", id=68),
         )
         view = ui.LayoutView().add_item(container)
         await interaction.response.send_message(view=view)
