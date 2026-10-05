@@ -193,7 +193,7 @@ class Utility(fuchsia.Addon):
                 choices.append(app_commands.Choice(name=suggestion, value=suggestion))
             self.suggest_cache[interaction.user.id] = choices
             return choices
-        except:
+        except Exception:
             return []
 
     async def google_command_callback(
@@ -932,7 +932,7 @@ class Utility(fuchsia.Addon):
                 ui.TextDisplay(
                     f"### Info in {interaction.guild}"
                     + (
-                        f"\n<:server_owner:1417956422225756220> **owns this server**"
+                        "\n<:server_owner:1417956422225756220> **owns this server**"
                         if interaction.guild.owner_id == user_object.id
                         else ""
                     )
@@ -1068,7 +1068,7 @@ class Utility(fuchsia.Addon):
                 )
             if interaction.context.guild:
                 row = StickerInfoRow(sticker_full, interaction)
-        except:
+        except Exception:
             # i don't actually care what happens if this fails
             # it just means there was some sort of issue with fetching the
             # sticker, and there's still useful information that can be gained
