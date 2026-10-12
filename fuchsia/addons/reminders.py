@@ -131,7 +131,9 @@ class Reminder:
             # never fail and if it does I will cry
             assert isinstance(dest, discord.abc.Messageable)
 
-            embed = fuchsia.Embed(title="Reminder Triggered", description=self.content)
+            embed = fuchsia.Embed(
+                title="Reminder Triggered", description=self.content
+            )
             if self.repeating is True:
                 embed.add_field(
                     name="Repeats at:",
@@ -147,7 +149,9 @@ class Reminder:
             # mention the user if there is an existing channel we want to send in
             if isinstance(
                 dest,
-                discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel,
+                discord.abc.GuildChannel
+                | discord.Thread
+                | discord.abc.PrivateChannel,
             ):
                 content = f"<@{self.user_id}> {content}"
 
@@ -263,7 +267,9 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         reminder = Reminder(bot=self.bot, **data)
         insort(self.reminders[user_id], reminder, key=lambda r: r.end_time)
 
-    async def addon_interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def addon_interaction_check(
+        self, interaction: discord.Interaction
+    ) -> bool:
         return await is_registered_profile_predicate(interaction)
 
     @iter_autocomplete(("1d", "1w", "1mo", "1y"), param="repeat")
@@ -340,7 +346,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
         )
         now = datetime.now(tz)
 
-        message = "Your reminder will be delivered <t:{0}:R> [<t:{0}>]"
+        message = "Will be delivered <t:{0}:R> [<t:{0}>]"
         use_coachmark = False
         match time_data:
             case TimedeltaWithYears():
@@ -351,11 +357,15 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                             "Reminders may repeat no more than once a minute"
                         )
 
-                    epoch = (now + time_data - delta).replace(second=1, microsecond=0)
+                    epoch = (now + time_data - delta).replace(
+                        second=1, microsecond=0
+                    )
                     message = (
-                        "Your reminder will be delivered every {0}, starting"
+                        "Will be delivered every {0}, starting"
                         " <t:{1:.0f}>"
-                    ).format(humanize_timedelta(delta), (epoch + delta).timestamp())
+                    ).format(
+                        humanize_timedelta(delta), (epoch + delta).timestamp()
+                    )
 
                 else:
                     # Delta is provided, epoch time is now since it's the starting
@@ -376,9 +386,11 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                     # times from later in the current day to be triggered once
                     epoch = (time_data - delta).replace(second=1, microsecond=0)
                     message = (
-                        "Your reminder will be delivered every {0}, starting"
+                        "Wwill be delivered every {0}, starting"
                         " <t:{1:.0f}>"
-                    ).format(humanize_timedelta(delta), (epoch + delta).timestamp())
+                    ).format(
+                        humanize_timedelta(delta), (epoch + delta).timestamp()
+                    )
 
                 else:
                     delta = time_data - now
@@ -405,7 +417,13 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             deliver_in=interaction.channel_id if in_channel is True else None,
         )
         view = ui.LayoutView().add_item(
-            ui.Container(ui.TextDisplay(message.format(timestamp)))
+            ui.Container(
+                ui.TextDisplay("### Reminder Created"),
+                ui.Separator(visible=True),
+                ui.TextDisplay(shorten(content, 1500)),
+                ui.Separator(visible=True),
+                ui.TextDisplay(message.format(timestamp)),
+            )
         )
         if use_coachmark:
             profile_cmd_id = self.bot.command_ids.get("profile")
@@ -436,7 +454,11 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             )
             formatted_reminders.append(
                 "- {0} (<t:{1}:R>) {2}".format(
-                    ("\U0001f501" if reminder.repeating else "\u0031\ufe0f\u20e3"),
+                    (
+                        "\U0001f501"
+                        if reminder.repeating
+                        else "\u0031\ufe0f\u20e3"
+                    ),
                     int(reminder.end_time.timestamp()),
                     content,
                 )
@@ -468,7 +490,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             ui.Separator(),
             ui.TextDisplay(
                 f"**Will be delivered at** <t:{int(reminder.end_time.timestamp())}>"
-                +f" (<t:{int(reminder.end_time.timestamp())}:R>)"
+                + f" (<t:{int(reminder.end_time.timestamp())}:R>)"
                 + (
                     f"\n**Will repeat every** `{humanize_timedelta(reminder.delta)}`"
                     if reminder.repeating
@@ -518,9 +540,13 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
 
         elif is_valid_index(index):
             try:
-                reminders = [self.reminders[interaction.user.id].pop(int(index) - 1)]
+                reminders = [
+                    self.reminders[interaction.user.id].pop(int(index) - 1)
+                ]
             except IndexError:
-                raise UserValueError("One or more of the provided indices is invalid.")
+                raise UserValueError(
+                    "One or more of the provided indices is invalid."
+                )
 
         else:
             raise UserValueError("Invalid input provided.")
@@ -537,7 +563,9 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
             return []
 
         reminders = [rem.content for rem in self.reminders[interaction.user.id]]
-        return generate_autocomplete_list(reminders, current, insert_wildcard=True)
+        return generate_autocomplete_list(
+            reminders, current, insert_wildcard=True
+        )
 
 
 async def setup(bot: fuchsia.Fuchsia):
