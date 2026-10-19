@@ -422,7 +422,7 @@ class Reminders(fuchsia.Addon, app_group=True, group_name="remind"):
                 ui.Separator(visible=True),
                 ui.TextDisplay(shorten(content, 1500)),
                 ui.Separator(visible=True),
-                ui.TextDisplay(message.format(timestamp)),
+                ui.TextDisplay(f"-# {message.format(timestamp)}"),
             )
         )
         if use_coachmark:
